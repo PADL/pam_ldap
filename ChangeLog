@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+44	Luke Howard <lukeh@padl.com>
+
+    * incorporated patch for shadowLastChange attribute
+
 40	Luke Howard <lukeh@padl.com>
 
     * added support for NDSv8 password changing
