@@ -2329,13 +2329,13 @@ _update_authtok (pam_ldap_session_t * session,
   char old_password_with_quotes[17], new_password_with_quotes[17];
   char old_unicode_password[34], new_unicode_password[34];
 
-#ifdef LDAP_EXOP_X_MODIFY_PASSWD
+#ifdef LDAP_EXOP_MODIFY_PASSWD
   /* for OpenLDAP password change extended operation */
   BerElement *ber;
   struct berval *bv;
   char *retoid;
   struct berval *retdata;
-#endif /* LDAP_EXOP_X_MODIFY_PASSWD */
+#endif /* LDAP_EXOP_MODIFY_PASSWD */
 
   if (session->info == NULL)
     {
@@ -2496,7 +2496,7 @@ _update_authtok (pam_ldap_session_t * session,
       break;
 
     case PASSWORD_EXOP:
-#ifdef LDAP_EXOP_X_MODIFY_PASSWD
+#ifdef LDAP_EXOP_MODIFY_PASSWD
       ber = ber_alloc_t (LBER_USE_DER);
 
       if (ber == NULL)
@@ -2522,7 +2522,7 @@ _update_authtok (pam_ldap_session_t * session,
       ber_free (ber, 1);
 
       rc =
-	ldap_extended_operation_s (session->ld, LDAP_EXOP_X_MODIFY_PASSWD, bv,
+	ldap_extended_operation_s (session->ld, LDAP_EXOP_MODIFY_PASSWD, bv,
 				   NULL, NULL, &retoid, &retdata);
       ber_bvfree (bv);
 
@@ -2540,7 +2540,7 @@ _update_authtok (pam_ldap_session_t * session,
 	}
 #else
       rc = PAM_SERVICE_ERR;
-#endif /* LDAP_EXOP_X_MODIFY_PASSWD */
+#endif /* LDAP_EXOP_MODIFY_PASSWD */
 
       break;
     }				/* end switch */

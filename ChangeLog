@@ -1,6 +1,12 @@
 $Id$
 ===============================================================
 
+153	Luke Howard <lukeh@padl.com>
+
+	* support non-experimental password change exop
+	* patch from Howard Chu to use linker grouping on
+	  Solaris
+
 152	Luke Howard <lukeh@padl.com>
 
 	* fix build breakage with OpenLDAP HEAD

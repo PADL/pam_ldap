@@ -2,7 +2,7 @@ AC_INIT(pam_ldap.c)
 AC_CANONICAL_SYSTEM
 AC_PREFIX_DEFAULT()
 
-AM_INIT_AUTOMAKE(pam_ldap, 152)
+AM_INIT_AUTOMAKE(pam_ldap, 153)
 AM_CONFIG_HEADER(config.h)
 
 AC_PROG_CC
@@ -36,7 +36,7 @@ hpux*) pam_ldap_so_LD="/bin/ld"
   pam_ldap_so_LDFLAGS="-b -dynamic -G `cat exports.hpux`"
   TARGET_OS="HPUX" ;;
 solaris*) pam_ldap_so_LD="/usr/ccs/bin/ld"
-  pam_ldap_so_LDFLAGS="-B dynamic -M \$(srcdir)/exports.solaris -G" ;;
+  pam_ldap_so_LDFLAGS="-B dynamic -M \$(srcdir)/exports.solaris -G -B group -lc" ;;
 linux*) pam_ldap_so_LDFLAGS="-shared -Wl,-Bdynamic -Wl,--version-script,\$(srcdir)/exports.linux" ;;
 *) pam_ldap_so_LDFLAGS="-shared" ;;
 esac

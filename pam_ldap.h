@@ -171,6 +171,10 @@ pam_ldap_shadow_t;
 #define LDAP_OPT_OFF ((void *) 0)
 #endif /* LDAP_OPT_OFF */
 
+#if defined(LDAP_EXOP_X_MODIFY_PASSWD) && !defined(LDAP_EXOP_MODIFY_PASSWD)
+#define LDAP_EXOP_MODIFY_PASSWD LDAP_EXOP_X_MODIFY_PASSWD
+#endif
+
 /* Seconds in a day */
 #define SECSPERDAY 86400
 
