@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+170	Luke Howard <lukeh@padl.com>
+
+	* sync ldap.conf with nss_ldap
+
 169	Luke Howard <lukeh@padl.com>
 
 	* include password policy schema file
