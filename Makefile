@@ -14,7 +14,7 @@ LDAP_LIB_DIR = /usr/local/ldapsdk/lib
 LDAP_INC_DIR = /usr/local/ldapsdk/include
 LDAPLIBS = -L$(LDAP_LIB_DIR) -lldap -llber -lpam -lnsl
 #OPT_FLAGS = -O2
-OPT_FLAGS = -g  -DYPLDAPD
+OPT_FLAGS = -g  #-DYPLDAPD
 
 # Which Make is gnu make
 MAKE = make

@@ -154,8 +154,8 @@ void _release_config(
         free(c->plc_attr);
     }
 
-    if (c->plc_objectclass != NULL) {
-        free(c->plc_objectclass);
+    if (c->plc_filter != NULL) {
+        free(c->plc_filter);
     }
     
     memset(c, 0, sizeof(*c));
@@ -206,8 +206,9 @@ int _allocconfig(
     result->plc_binddn = NULL;
     result->plc_bindpw = NULL;
     result->plc_sslpath = NULL;
-    result->plc_objectclass = NULL;
+    result->plc_filter = NULL;
     result->plc_attr = NULL;
+    result->plc_getpolicy = 0;
 
     return PAM_SUCCESS;
 }
@@ -351,10 +352,12 @@ int _readconfig(
             result->plc_port = atoi(v);
         } else if (!strcmp(k, "sslpath")) {
             CHECKPOINTER(result->plc_sslpath = strdup(v));
-        } else if (!strcmp(k, "pam_objectclass")) {
-            CHECKPOINTER(result->plc_objectclass = strdup(v));
+        } else if (!strcmp(k, "pam_filter")) {
+            CHECKPOINTER(result->plc_filter = strdup(v));
         } else if (!strcmp(k, "pam_attribute")) {
             CHECKPOINTER(result->plc_attr = strdup(v));
+        } else if (!strcmp(k, "pam_lookup_policy")) {
+            result->plc_getpolicy = !strcmp(v, "yes");
         }
     }
 
@@ -370,6 +373,26 @@ int _readconfig(
     return PAM_SUCCESS;
 }
 #endif
+
+
+static int _getvalue(
+                     LDAP *ld,
+                     LDAPMessage *e,
+                     const char *attr,
+                     int *ptr
+                     )
+{
+    char **vals;
+
+    vals = ldap_get_values(ld, e, (char *)attr);
+    if (vals == NULL) {
+        return PAM_SUCCESS;
+    }
+    *ptr = atol(vals[0]);
+    ldap_value_free(vals);
+
+    return PAM_SUCCESS;
+}
 
 static int _open_session(
                                   pam_ldap_session *session
@@ -413,11 +436,12 @@ static int _open_session(
 
 }
 
-static int _uid2dn(
-                            pam_ldap_session *session,
-                            const char *user,
-                            char **dn
-                            )
+static int _get_user_info(
+                   const char *user,
+                   char **dn,
+                   pam_ldap_session *session,
+                   pam_ldap_password_info *pwinfo
+                  )
 {
     char filter[LDAP_FILT_MAXSIZ];
     int rc;
@@ -449,9 +473,9 @@ static int _uid2dn(
     session->pls_ld->ld_sizelimit = 1;
 #endif /* LDAP_VERSION3 */
 
-    if (session->pls_conf->plc_objectclass != NULL) {
-        snprintf(filter, sizeof filter, "(&(objectclass=%s)(%s=%s))",
-                 session->pls_conf->plc_objectclass,
+    if (session->pls_conf->plc_filter != NULL) {
+        snprintf(filter, sizeof filter, "(&(%s)(%s=%s))",
+                 session->pls_conf->plc_filter,
                  session->pls_conf->plc_attr,
                  user);
     } else {
@@ -481,6 +505,15 @@ static int _uid2dn(
         return PAM_USER_UNKNOWN;
     }
 
+    if (pwinfo != NULL) {
+        memset(pwinfo, 0, sizeof(*pwinfo));
+        _getvalue(session->pls_ld, msg, "passwordExpirationTime", &pwinfo->passwordExpirationTime);
+        _getvalue(session->pls_ld, msg, "passwordExpWarned", &pwinfo->passwordExpWarned);
+        _getvalue(session->pls_ld, msg, "passwordRetryCount", &pwinfo->passwordRetryCount);
+        _getvalue(session->pls_ld, msg, "retryCountResetTime", &pwinfo->retryCountResetTime);
+        _getvalue(session->pls_ld, msg, "accountUnlockTime", &pwinfo->accountUnlockTime);        
+    }
+
     if (dn != NULL) {
         *dn = ldap_get_dn(session->pls_ld, msg);
     }
@@ -490,6 +523,14 @@ static int _uid2dn(
     return (dn != NULL && *dn == NULL) ? PAM_SERVICE_ERR : PAM_SUCCESS;
 }
 
+static int _get_user_dn(
+                   const char *user,
+                   char **dn,
+                   pam_ldap_session *session
+                  )
+{
+    return _get_user_info(user, dn, session, NULL);
+}
 
 static int _initialize(
                                 pam_ldap_session **psession
@@ -528,11 +569,89 @@ static int _reopen(
     return PAM_SUCCESS;
 }
 
-static int _validate(
-                              const char *user,
-                              const char *password,
-                              pam_ldap_session **psession
+static int _get_ldap_password_policy(
+                              pam_ldap_session **psession,
+                              pam_ldap_password_policy *policy
                               )
+{
+    int rc;
+    LDAPMessage *res, *msg;
+    pam_ldap_session *session;
+
+    if (psession != NULL) {
+        if (*psession != NULL) {
+            rc = _reopen(*psession);
+        } else {
+            rc = _initialize(psession);
+        }
+        session = *psession;
+    } else {
+        rc = _initialize(&session);
+    }
+
+    /* set some reasonable defaults */
+    memset(policy, 0, sizeof(*policy));
+    policy->passwordMinLength = 6;
+    policy->passwordMaxFailure = 3;
+
+    if (session->pls_conf->plc_getpolicy == 0) {
+        return PAM_SUCCESS;
+    }
+
+    if (session->pls_ld == NULL) {
+        rc = _open_session(session);
+        if (rc != PAM_SUCCESS)
+            return rc;
+        /* need to bind first */
+        rc = ldap_simple_bind_s(
+                                session->pls_ld,
+                                session->pls_conf->plc_binddn,
+                                session->pls_conf->plc_bindpw
+                                );
+        if (rc != LDAP_SUCCESS) {
+            return PAM_SUCCESS;
+        }
+    }
+
+#ifdef LDAP_VERSION3
+    rc = 1;
+    (void) ldap_set_option(session->pls_ld, LDAP_OPT_SIZELIMIT, &rc);
+#else
+    session->pls_ld->ld_sizelimit = 1;
+#endif /* LDAP_VERSION3 */
+
+    rc = ldap_search_s(
+                       session->pls_ld,
+                       "",
+                       LDAP_SCOPE_BASE,
+                       "(objectclass=passwordPolicy)",
+                       NULL,
+                       0,
+                       &res
+                       );
+
+    if (rc == LDAP_SUCCESS) {
+        msg = ldap_first_entry(session->pls_ld, res);
+        if (msg != NULL) {
+            _getvalue(session->pls_ld, msg, "passwordMaxFailure", &policy->passwordMaxFailure);
+            _getvalue(session->pls_ld, msg, "passwordMinLength", &policy->passwordMinLength);
+        }
+        ldap_msgfree(res);
+    }
+
+    if (psession == NULL) {
+        _release_session(psession);
+    }
+
+    return PAM_SUCCESS;
+}
+
+static int _validate_and_get_info(
+                     const char *user,
+                     const char *password,
+                     pam_ldap_session **psession,
+                     pam_ldap_password_info *pwinfo
+                    )
 {
     int rc;
     char *dn = NULL;
@@ -550,7 +669,7 @@ static int _validate(
     }
 
     /* calling this ensures that pls_ld is set */
-    rc = _uid2dn(session, user, &dn);
+    rc = _get_user_info(user, &dn, session, pwinfo);
     if (rc != PAM_SUCCESS) {
         goto out;
     }
@@ -587,6 +706,15 @@ out:
     return rc;
 }
 
+static int _validate(
+                     const char *user,
+                     const char *password,
+                     pam_ldap_session **psession
+                    )
+{
+    return _validate_and_get_info(user, password, psession, NULL);
+}
+
 static int _change_password(
                                      char *user,
                                      char *old_password,
@@ -616,7 +744,7 @@ static int _change_password(
     }
 
     /* calling this ensures that pls_ld is set */
-    rc = _uid2dn(session, user, &dn);
+    rc = _get_user_dn(user, &dn, session);
     if (rc != PAM_SUCCESS) {
         goto out;
     }
@@ -819,6 +947,8 @@ PAM_EXTERN int pam_sm_chauthtok(
     pam_ldap_session *session = NULL;
     int use_first_pass = 0, try_first_pass = 0, no_warn = 0;
     char errmsg[1024];
+    pam_ldap_password_policy policy;
+/*    pam_ldap_password_info pwinfo; */
 
     for (i = 0; i < argc; i++) {
         if (!strcmp(argv[i], "use_first_pass"))
@@ -851,7 +981,7 @@ PAM_EXTERN int pam_sm_chauthtok(
             return rc;
         }
 
-        rc = _uid2dn(session, usrname, NULL);
+        rc = _get_user_dn(usrname, NULL, session);
         _release_session(&session);
         return rc;
     }
@@ -871,8 +1001,11 @@ PAM_EXTERN int pam_sm_chauthtok(
     }
     
     tries = 0;
-    
-    while ((curpass == NULL) && (tries++ < MAX_PASSWD_TRIES)) {
+
+    /* support Netscape Directory Server's password policy */
+    _get_ldap_password_policy(&session, &policy);
+                       
+    while ((curpass == NULL) && (tries++ < policy.passwordMaxFailure)) {
         pmsg = &msg;
         msg.msg_style = PAM_PROMPT_ECHO_OFF;
         msg.msg = OLD_PASSWORD_PROMPT;
@@ -933,7 +1066,7 @@ PAM_EXTERN int pam_sm_chauthtok(
 
     tries = 0;
 
-    while ((newpass == NULL) && (tries++ < MAX_PASSWD_TRIES)) {
+    while ((newpass == NULL) && (tries++ < policy.passwordMaxFailure)) {
         pmsg = &msg;
         msg.msg_style = PAM_PROMPT_ECHO_OFF;
         msg.msg = NEW_PASSWORD_PROMPT;
@@ -960,6 +1093,9 @@ PAM_EXTERN int pam_sm_chauthtok(
         if (newpass != NULL) {
             if (curpass != NULL && !strcmp(curpass, newpass)) {
                 cmiscptr = "Passwords must differ";
+                newpass = NULL;
+            } else if (strlen(newpass) < policy.passwordMinLength) {
+                cmiscptr = "Password too short";
                 newpass = NULL;
             }
         } else {
@@ -1019,13 +1155,15 @@ PAM_EXTERN int pam_sm_chauthtok(
     pam_set_item(pamh, PAM_AUTHTOK, (void *)newpass);
     rc = _change_password(usrname, curpass, newpass, &session);
     if (rc != PAM_SUCCESS) {
-        int lderr;        
+        int lderr;
+        char *reason;
+
 #ifdef LDAP_VERSION3
-        lderr = ldap_get_lderrno(session->pls_ld, NULL, NULL);
+        lderr = ldap_get_lderrno(session->pls_ld, NULL, &reason);
 #else
         lderr = session->pls_ld->ld_errno;
 #endif /* LDAP_VERSION3 */
-        snprintf(errmsg, sizeof errmsg, "LDAP password information update failed (%s)", ldap_err2string(lderr));
+        snprintf(errmsg, sizeof errmsg, "LDAP password information update failed: %s (%s)", ldap_err2string(lderr), reason);
         conv_sendmsg(appconv, errmsg, PAM_ERROR_MSG, no_warn);
     } else {
         snprintf(errmsg, sizeof errmsg, "LDAP password information changed for %s", usrname);
@@ -1085,7 +1223,7 @@ main(int argc, char **argv)
 	int rc;
    char *p = (argc > 1) ? argv[1] : "test";
 	char *np = (argc > 2) ? argv[2] : "test2";
-	fprintf(stderr, "%d\n", _validate("lukeh", p, NULL));
+	fprintf(stderr, "%d\n", _validate("lukeh", p, NULL, NULL));
 	fprintf(stderr, "%d\n", _change_password("lukeh", p, np, NULL));
 	return rc;
 }
