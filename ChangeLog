@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+147	Luke Howard <lukeh@padl.com>
+
+	* make shadow.lstchg default -1 to not force
+ 	  password change when now shadow information present
+
 146	Luke Howard <lukeh@padl.com>
 
 	* fix for BUG#91 / Debian Bug #144175: adhere to

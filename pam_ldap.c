@@ -2090,7 +2090,7 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
     }
 
   /* Assume shadow controls.  Allocate shadow structure and link to session. */
-  session->info->shadow.lstchg = 0;
+  session->info->shadow.lstchg = -1;
   session->info->shadow.min = 0;
   session->info->shadow.max = 0;
   session->info->shadow.warn = 0;
