@@ -66,8 +66,10 @@ don't have any experience building with the SSL/TLS
 support in OpenLDAP.
 
 To discuss pam_ldap and related technologies, you may
-subscribe to the following mailing list:    
+subscribe to the following mailing lists:    
 
+        <URL:mailto:pamldap-request@padl.com>
+and
         <URL:mailto:ldap-nis-request@padl.com>
 
 Send an electronic mail message with "subscribe" in the
@@ -76,8 +78,10 @@ message body to join the list.
 Note that PADL now offer commercial support on a
 per-incident basis.      
 
+To request a support incident, send email to: pamldap-support@padl.com
+
 --
-[ PADL Software Pty Ltd ]
-Email: support@padl.com
-Internet: http://www.padl.com
+PADL Software Pty Ltd
+pamldap-support@padl.com
+http://www.padl.com/
 
