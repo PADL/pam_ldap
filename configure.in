@@ -2,7 +2,7 @@ AC_INIT(pam_ldap.c)
 AC_CANONICAL_SYSTEM
 AC_PREFIX_DEFAULT()
 
-AM_INIT_AUTOMAKE(pam_ldap, 109)
+AM_INIT_AUTOMAKE(pam_ldap, 110)
 AM_CONFIG_HEADER(config.h)
 
 AC_PROG_CC
@@ -28,6 +28,7 @@ esac
 case "$target_os" in
 aix*) pam_ldap_so_LDFLAGS="-bM:SRE -bnoentry -bE:\$(srcdir)/exports.aix" ;;
 solaris*) pam_ldap_so_LDFLAGS="-Wl,-M -Wl,mapfile -Wl,-G" ;;
+darwin*) pam_ldap_so_LDFLAGS="-bundle" ;;
 *) pam_ldap_so_LDFLAGS="-shared" ;;
 esac
 AC_SUBST(pam_ldap_so_LDFLAGS)

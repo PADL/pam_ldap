@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+110	Luke Howard <lukeh@padl.com>
+
+	* build on Mac OS X FCS
+
 109	Luke Howard <lukeh@padl.com>
 
 	* patch from Tero Pelander <tpeland@tkukoulu.fi> for
