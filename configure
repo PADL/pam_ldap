@@ -1541,7 +1541,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=pam_ldap
- VERSION=164
+ VERSION=165
 
 
 cat >>confdefs.h <<_ACEOF
