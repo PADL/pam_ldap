@@ -4,6 +4,8 @@ $Id$
 106	Luke Howard <lukeh@padl.com>
 
 	* URI support
+	* cleaned up some warnings with older client 
+	  libraries
 
 105	Luke Howard <lukeh@padl.com>
 
