@@ -212,6 +212,8 @@ pam_ldap_session_t;
 #define PADL_LDAP_AUTHTOK_DATA "PADL-LDAP-AUTHTOK-DATA"
 /* non-template user (pre-mapping) */
 #define PADL_LDAP_AUTH_DATA "PADL-LDAP-AUTH-DATA"
+/* authtok for Solaris */
+#define PADL_LDAP_OLDAUTHTOK_DATA "PADL-LDAP-OLDAUTHTOK-DATA"
 
 /* Configuration file routines */
 static int _alloc_config (pam_ldap_config_t **);

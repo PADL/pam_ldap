@@ -2575,7 +2575,12 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	  curpass = NULL;
 	}
 
+#ifdef solaris
+      pam_set_data (pamh, PADL_LDAP_OLDAUTHTOK_DATA,
+		    (void *) strdup(curpass), _cleanup_data);
+#else
       pam_set_item (pamh, PAM_OLDAUTHTOK, (void *) curpass);
+#endif /* solaris */
       return rc;
     }				/* prelim */
   else if (session->info == NULL)	/* this is no LDAP user */
@@ -2584,7 +2589,11 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if (use_authtok)
     use_first_pass = 1;
 
+#ifdef solaris
+  rc = pam_get_data (pamh, PADL_LDAP_OLDAUTHTOK_DATA, (const void **) &curpass);
+#else
   rc = pam_get_item (pamh, PAM_OLDAUTHTOK, (CONST_ARG void **) &curpass);
+#endif /* solaris */
   if (rc != PAM_SUCCESS)
     {
       syslog (LOG_ERR, "pam_ldap: error getting PAM_OLDAUTHTOK (%s)",
@@ -2839,7 +2848,11 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if (session->info == NULL)
     {
       rc = _get_user_info (session, username);
-      if (rc != PAM_SUCCESS)
+      if (rc == PAM_USER_UNKNOWN)
+	{
+	  return PAM_SUCCESS;
+	}
+      else if (rc != PAM_SUCCESS)
 	{
 	  return rc;
 	}

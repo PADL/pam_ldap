@@ -1,6 +1,15 @@
 $Id$
 ===============================================================
 
+114	Luke Howard <lukeh@padl.com>
+
+	* patch from Brian Nelson <bnelson@cis.ysu.edu>; if
+	  a user doesn't exist in LDAP, then make pam_sm_acct_mgmt()
+	  return PAM_SUCCESS
+	* another patch for correctly updating passwords on
+	  Solaris (which doesn't do preliminary password changing
+	  the same was as Linux-PAM)
+
 113	Luke Howard <lukeh@padl.com>
 
 	* don't use ldap_pvt_tls_set_option(); it is private API
