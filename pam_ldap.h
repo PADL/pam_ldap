@@ -73,6 +73,8 @@ typedef struct pam_ldap_config
     uid_t min_uid;
     /* max uid */
     uid_t max_uid;
+    /* password change for NDS */
+    int nds_passwd;
   }
 pam_ldap_config_t;
 

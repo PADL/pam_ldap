@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+74	Luke Howard <lukeh@padl.com>
+
+	* fixed support for NDS password changing,
+	  from Petr Olivka <Petr.Olivka@vsb.cz>
+
 73	Luke Howard <lukeh@padl.com>
 
 	* added support for OpenLDAP start TLS, from

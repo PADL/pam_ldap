@@ -417,6 +417,7 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->crypt_local = 0;
   result->min_uid = 0;
   result->max_uid = 0;
+  result->nds_passwd = 0;
   result->tmplattr = NULL;
   result->tmpluser = NULL;
  
@@ -672,6 +673,10 @@ _read_config (pam_ldap_config_t ** presult)
       else if (!strcasecmp (k, "pam_max_uid"))
 	{
 	  result->max_uid = (uid_t) atol (v);
+	}
+      else if (!strcasecmp (k, "pam_nds_passwd"))
+	{
+	  result->nds_passwd = !strcasecmp (v, "yes");
 	}
     }
 
@@ -1560,8 +1565,10 @@ _update_authtok (pam_ldap_session_t * session,
 		 const char *old_password,
 		 const char *new_password, int method)
 {
-  char *strvals[2];
-  LDAPMod *mods[2], mod;
+  char *strvalsold[2];
+  char *strvalsnew[2];
+  LDAPMod mod, mod2;
+  LDAPMod *mods[3];
   char buf[64], saltbuf[16];
   int rc = PAM_SUCCESS;
 
@@ -1593,86 +1600,101 @@ _update_authtok (pam_ldap_session_t * session,
 	return rc;
     }
 
-#ifdef NDS
-  /* NDS requires that the old password is first removed */
-  strvals[0] = (char *) old_password;
-  strvals[1] = NULL;
-
-  mod.mod_vals.modv_strvals = strvals;
-  mod.mod_type = (char *) "userPassword";
-  mod.mod_op = LDAP_MOD_DELETE;
-
-  mods[0] = &mod;
-  mods[1] = NULL;
-
-  rc = ldap_modify_s (session->ld, session->info->userdn, mods);
-  if (rc != LDAP_SUCCESS)
+  if (session->conf->nds_passwd)
     {
-      syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
-      return PAM_PERM_DENIED;
-    }
-#endif /* NDS */
+      /* NDS requires that the old password is first removed */
+      strvalsold[0] = (char *) old_password;
+      strvalsold[1] = NULL;
+      strvalsnew[0] = (char *) new_password;
+      strvalsnew[1] = NULL;
 
-  /* Netscape generates hashed automatically, but UMich doesn't. */
-  if (session->conf->crypt_local)
-    {
-      switch (method)
-	{
-	case PASSWORD_DES:
-	  _get_salt (saltbuf);
-	  break;
-	case PASSWORD_MD5:
-	  {
-	    md5_state_t state;
-	    md5_byte_t digest[16];
-	    struct timeval tv;
-	    int i;
+      mod.mod_vals.modv_strvals = strvalsold;
+      mod.mod_type = (char *) "userPassword";
+      mod.mod_op = LDAP_MOD_DELETE;
+      
+      mod2.mod_vals.modv_strvals = strvalsnew;
+      mod2.mod_type = (char *) "userPassword";
+      mod2.mod_op = LDAP_MOD_REPLACE;
 
-	    md5_init (&state);
-	    gettimeofday (&tv, NULL);
-	    md5_append (&state, (unsigned char *) &tv, sizeof (tv));
-	    i = getpid ();
-	    md5_append (&state, (unsigned char *) &i, sizeof (i));
-	    i = clock ();
-	    md5_append (&state, (unsigned char *) &i, sizeof (i));
-	    md5_append (&state, (unsigned char *) saltbuf, sizeof (saltbuf));
-	    md5_finish (&state, digest);
+      mods[0] = &mod;
+      mods[1] = &mod2;
+      mods[2] = NULL;
 
-	    strcpy (saltbuf, "$1$");
-	    for (i = 0; i < 8; i++)
-	      saltbuf[i + 3] = i64c (digest[i] & 0x3f);
-
-	    saltbuf[i + 3] = '\0';
-	    break;
-	  }
-	}
-
-      snprintf (buf, sizeof buf, "{crypt}%s", crypt (new_password, saltbuf));
-      strvals[0] = buf;
-    }
+      rc = ldap_modify_s (session->ld, session->info->userdn, mods);
+      if (rc != LDAP_SUCCESS)
+        {
+          syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
+          rc = PAM_PERM_DENIED;
+        }
+      else
+        {
+          rc = PAM_SUCCESS;
+        }
+    }  
   else
-    {
-      strvals[0] = (char *) new_password;
-    }
+    { 
+      /* Netscape generates hashed automatically, but UMich doesn't. */
+      if (session->conf->crypt_local)
+        {
+          switch (method)
+	    {
+	    case PASSWORD_DES:
+	      _get_salt (saltbuf);
+	      break;
+	    case PASSWORD_MD5:
+	      {
+	        md5_state_t state;
+	        md5_byte_t digest[16];
+	        struct timeval tv;
+	        int i;
 
-  strvals[1] = NULL;
+	        md5_init (&state);
+	        gettimeofday (&tv, NULL);
+	        md5_append (&state, (unsigned char *) &tv, sizeof (tv));
+	        i = getpid ();
+	        md5_append (&state, (unsigned char *) &i, sizeof (i));
+	        i = clock ();
+	        md5_append (&state, (unsigned char *) &i, sizeof (i));
+	        md5_append (&state, (unsigned char *) saltbuf, sizeof (saltbuf));
+	        md5_finish (&state, digest);
 
-  mod.mod_op = LDAP_MOD_REPLACE;
-  mod.mod_type = (char *) "userPassword";
-  mod.mod_values = strvals;
-  mods[0] = &mod;
-  mods[1] = NULL;
+	        strcpy (saltbuf, "$1$");
+	        for (i = 0; i < 8; i++)
+	          saltbuf[i + 3] = i64c (digest[i] & 0x3f);
 
-  rc = ldap_modify_s (session->ld, session->info->userdn, mods);
-  if (rc != LDAP_SUCCESS)
-    {
-      syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
-      rc = PAM_PERM_DENIED;
-    }
-  else
-    {
-      rc = PAM_SUCCESS;
-    }
+	        saltbuf[i + 3] = '\0';
+	        break;
+	      }
+	    }
+
+          snprintf (buf, sizeof buf, "{crypt}%s", crypt (new_password, saltbuf));
+          strvalsnew[0] = buf;
+        }
+      else
+        {
+          strvalsnew[0] = (char *) new_password;
+        }
+
+      strvalsnew[1] = NULL;
+
+      mod.mod_op = LDAP_MOD_REPLACE;
+      mod.mod_type = (char *) "userPassword";
+      mod.mod_values = strvalsnew;
+      
+      mods[0] = &mod;
+      mods[1] = NULL;
+
+      rc = ldap_modify_s (session->ld, session->info->userdn, mods);
+      if (rc != LDAP_SUCCESS)
+        {
+          syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
+          rc = PAM_PERM_DENIED;
+        }
+      else
+        {
+          rc = PAM_SUCCESS;
+        }
+  }
 
   return rc;
 }
