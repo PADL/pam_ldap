@@ -13,6 +13,8 @@ SECURITY_DIR = /lib/security
 LDAP_LIB_DIR = /usr/local/ldapsdk/lib
 LDAP_INC_DIR = /usr/local/ldapsdk/include
 LDAPLIBS = -lpam -L$(LDAP_LIB_DIR) -lldap -llber
+#OPT_FLAGS = -O2
+OPT_FLAGS = -g
 
 # Which Make is gnu make
 MAKE = make
@@ -21,18 +23,18 @@ MAKE = make
 # OS Part
 # Linux Section
 CC = gcc
-CFLAGS = -Wall -I$(LDAP_INC_DIR) $(CON_FILE) -DLINUX -DHAVE_SHADOW_H -O2 -fPIC
-LD_FLAGS = -x --shared 
+CFLAGS = -Wall -I$(LDAP_INC_DIR) $(CON_FILE) -DLINUX $(OPT_FLAGS) -fPIC
+LD_FLAGS = -x --shared -rpath $(LDAP_LIB_DIR)
 
 # Solaris 2.6 Sun Pro C Compiler
 #CC = /opt/SUNWspro/bin/cc
-#CFLAGS = -I$(LDAP_INC_DIR) $(CON_FILE) -DSOLARIS -DHAVE_SHADOW_H -O2 -K PIC 
-#LD_FLAGS = -B dynamic -G
+#CFLAGS = -I$(LDAP_INC_DIR) $(CON_FILE) -DSOLARIS $(OPT_FLAGS) -K PIC 
+#LD_FLAGS = -B dynamic -G -R$(LDAP_LIB_DIR)
 
 # Solaris 2.6 GCC 2.7.2.3
-#CC = gcc
-#CFLAGS = -Wall -I$(LDAP_INC_DIR) -DSOLARIS -DHAVE_SHADOW_H -O2 -fPIC
-#LD_FLAGS = -B dynamic -G
+CC = gcc
+CFLAGS = -Wall -I$(LDAP_INC_DIR) -DSOLARIS $(OPT_FLAGS) -fPIC
+LD_FLAGS = -B dynamic -G -R$(LDAP_LIB_DIR) -R/usr/ucblib
 
 LIBAUTHSH = pam_ldap.so
 
@@ -59,7 +61,9 @@ static/%.o: %.c
 dummy: all
 
 install: all
-	mv pam_ldap.so $(SECURITY_DIR)
+	chmod 755 pam_ldap.so
+	cp pam_ldap.so $(SECURITY_DIR)
+	chown root $(SECURITY_DIR)/pam_ldap.so
 
 all: dirs $(LIBSHARED) 
 

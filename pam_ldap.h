@@ -25,7 +25,8 @@ typedef struct
     pam_ldap_config *pls_conf;
 } pam_ldap_session;
 
-#define MAX_PASSWD_TRIES 3                                                      
-#define OLD_PASSWORD_PROMPT "Password: "                                        
-#define NEW_PASSWORD_PROMPT "New password: "                                    
-#define AGAIN_PASSWORD_PROMPT "New password (again): "
+#define MAX_PASSWD_TRIES 3 
+#define OLD_PASSWORD_PROMPT "Enter login(LDAP) password: "
+#define NEW_PASSWORD_PROMPT "New password: "
+#define AGAIN_PASSWORD_PROMPT "Re-enter new password: "
+

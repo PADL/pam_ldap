@@ -101,6 +101,7 @@
 
 #ifndef LINUX
 #include <security/pam_appl.h>
+#define PAM_EXTERN
 #endif /* LINUX */
 #include <security/pam_modules.h>
 
@@ -112,9 +113,13 @@
 
 #define PAM_SM_PASSWORD
 
+#define TRACE(x)	do { fprintf(stderr, "%s\n", x); \
+    syslog(LOG_DEBUG, "pam_ldap: %s\n", x); \
+    } while (0)
+
 static char rcsid[] = "$Id$";
 
-void _pam_ldap_release_config(
+void _release_config(
                          pam_ldap_config **pconfig
                          )
 {
@@ -156,7 +161,7 @@ void _pam_ldap_release_config(
     return;
 }
 
-void _pam_ldap_release_session(
+void _release_session(
                             pam_ldap_session **session
                             )
 {
@@ -164,7 +169,7 @@ void _pam_ldap_release_session(
         return;
 
     ldap_unbind((*session)->pls_ld);
-    _pam_ldap_release_config(&(*session)->pls_conf);
+    _release_config(&(*session)->pls_conf);
     free(*session);
     *session = NULL;
     
@@ -178,7 +183,7 @@ void _pam_ldap_release_session(
 } \
 } while (0)
 
-int _pam_ldap_readconfig(
+int _readconfig(
                          pam_ldap_config **presult
                          )
 {
@@ -268,7 +273,7 @@ int _pam_ldap_readconfig(
     return PAM_SUCCESS;
 }
 
-static int _pam_ldap_open_session(
+static int _open_session(
                                   pam_ldap_session *session
                                   )
 {
@@ -308,7 +313,7 @@ static int _pam_ldap_open_session(
 
 }
 
-static int _pam_ldap_uid2dn(
+static int _uid2dn(
                             pam_ldap_session *session,
                             const char *user,
                             char **dn
@@ -322,7 +327,7 @@ static int _pam_ldap_uid2dn(
         *dn = NULL;
     
     if (session->pls_ld == NULL) {
-        rc = _pam_ldap_open_session(session);
+        rc = _open_session(session);
         if (rc != PAM_SUCCESS)
             return rc;
         /* need to bind first */
@@ -331,8 +336,10 @@ static int _pam_ldap_uid2dn(
                                 session->pls_conf->plc_binddn,
                                 session->pls_conf->plc_bindpw
                                 );
-        if (rc != LDAP_SUCCESS)
+        if (rc != LDAP_SUCCESS) {
+            syslog(LOG_ERR, "pam_ldap: ldap_simple_bind_s %s", ldap_err2string(rc));
             return PAM_CRED_INSUFFICIENT;
+        }
     }
 
 #ifdef LDAP_VERSION3
@@ -380,11 +387,11 @@ static int _pam_ldap_uid2dn(
 
     ldap_msgfree(res);
 
-    return (*dn == NULL) ? PAM_SERVICE_ERR : PAM_SUCCESS;
+    return (dn != NULL && *dn == NULL) ? PAM_SERVICE_ERR : PAM_SUCCESS;
 }
 
 
-static int _pam_ldap_initialize(
+static int _initialize(
                                 pam_ldap_session **psession
                                 )
 {
@@ -401,27 +408,27 @@ static int _pam_ldap_initialize(
     session->pls_conf = NULL;
     session->pls_ldapversion = LDAP_VERSION2;
 
-    rc = _pam_ldap_readconfig(&session->pls_conf);
+    rc = _readconfig(&session->pls_conf);
     if (rc != PAM_SUCCESS) {
-        _pam_ldap_release_session(psession);
+        _release_session(psession);
         return rc;
     }
 
     return PAM_SUCCESS;
 }
 
-static int _pam_ldap_reopen(
+static int _reopen(
                             pam_ldap_session *session
                             )
 {
     if (session->pls_ldapversion == LDAP_VERSION2) {
         ldap_unbind(session->pls_ld);
-        return _pam_ldap_open_session(session);
+        return _open_session(session);
     }
     return PAM_SUCCESS;
 }
 
-static int _pam_ldap_validate(
+static int _validate(
                               const char *user,
                               const char *password,
                               pam_ldap_session **psession
@@ -433,16 +440,17 @@ static int _pam_ldap_validate(
 
     if (psession != NULL) {
         if (*psession != NULL) {
-            rc = _pam_ldap_reopen(session);
+            rc = _reopen(*psession);
         } else {
-            rc = _pam_ldap_initialize(psession);
+            rc = _initialize(psession);
         }
         session = *psession;
     } else {
-        rc = _pam_ldap_initialize(&session);
+        rc = _initialize(&session);
     }
 
-    rc = _pam_ldap_uid2dn(session, user, &dn);
+    /* calling this ensures that pls_ld is set */
+    rc = _uid2dn(session, user, &dn);
     if (rc != PAM_SUCCESS) {
         goto out;
     }
@@ -450,7 +458,7 @@ static int _pam_ldap_validate(
     if (session->pls_ldapversion == LDAP_VERSION2) {
         /* can't do another bind */
         ldap_unbind(session->pls_ld);
-        rc = _pam_ldap_open_session(session);
+        rc = _open_session(session);
         if (rc != PAM_SUCCESS)
             goto out;
     }
@@ -472,16 +480,14 @@ out:
     if (dn != NULL)
         LDAP_MEMFREE(dn);
 
-    if (psession != NULL) {
-        *psession = session;
-    } else {
-        _pam_ldap_release_session(&session);
+    if (psession == NULL) {
+        _release_session(&session);
     }
 
     return rc;
 }
 
-static int _pam_ldap_change_password(
+static int _change_password(
                                      char *user,
                                      char *old_password,
                                      char *new_password,
@@ -495,26 +501,27 @@ static int _pam_ldap_change_password(
     pam_ldap_session *session;
 
     if (psession != NULL) {
-        if (*psession != NULL) {
-            rc = _pam_ldap_reopen(session);
+        if (*psession != NULL) {           
+            rc = _reopen(*psession);
         } else {
-            rc = _pam_ldap_initialize(psession);
+            rc = _initialize(psession);
         }
         session = *psession;
     } else {       
-	rc = _pam_ldap_initialize(&session);
+	rc = _initialize(&session);
     }
     
     if (rc != PAM_SUCCESS) {
         goto out;
     }
 
-    rc = _pam_ldap_uid2dn(session, user, &dn);
+    /* calling this ensures that pls_ld is set */
+    rc = _uid2dn(session, user, &dn);
     if (rc != PAM_SUCCESS) {
         goto out;
     }
 
-    rc = _pam_ldap_reopen(session);
+    rc = _reopen(session);
     if (rc != PAM_SUCCESS) {
         goto out;
     }
@@ -562,10 +569,8 @@ out:
     if (dn != NULL)
         LDAP_MEMFREE(dn);
 
-    if (psession != NULL) {
-        *psession = session;
-    } else {
-        _pam_ldap_release_session(&session);
+    if (psession == NULL) {
+        _release_session(&session);
     }
 
     return rc;        
@@ -607,13 +612,13 @@ static int _set_auth_tok(
 
     pmsg[0] = &msg[0];
     msg[0].msg_style = PAM_PROMPT_ECHO_OFF;
-    msg[0].msg = "Password: ";
+    msg[0].msg = "LDAP Password: ";
     resp = NULL;
 
     if ((rc = _converse(pamh, 1, pmsg, &resp)) != PAM_SUCCESS)
         return rc;
 
-    if (resp) {
+    if (resp != NULL) {
         if ((flags & PAM_DISALLOW_NULL_AUTHTOK) && resp[0].resp == NULL) {
             free(resp);
             return PAM_AUTH_ERR;
@@ -647,38 +652,8 @@ static int conv_sendmsg(
     msg.msg = message;
     resp = NULL;
 
-    return (aconv->conv)(1, (const struct pam_message **)&pmsg, &resp, aconv->appdata_ptr);
+    return aconv->conv(1, (const struct pam_message **)&pmsg, &resp, aconv->appdata_ptr);
 }
-
-static int conv_getitem(
-                        struct pam_conv *aconv,
-                        char *message,
-                        int style,
-                        char **result
-                        )
-{
-    struct pam_message msg, *pmsg;
-    struct pam_response *resp;
-    int rc;
-
-    pmsg = &msg;
-    msg.msg_style = style;
-    msg.msg = message;
-    resp = NULL;
-
-    rc = (aconv->conv)(1, (const struct pam_message **)&pmsg, &resp, aconv->appdata_ptr);
-
-    if (rc != PAM_SUCCESS)
-        return rc;
-    
-    if (resp != NULL) {
-        *result = resp->resp;
-        free(resp);
-        return PAM_SUCCESS;
-    }
-    return PAM_SERVICE_ERR;
-}
-    
 
 PAM_EXTERN int pam_sm_authenticate(
                                    pam_handle_t *pamh,
@@ -690,23 +665,43 @@ PAM_EXTERN int pam_sm_authenticate(
     int rc;
     const char *name;
     char *p;
+    int use_first_pass = 0, try_first_pass = 0;
+    int i;
 
-    rc = pam_get_user(pamh, &name, "login: ");
+    for (i = 0; i < argc; i++) {
+        if (!strcmp(argv[i], "use_first_pass"))
+            use_first_pass = 1;
+        else if (!strcmp(argv[i], "try_first_pass"))
+            try_first_pass = 1;
+        else
+            syslog(LOG_DEBUG, "unknown module option %s", argv[i]);
+    }
+
+    rc = pam_get_user(pamh, &name, NULL);
     if (rc != PAM_SUCCESS)
         return rc;
 
     pam_get_item(pamh, PAM_AUTHTOK, (void *)&p);
-    if (p == NULL) {
-        rc = _set_auth_tok(pamh, flags, argc, argv);
-        if (rc != PAM_SUCCESS)
+    if (p != NULL && (use_first_pass || try_first_pass)) {
+        rc = _validate(name, p, NULL);
+        if (rc == PAM_SUCCESS || use_first_pass) {
             return rc;
+        }
+    }
+
+    rc = _set_auth_tok(pamh, flags, argc, argv);
+    if (rc != PAM_SUCCESS) {
+        return rc;
+    } else {
+        syslog(LOG_ERR, "pam_ldap: _set_auth_tok failed");
+        return rc;
     }
     
     pam_get_item(pamh, PAM_AUTHTOK, (void *)&p);
     if (p == NULL)
         return PAM_AUTH_ERR;
-    
-    return _pam_ldap_validate(name, p, NULL);
+
+    return _validate(name, p, NULL);
 }
 
 
@@ -723,8 +718,19 @@ PAM_EXTERN int pam_sm_chauthtok(
     struct pam_message msg, *pmsg;
     struct pam_response *resp;
     const char *cmiscptr = NULL;
-    int tries = 0;
+    int tries = 0, i;
     pam_ldap_session *session = NULL;
+    int use_first_pass = 0, try_first_pass = 0;
+    char errmsg[1024];
+
+    for (i = 0; i < argc; i++) {
+        if (!strcmp(argv[i], "use_first_pass"))
+            use_first_pass = 1;
+        else if (!strcmp(argv[i], "try_first_pass"))
+            try_first_pass = 1;
+        else
+            syslog(LOG_DEBUG, "unknown module option %s", argv[i]);
+    }
 
     rc = pam_get_item(pamh, PAM_CONV, (const void **)&appconv);
     if (rc != PAM_SUCCESS)
@@ -739,18 +745,30 @@ PAM_EXTERN int pam_sm_chauthtok(
     
     if (flags & PAM_PRELIM_CHECK) {
         /* see whether the user exists */
-        rc = _pam_ldap_initialize(&session);
+        rc = _initialize(&session);
         if (rc != PAM_SUCCESS) {
             return rc;
         }
 
-        rc = _pam_ldap_uid2dn(session, usrname, NULL);
-        _pam_ldap_release_session(&session);
+        rc = _uid2dn(session, usrname, NULL);
+        _release_session(&session);
         return rc;
     }
 
-    pam_get_item(pamh, PAM_OLDAUTHTOK, (const void **)&curpass);
-    pam_get_item(pamh, PAM_AUTHTOK, (const void **)&newpass);
+    if (try_first_pass || use_first_pass) {
+        if (pam_get_item(pamh, PAM_OLDAUTHTOK, (const void **)&curpass) == PAM_SUCCESS) {
+            rc = _validate(usrname, curpass, &session);
+            if (use_first_pass && rc != PAM_SUCCESS) {
+                conv_sendmsg(appconv, "LDAP Password incorrect", PAM_ERROR_MSG);
+                goto out;
+            } else {
+                conv_sendmsg(appconv, "LDAP Password incorrect: try again", PAM_ERROR_MSG);
+            }
+        } else {
+            curpass = NULL;
+        }
+    }
+    
     tries = 0;
     
     while ((curpass == NULL) && (tries++ < MAX_PASSWD_TRIES)) {
@@ -773,20 +791,24 @@ PAM_EXTERN int pam_sm_chauthtok(
         free(resp);
 
         /* validate the old password */
-        rc = _pam_ldap_validate(usrname, curpass, &session);
+        rc = _validate(usrname, curpass, &session);
         if (rc != PAM_SUCCESS) {
             int abortme = 0;
             
             if (curpass != NULL && curpass[0] == '\0') {
                 abortme = 1;
             }
-            if (curpass)
+            if (curpass) {
+                memset(curpass, 0, strlen(curpass));                
                 free(curpass);
+            }
             curpass = NULL;
             if (abortme) {
-                conv_sendmsg(appconv, "Password change aborted.", PAM_ERROR_MSG);
+                conv_sendmsg(appconv, "Password change aborted", PAM_ERROR_MSG);
                 rc = PAM_AUTHTOK_ERR;
                 goto out;
+            } else {
+                conv_sendmsg(appconv, "LDAP Password incorrect: try again", PAM_ERROR_MSG);
             }
         }
     }
@@ -797,9 +819,22 @@ PAM_EXTERN int pam_sm_chauthtok(
     }
 
     pam_set_item(pamh, PAM_OLDAUTHTOK, (void *)curpass);
+
+    if (try_first_pass || use_first_pass) {
+        if (pam_get_item(pamh, PAM_AUTHTOK, (const void **)&newpass) != PAM_SUCCESS) {
+            newpass = NULL;
+        }
+    }
+
     tries = 0;
 
     while ((newpass == NULL) && (tries++ < MAX_PASSWD_TRIES)) {
+        if (use_first_pass) {
+            /* curpass was NULL. Abort. */
+            rc = PAM_AUTHTOK_ERR;
+            goto out;
+        }
+
         pmsg = &msg;
         msg.msg_style = PAM_PROMPT_ECHO_OFF;
         msg.msg = NEW_PASSWORD_PROMPT;
@@ -825,11 +860,10 @@ PAM_EXTERN int pam_sm_chauthtok(
 
         if (newpass != NULL) {
             if (curpass != NULL && !strcmp(curpass, newpass)) {
-                cmiscptr = "You must choose a new password.";
+                cmiscptr = "Passwords must differ";
                 newpass = NULL;
             }
         } else {
-            conv_sendmsg(appconv, "Password change aborted.", PAM_ERROR_MSG);
             rc = PAM_AUTHTOK_ERR;
             goto out;
         }
@@ -868,11 +902,12 @@ PAM_EXTERN int pam_sm_chauthtok(
                 miscptr = NULL;
                 break;
             }
-            conv_sendmsg(appconv, "You must enter the same password twice.", PAM_ERROR_MSG);
+            conv_sendmsg(appconv, "You must enter the same password twice", PAM_ERROR_MSG);
             miscptr = NULL;
             newpass = NULL;
         } else {
             conv_sendmsg(appconv, cmiscptr, PAM_ERROR_MSG);
+            cmiscptr = NULL;
             newpass = NULL;
         }
     }
@@ -883,29 +918,31 @@ PAM_EXTERN int pam_sm_chauthtok(
     }
 
     pam_set_item(pamh, PAM_AUTHTOK, (void *)newpass);
-    rc = _pam_ldap_change_password(usrname, curpass, newpass, &session);
+    rc = _change_password(usrname, curpass, newpass, &session);
     if (rc != PAM_SUCCESS) {
-        int lderr;
+        int lderr;        
 #ifdef LDAP_VERSION3
         lderr = ldap_get_lderrno(session->pls_ld, NULL, NULL);
 #else
         lderr = session->pls_ld->ld_errno;
 #endif /* LDAP_VERSION3 */
-        conv_sendmsg(appconv, ldap_err2string(lderr), PAM_ERROR_MSG);
+        snprintf(errmsg, sizeof errmsg, "LDAP password information update failed (%s)", ldap_err2string(lderr));
+        conv_sendmsg(appconv, errmsg, PAM_ERROR_MSG);
     } else {
-        conv_sendmsg(appconv, "LDAP password changed.", PAM_TEXT_INFO);
+        snprintf(errmsg, sizeof errmsg, "LDAP password information changed for %s", usrname);
+        conv_sendmsg(appconv, errmsg, PAM_TEXT_INFO);
     }                    
 
 out:
 
-    _pam_ldap_release_session(&session);
+    _release_session(&session);
     
     return rc;
 }
 
 /* static module data */
 #ifdef PAM_STATIC
-struct pam_module _pam_ldap_modstruct = {
+struct pam_module _modstruct = {
     "pam_ldap",
     pam_sm_authenticate,
     NULL,
@@ -916,4 +953,15 @@ struct pam_module _pam_ldap_modstruct = {
 };
 #endif /* PAM_STATIC */
 
+#ifdef TESTING
+main(int argc, char **argv)
+{
+	int rc;
+   char *p = (argc > 1) ? argv[1] : "test";
+	char *np = (argc > 2) ? argv[2] : "test2";
+	fprintf(stderr, "%d\n", _validate("lukeh", p, NULL));
+	fprintf(stderr, "%d\n", _change_password("lukeh", p, np, NULL));
+	return rc;
+}
+#endif
 
