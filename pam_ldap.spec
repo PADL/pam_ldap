@@ -25,7 +25,7 @@ Install nss_ldap if you need LDAP access clients.
 %setup -q -a 0
 
 %build
-%configure
+./configure
 make
 
 %install
