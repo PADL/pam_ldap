@@ -1,4 +1,5 @@
-pam_sample.so.1 {
+#ident $Id$
+pam_ldap.so.1 {
 	global:
 		# Published PAM service module interfaces
 		pam_sm_authenticate;

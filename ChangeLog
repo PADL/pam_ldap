@@ -1,6 +1,18 @@
 $Id$
 ===============================================================
 
+15   Luke Howard <lukeh@padl.com>
+
+    * force users to change passwords if their account has
+      expired
+    * updated mapfile for Solaris
+
+14   Luke Howard <lukeh@padl.com>
+
+    * fall back to /etc/ldap.conf if ypldapd is configured
+      for configuration lookup
+    * fixed up pam.conf
+
 13   Luke Howard <lukeh@padl.com>
 
     * added -lcrypt for Linux

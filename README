@@ -33,6 +33,16 @@ I've tested this with Netscape Directory Server 3.1 under NT and
 Solaris, the University of Michigan LDAP server, and Microsoft's
 Exchange Server.
 
+Here are some possible deployment scenarios:
+
+   o pam_ldap with account information in /etc flat files,
+     kept manually in sync with LDAP
+
+   o pam_ldap with account information in LDAP, using 
+     nss_ldap
+
+   o pam_ldap with account information in NIS, using
+     ypldapd
 
 
 --

@@ -224,6 +224,18 @@ static void _pam_ldap_cleanup_session(
     return;
 }
 
+static void _cleanup_authtok_data(
+                      pam_handle_t *pamh,
+                      void *data,
+                      int error_status
+                      )
+{
+    if (data != NULL)
+        free(data);
+
+    return;
+}
+
 static int _alloc_config(
                  pam_ldap_config_t **presult
                  )
@@ -913,7 +925,7 @@ static int _pam_ldap_get_session(
     pam_ldap_session_t *session;
     int rc;
     
-    if (pam_get_data(pamh, "PADL-LDAP-SESSION-DATA", (const void **)&session) == PAM_SUCCESS) {
+    if (pam_get_data(pamh, PADL_LDAP_SESSION_DATA, (const void **)&session) == PAM_SUCCESS) {
         /*
          * we cache the information retrieved from the LDAP server, however
          * we need to flush this if the application has changed the user on us.
@@ -951,7 +963,7 @@ static int _pam_ldap_get_session(
     }
 #endif /* YPLDAPD */
 
-    rc = pam_set_data(pamh, "PADL-LDAP-SESSION-DATA", session, _pam_ldap_cleanup_session);
+    rc = pam_set_data(pamh, PADL_LDAP_SESSION_DATA, session, _pam_ldap_cleanup_session);
     if (rc != PAM_SUCCESS) {
         _release_config(&session->conf);
         free(session);
@@ -1301,12 +1313,12 @@ PAM_EXTERN int pam_sm_chauthtok(
                                 )
 {
     int rc = PAM_SUCCESS;
-    char *username, *curpass = NULL, *newpass = NULL;
+    char *username, *curpass = NULL, *newpass = NULL, *expuser = NULL;
     struct pam_conv *appconv;
     struct pam_message msg, *pmsg;
     struct pam_response *resp;
     const char *cmiscptr = NULL;
-    int tries = 0, i;
+    int tries = 0, i, canabort = 1;
     pam_ldap_session_t *session = NULL;
     int use_first_pass = 0, try_first_pass = 0, no_warn = 0;
     char errmsg[1024];
@@ -1338,6 +1350,10 @@ PAM_EXTERN int pam_sm_chauthtok(
 
     if (username == NULL)
         return PAM_USER_UNKNOWN;
+
+    rc = pam_get_data(pamh, PADL_LDAP_AUTHTOK_DATA, (const void **)&expuser);
+    if (rc == PAM_SUCCESS && expuser != NULL)
+        canabort = (strcmp(username, expuser) == 0) ? 0 : 1;
 
     rc = _pam_ldap_get_session(pamh, username, &session);
     if (rc != PAM_SUCCESS)
@@ -1402,7 +1418,7 @@ PAM_EXTERN int pam_sm_chauthtok(
                 free(curpass);
             }
             curpass = NULL;
-            if (abortme) {
+            if (canabort && abortme) {
                 _conv_sendmsg(appconv, "Password change aborted", PAM_ERROR_MSG, no_warn);
                 rc = PAM_AUTHTOK_ERR;
                 return rc;
@@ -1494,11 +1510,12 @@ PAM_EXTERN int pam_sm_chauthtok(
                 miscptr = NULL;
             }
             if (miscptr == NULL) {
-                _conv_sendmsg(appconv, "Password change aborted", PAM_ERROR_MSG, no_warn);
-                rc = PAM_AUTHTOK_ERR;
-                return rc;
-            }
-            if (!strcmp(newpass, miscptr)) {
+                if (canabort) {
+                    _conv_sendmsg(appconv, "Password change aborted", PAM_ERROR_MSG, no_warn);
+                    rc = PAM_AUTHTOK_ERR;
+                    return rc;
+                }
+            } else if (!strcmp(newpass, miscptr)) {
                 miscptr = NULL;
                 break;
             }
@@ -1631,6 +1648,8 @@ PAM_EXTERN int pam_sm_acct_mgmt(
                      "Your LDAP password will expire in %d day%s.",
                      days, (days == 1) ? "" : "s");
             _conv_sendmsg(appconv, buf, PAM_ERROR_MSG, no_warn);
+				/* we set this to make sure that user can't abort a password change */
+            (void) pam_set_data(pamh, PADL_LDAP_AUTHTOK_DATA, strdup(username), _cleanup_authtok_data);
         }
     }
 

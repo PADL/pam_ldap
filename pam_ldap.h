@@ -116,6 +116,10 @@ typedef struct pam_ldap_session
 #define NEW_PASSWORD_PROMPT "New password: "
 #define AGAIN_PASSWORD_PROMPT "Re-enter new password: "
 
+#define PADL_LDAP_SESSION_DATA "PADL-LDAP-SESSION-DATA"
+#define PADL_LDAP_AUTHTOK_DATA "PADL-LDAP-AUTHTOK-DATA"
+#define PADL_LDAP_AUTH_DATA "PADL-LDAP-AUTH-DATA"
+
 /* Configuration file routines */
 static int _alloc_config(pam_ldap_config_t **);
 static void _release_config(pam_ldap_config_t **);
@@ -139,6 +143,7 @@ static int _get_string_values(LDAP *, LDAPMessage *, const char *, char ***);
 static int _has_value(char **, const char *);
 static int _host_ok(pam_ldap_session_t *session);
 static char *_get_salt(char buf[3]);
+static void _cleanup_authtok_data(pam_handle_t *, void *, int);
 
 /* LDAP cover routines */
 static int _get_user_info(pam_ldap_session_t *, const char *);
