@@ -6,6 +6,8 @@ $Id$
 	* note in ldap.conf that the default encryption
 	  scheme for changing passwords is none (let
 	  the server do it) (BUG#65)
+	* pass NULL as session handle for SSL options;
+	  they are set globally
 
 123	Luke Howard <lukeh@padl.com>
 
