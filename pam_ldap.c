@@ -559,6 +559,9 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
       return PAM_SYSTEM_ERR;
     }
 
+  defaultBase = NULL;
+  passwdBase = NULL;
+
   while (fgets (b, sizeof (b), fp) != NULL)
     {
       char *k, *v;
