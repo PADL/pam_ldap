@@ -2839,7 +2839,7 @@ pam_sm_open_session (pam_handle_t * pamh,
 
   if (pam_get_data
       (pamh, PADL_LDAP_SESSION_DATA, (const void **) &session) == PAM_SUCCESS)
-    _pam_ldap_cleanup_session (pamh, (void *) session, PAM_SUCCESS);
+    pam_set_data (pamh, PADL_LDAP_SESSION_DATA, NULL, NULL);
 
   return PAM_SUCCESS;
 }
