@@ -1087,7 +1087,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	{
 	  CHECKPOINTER (result->logdir = strdup (v));
 	}
-      else if (!strcasecmp (k, "pam_sasl_mechanism"))
+      else if (!strcasecmp (k, "pam_sasl_mech"))
 	{
 	  CHECKPOINTER (result->sasl_mechanism = strdup (v));
 	}

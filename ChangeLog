@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+173	Luke Howard <lukeh@padl.com>
+
+	* s/pam_sasl_mechanism/pam_sasl_mech/ for
+	  consistency with OpenLDAP ldap.conf
+
 172	Luke Howard <lukeh@padl.com>
 
 	* preliminary SASL bind support
