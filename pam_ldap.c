@@ -1879,7 +1879,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		    {
 		      _conv_sendmsg (appconv, "Password change aborted",
 				     PAM_ERROR_MSG, no_warn);
-		      return PAM_AUTHTOK_ERR;
+		      return PAM_AUTHTOK_RECOVER_ERR;
 		    }
 		  else
 		    {
@@ -1891,7 +1891,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	    }			/* while */
 
 	  if (curpass == NULL)
-	    return PAM_AUTHTOK_ERR;
+	    return PAM_AUTHTOK_RECOVER_ERR;
 	}
       else
 	{
@@ -1910,7 +1910,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if (rc != PAM_SUCCESS)
     {
       syslog (LOG_ERR, "pam_ldap: error getting PAM_OLDAUTHTOK (%s)", pam_strerror(pamh, rc));
-      return PAM_AUTHTOK_ERR;
+      return PAM_AUTHTOK_RECOVER_ERR;
     }
 
   if (try_first_pass || use_first_pass)
@@ -1920,7 +1920,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	newpass = NULL;
 
       if (use_first_pass && newpass == NULL)
-	return PAM_AUTHTOK_ERR;
+	return PAM_AUTHTOK_RECOVER_ERR;
     }
 
   tries = 0;
@@ -1965,7 +1965,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	}
       else
 	{
-	  return PAM_AUTHTOK_ERR;
+	  return PAM_AUTHTOK_RECOVER_ERR;
 	}
 
       if (cmiscptr == NULL)
@@ -1997,7 +1997,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		{
 		  _conv_sendmsg (appconv, "Password change aborted",
 				 PAM_ERROR_MSG, no_warn);
-		  return PAM_AUTHTOK_ERR;
+		  return PAM_AUTHTOK_RECOVER_ERR;
 		}
 	    }
 	  else if (!strcmp (newpass, miscptr))
@@ -2020,7 +2020,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
     }				/* while */
 
   if (cmiscptr != NULL || newpass == NULL)
-    return PAM_AUTHTOK_ERR;
+    return PAM_AUTHTOK_RECOVER_ERR;
 
   pam_set_item (pamh, PAM_AUTHTOK, (void *) newpass);
   rc = _update_authtok (session, username, curpass, newpass, method);
