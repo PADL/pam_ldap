@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+27   Luke Howard <lukeh@padl.com>
+
+    * fix for recall 256: free() smasher 
+
 26   Luke Howard <lukeh@padl.com>
 
     * added commented out flags for non-V3 SDKs

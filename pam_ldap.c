@@ -197,7 +197,7 @@ static void _release_user_info(
     }
 
     free((void *)(*info)->username);
-    free(&info);
+    free(*info);
     
     *info = NULL;
     return;
