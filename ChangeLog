@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+141	Luke Howard <lukeh@padl.com>
+
+	* support for headers in /usr/include/pam (Darwin)
+
 140	Luke Howard <lukeh@padl.com>
 
 	* further fix for recall #8362: do not turn

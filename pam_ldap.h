@@ -22,13 +22,21 @@
 
 #ifdef HAVE_SECURITY_PAM_APPL_H
 #include <security/pam_appl.h>
+#elif defined(HAVE_PAM_PAM_APPL_H)
+#include <pam/pam_appl.h>
 #endif
 
 #ifdef HAVE_SECURITY_PAM_MISC_H
 #include <security/pam_misc.h>
+#elif defined(HAVE_PAM_PAM_MISC_H)
+#include <pam/pam_misc.h>
 #endif
 
+#ifndef HAVE_PAM_PAM_MODULES_H
 #include <security/pam_modules.h>
+#else
+#include <pam/pam_modules.h>
+#endif
 
 /* /etc/ldap.conf nss_ldap-style configuration */
 typedef struct pam_ldap_config

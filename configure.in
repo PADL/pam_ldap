@@ -2,7 +2,7 @@ AC_INIT(pam_ldap.c)
 AC_CANONICAL_SYSTEM
 AC_PREFIX_DEFAULT()
 
-AM_INIT_AUTOMAKE(pam_ldap, 140)
+AM_INIT_AUTOMAKE(pam_ldap, 141)
 AM_CONFIG_HEADER(config.h)
 
 AC_PROG_CC
@@ -46,6 +46,7 @@ if test -n "$with_ldap_dir"; then
 fi
 
 AC_CHECK_HEADERS(security/pam_appl.h security/pam_misc.h)
+AC_CHECK_HEADERS(pam/pam_appl.h pam/pam_misc.h pam/pam_modules.h)
 AC_CHECK_HEADERS(des.h crypt.h)
 AC_CHECK_HEADERS(lber.h)
 AC_CHECK_HEADERS(ldap.h, , AC_MSG_ERROR(could not locate <ldap.h>))
