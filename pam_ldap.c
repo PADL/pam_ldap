@@ -2069,10 +2069,20 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
       ssd->next = NULL;
     }
 nxt:
-  if (ssd->filter != NULL)
+  if ((session->conf->filter != NULL) && (ssd->filter != NULL))
+    {
+      snprintf(filter, sizeof filter, "(&(%s)(%s)(%s=%s))",
+                ssd->filter, session->conf->filter, session->conf->userattr, escapedUser);
+    }
+  else if (ssd->filter != NULL)
     {
       snprintf (filter, sizeof filter, "(&(%s)(%s=%s))",
 		ssd->filter, session->conf->userattr, escapedUser);
+    }
+  else if (session->conf->filter != NULL)
+    {
+      snprintf (filter, sizeof filter, "(&(%s)(%s=%s))",
+		session->conf->filter, session->conf->userattr, escapedUser);
     }
   else
     {
