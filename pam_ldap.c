@@ -884,6 +884,10 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 static int
 _open_session (pam_ldap_session_t * session)
 {
+#ifdef LDAP_X_OPT_CONNECT_TIMEOUT
+  int timeout;
+#endif
+
 #ifdef HAVE_LDAPSSL_INIT
   int rc;
 
@@ -957,15 +961,23 @@ _open_session (pam_ldap_session_t * session)
   session->ld->ld_timelimit = session->conf->timelimit;
 #endif
 
-#ifdef LDAP_OPT_REFERRALS
+#ifdef LDAP_X_OPT_CONNECT_TIMEOUT
+  /*
+   * This is a new option in the Netscape SDK which sets 
+   * the TCP connect timeout. For want of a better value,
+   * we use the bind_timelimit to control this.
+   */
+  timeout = session->conf->bind_timelimit * 1000;
+  (void) ldap_set_option (session->ld, LDAP_X_OPT_CONNECT_TIMEOUT, &timeout);
+#endif
 
+#ifdef LDAP_OPT_REFERRALS
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
 			  session->conf->
 			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef LDAP_OPT_RESTART
-
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
 			  session->conf->
 			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
