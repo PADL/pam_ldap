@@ -674,7 +674,8 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	}
       else if (!strcasecmp (k, "ssl"))
 	{
-	  if (!strcasecmp (v, "on") || !strcasecmp (v, "yes") || !strcasecmp (v, "true"))
+	  if (!strcasecmp (v, "on") || !strcasecmp (v, "yes")
+	      || !strcasecmp (v, "true"))
 	    {
 	      result->ssl_on = SSL_LDAPS;
 	    }
@@ -685,11 +686,13 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	}
       else if (!strcasecmp (k, "referrals"))
 	{
-	  result->referrals = (!strcasecmp(v,"on") || !strcasecmp(v, "yes") || !strcasecmp(v, "true"));
+	  result->referrals = (!strcasecmp (v, "on") || !strcasecmp (v, "yes")
+			       || !strcasecmp (v, "true"));
 	}
       else if (!strcasecmp (k, "restart"))
 	{
-	  result->restart = (!strcasecmp(v,"on") || !strcasecmp(v, "yes") || !strcasecmp(v, "true"));
+	  result->restart = (!strcasecmp (v, "on") || !strcasecmp (v, "yes")
+			     || !strcasecmp (v, "true"));
 	}
       else if (!strcasecmp (k, "pam_filter"))
 	{
@@ -898,11 +901,17 @@ _open_session (pam_ldap_session_t * session)
 #endif
 
 #ifdef LDAP_OPT_REFERRALS
-  (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS, session->conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+  
+    (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
+			    session->conf->
+			    referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef LDAP_OPT_RESTART
-  (void) ldap_set_option (session->ld, LDAP_OPT_RESTART, session->conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+  
+    (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
+			    session->conf->
+			    restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
