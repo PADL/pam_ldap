@@ -238,7 +238,12 @@ libraries.
 Specifies the debug level used for logging by the
 .I LDAP
 client library. This feature is not supported by all client
-libraries.
+libraries, and does not apply to the
+.B nss_ldap
+and
+.B pam_ldap
+modules themselves (debugging, if any, is configured separately
+and usually at compile time).
 .TP
 .B ssl <on|off|start_tls>
 Specifies whether to use SSL/TLS or not (the default is not to). If
@@ -489,6 +494,7 @@ module in this case.
 .B no_warn
 Specifies that warning messages should not be propagated to the PAM
 application.
+.TP
 .B use_authtok
 Analogous to
 .B use_first_pass
@@ -506,4 +512,4 @@ module was developed by PADL Software Pty Ltd (www.padl.com).
 .TP
 /etc/ldap.conf, /etc/ldap.secret, /etc/pam.conf
 .SH SEE ALSO
-.BR nss_ldap (5)
+.BR pam (8)
