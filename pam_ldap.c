@@ -1167,11 +1167,15 @@ _open_session (pam_ldap_session_t * session)
 #endif
       if (session->conf->debug)
 	{
+#ifdef LBER_OPT_DEBUG_LEVEL
 	  ber_set_option( NULL, LBER_OPT_DEBUG_LEVEL, &session->conf->debug );
+#endif /* LBER_OPT_DEBUG_LEVEL */
+#ifdef LDAP_OPT_DEBUG_LEVEL
 	  ldap_set_option( NULL, LDAP_OPT_DEBUG_LEVEL, &session->conf->debug );
+#endif /* LDAP_OPT_DEBUG_LEVEL */
 	}
     }
-#endif
+#endif /* HAVE_LDAP_SET_OPTION */
 
 #ifdef HAVE_LDAPSSL_INIT
   if (session->conf->ssl_on == SSL_LDAPS && ssl_initialized == 0)

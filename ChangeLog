@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+167	Luke Howard <lukeh@padl.com>
+
+	* fix compilation error on Solaris 9
+
 166	Luke Howard <lukeh@padl.com>
 
 	* fix signed/unsigned comparison issues
