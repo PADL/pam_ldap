@@ -5,6 +5,7 @@ $Id$
 
 	* support for service-based authorization
 	  (based on patch from Manon Goo)
+	* add ignore_authinfo_unavail flag
 
 161	Luke Howard <lukeh@padl.com>
 

@@ -285,6 +285,16 @@ if (X) { \
 #define LDAP_FILT_MAXSIZ 1024
 #endif /* LDAP_FILT_MAXSIZ */
 
+#define IGNORE_UNKNOWN_USER	0x01
+#define IGNORE_AUTHINFO_UNAVAIL	0x02
+
+#define STATUS_MAP_IGNORE_POLICY(_rc, _ignore_flags) do { \
+	if ((_rc) == PAM_USER_UNKNOWN && ((_ignore_flags) & IGNORE_UNKNOWN_USER)) \
+		rc = PAM_IGNORE; \
+	else if ((_rc) == PAM_AUTHINFO_UNAVAIL && ((_ignore_flags) & IGNORE_AUTHINFO_UNAVAIL)) \
+		rc = PAM_IGNORE; \
+	} while (0)
+
 /* PAM authentication routine */
 #define PAM_SM_AUTH
 PAM_EXTERN int pam_sm_authenticate (pam_handle_t *, int, int, const char **);
