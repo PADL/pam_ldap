@@ -6,6 +6,9 @@ $Id$
 	* with password change exop, use bind password not encoded
 	  old password for old password
 	* added --disable-ssl option to configure for Debian
+	* patch from Helmut Wirth <wirth@bison-soft.de> to allow
+	  only a URI to be specified.
+	* only set SSL options if we have values for those options
 
 118	Luke Howard <lukeh@padl.com>
 

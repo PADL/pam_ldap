@@ -800,7 +800,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	      result->tls_checkpeer = 1;
 	    }
 	  else if (!strcasecmp (v, "off") || !strcasecmp (v, "no")
-	      || !strcasecmp (v, "false"))
+		   || !strcasecmp (v, "false"))
 	    {
 	      result->tls_checkpeer = 0;
 	    }
@@ -879,7 +879,11 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
       result->scope = defaultScope;
     }
 
+#ifdef HAVE_LDAP_INITIALIZE
+  if (result->host == NULL && result->uri == NULL)
+#else
   if (result->host == NULL)
+#endif
     {
       /* 
        * According to PAM Documentation, such an error in a config file
@@ -1016,10 +1020,10 @@ _open_session (pam_ldap_session_t * session)
 	}
 
       /* set up SSL context */
-      if (_set_ssl_options(session) != LDAP_SUCCESS)
-        {
-          syslog (LOG_ERR, "pam_ldap: _set_ssl_options failed");
-        }
+      if (_set_ssl_options (session) != LDAP_SUCCESS)
+	{
+	  syslog (LOG_ERR, "pam_ldap: _set_ssl_options failed");
+	}
     }
 #endif /* LDAP_OPT_X_TLS */
 
@@ -1060,14 +1064,14 @@ _open_session (pam_ldap_session_t * session)
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_REFERRALS)
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->
-			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_RESTART)
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->
-			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
@@ -1085,7 +1089,7 @@ _open_session (pam_ldap_session_t * session)
 	    }
 
 	  /* set up SSL context */
-	  if (_set_ssl_options(session) != LDAP_SUCCESS)
+	  if (_set_ssl_options (session) != LDAP_SUCCESS)
 	    {
 	      syslog (LOG_ERR, "pam_ldap: _set_ssl_options failed");
 	    }
@@ -1094,7 +1098,7 @@ _open_session (pam_ldap_session_t * session)
 	  if (rc != LDAP_SUCCESS)
 	    {
 	      syslog (LOG_ERR, "pam_ldap: ldap_starttls_s: %s",
-		ldap_err2string (rc));	
+		      ldap_err2string (rc));
 	      return PAM_SYSTEM_ERR;
 	    }
 	}
@@ -1105,68 +1109,90 @@ _open_session (pam_ldap_session_t * session)
 
 #if defined HAVE_LDAP_START_TLS_S || (defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_X_TLS))
 static int
-_set_ssl_options(pam_ldap_session_t *session)
+_set_ssl_options (pam_ldap_session_t * session)
 {
   int rc;
 
   /* ca cert file */
-   rc = ldap_set_option(session->ld, LDAP_OPT_X_TLS_CACERTFILE,
-		session->conf->tls_cacertfile);
-  if (rc != LDAP_SUCCESS)
+  if (session->conf->tls_cacertfile != NULL)
     {
-      syslog (LOG_ERR, "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_CACERTFILE): %s",
-		ldap_err2string (rc));
-      return LDAP_OPERATIONS_ERROR;
+      rc = ldap_set_option (session->ld, LDAP_OPT_X_TLS_CACERTFILE,
+			    session->conf->tls_cacertfile);
+      if (rc != LDAP_SUCCESS)
+	{
+	  syslog (LOG_ERR,
+		  "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_CACERTFILE): %s",
+		  ldap_err2string (rc));
+	  return LDAP_OPERATIONS_ERROR;
+	}
     }
 
-  /* ca cert directory */
-   rc = ldap_set_option(session->ld, LDAP_OPT_X_TLS_CACERTDIR,
-		session->conf->tls_cacertdir);
-  if (rc != LDAP_SUCCESS)
+  if (session->conf->tls_cacertdir != NULL)
     {
-      syslog (LOG_ERR, "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_CACERTDIR): %s",
-		ldap_err2string (rc));
-      return LDAP_OPERATIONS_ERROR;
+      /* ca cert directory */
+      rc = ldap_set_option (session->ld, LDAP_OPT_X_TLS_CACERTDIR,
+			    session->conf->tls_cacertdir);
+      if (rc != LDAP_SUCCESS)
+	{
+	  syslog (LOG_ERR,
+		  "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_CACERTDIR): %s",
+		  ldap_err2string (rc));
+	  return LDAP_OPERATIONS_ERROR;
+	}
     }
-  
+
   /* require cert? */
-   rc = ldap_set_option(session->ld, LDAP_OPT_X_TLS_REQUIRE_CERT,
-		&session->conf->tls_checkpeer);
+  rc = ldap_set_option (session->ld, LDAP_OPT_X_TLS_REQUIRE_CERT,
+			&session->conf->tls_checkpeer);
   if (rc != LDAP_SUCCESS)
     {
-      syslog (LOG_ERR, "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_REQUIRE_CERT): %s",
-		ldap_err2string (rc));
+      syslog (LOG_ERR,
+	      "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_REQUIRE_CERT): %s",
+	      ldap_err2string (rc));
       return LDAP_OPERATIONS_ERROR;
     }
 
-  /* set cipher suite, certificate and private key: */
-   rc = ldap_set_option(session->ld, LDAP_OPT_X_TLS_CIPHER_SUITE,
-		session->conf->tls_ciphers);
-  if (rc != LDAP_SUCCESS)
+  if (session->conf->tls_ciphers != NULL)
     {
-      syslog (LOG_ERR, "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_CIPHER_SUITE): %s",
-		ldap_err2string (rc));
-      return LDAP_OPERATIONS_ERROR;
+      /* set cipher suite, certificate and private key: */
+      rc = ldap_set_option (session->ld, LDAP_OPT_X_TLS_CIPHER_SUITE,
+			    session->conf->tls_ciphers);
+      if (rc != LDAP_SUCCESS)
+	{
+	  syslog (LOG_ERR,
+		  "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_CIPHER_SUITE): %s",
+		  ldap_err2string (rc));
+	  return LDAP_OPERATIONS_ERROR;
+	}
     }
 
-   rc = ldap_set_option(session->ld, LDAP_OPT_X_TLS_CERTFILE,
-		session->conf->tls_cert);
-  if (rc != LDAP_SUCCESS)
+  if (session->conf->tls_cert != NULL)
     {
-      syslog (LOG_ERR, "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_CERTFILE): %s",
-		ldap_err2string (rc));
-      return LDAP_OPERATIONS_ERROR;
+      rc = ldap_set_option (session->ld, LDAP_OPT_X_TLS_CERTFILE,
+			    session->conf->tls_cert);
+      if (rc != LDAP_SUCCESS)
+	{
+	  syslog (LOG_ERR,
+		  "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_CERTFILE): %s",
+		  ldap_err2string (rc));
+	  return LDAP_OPERATIONS_ERROR;
+	}
     }
 
-   rc = ldap_set_option(session->ld, LDAP_OPT_X_TLS_KEYFILE,
-		session->conf->tls_key);
-  if (rc != LDAP_SUCCESS)
+  if (session->conf->tls_key != NULL)
     {
-      syslog (LOG_ERR, "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_KEYFILE): %s",
-		ldap_err2string (rc));
-      return LDAP_OPERATIONS_ERROR;
+      rc = ldap_set_option (session->ld, LDAP_OPT_X_TLS_KEYFILE,
+			    session->conf->tls_key);
+      if (rc != LDAP_SUCCESS)
+	{
+	  syslog (LOG_ERR,
+		  "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_KEYFILE): %s",
+		  ldap_err2string (rc));
+	  return LDAP_OPERATIONS_ERROR;
+	}
     }
-    return LDAP_SUCCESS;
+
+  return LDAP_SUCCESS;
 }
 #endif
 
@@ -2190,7 +2216,7 @@ _update_authtok (pam_ldap_session_t * session,
       ber_printf (ber, "{");
       ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_ID,
 		  session->info->userdn);
-	/* this doesn't appear to be necessary anymore */
+      /* this doesn't appear to be necessary anymore */
 /*      ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_OLD, old_password); */
       ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_NEW, new_password);
       ber_printf (ber, "N}");
@@ -2579,7 +2605,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	}
 
       pam_set_data (pamh, PADL_LDAP_OLDAUTHTOK_DATA,
-		    (curpass == NULL) ? NULL : (void *) strdup(curpass),
+		    (curpass == NULL) ? NULL : (void *) strdup (curpass),
 		    _cleanup_authtok_data);
       return rc;
     }				/* prelim */
@@ -2589,10 +2615,12 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if (use_authtok)
     use_first_pass = 1;
 
-  rc = pam_get_data (pamh, PADL_LDAP_OLDAUTHTOK_DATA, (const void **) &curpass);
+  rc =
+    pam_get_data (pamh, PADL_LDAP_OLDAUTHTOK_DATA, (const void **) &curpass);
   if (rc != PAM_SUCCESS)
     {
-      syslog (LOG_ERR, "pam_ldap: error getting old authentication token (%s)",
+      syslog (LOG_ERR,
+	      "pam_ldap: error getting old authentication token (%s)",
 	      pam_strerror (pamh, rc));
 #ifdef PAM_AUTHTOK_RECOVERY_ERR
       return PAM_AUTHTOK_RECOVERY_ERR;
