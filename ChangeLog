@@ -82,7 +82,7 @@ $Id$
 
 155	Luke Howard <lukeh@padl.com>
 
-	* proper for for non-expermental password change exop;
+	* proper for for non-experimental password change exop;
 	  broke compiling with older SDKs
 
 154	Luke Howard <lukeh@padl.com>
