@@ -828,7 +828,7 @@ _open_session (pam_ldap_session_t * session)
 	  if (version < LDAP_VERSION3)
 	    {
 	      version = LDAP_VERSION3;
-	      (void) ldap_set_option (sesion->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+	      (void) ldap_set_option (session->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 	      if (ldap_start_tls_s (session->ld, NULL, NULL) != LDAP_SUCCESS)
 		ldap_perror (session->ld, "ldap_start_tls");
 	    }
