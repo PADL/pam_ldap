@@ -420,7 +420,7 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->nds_passwd = 0;
   result->tmplattr = NULL;
   result->tmpluser = NULL;
- 
+
   return PAM_SUCCESS;
 }
 
@@ -519,14 +519,14 @@ _ypldapd_read_config (pam_ldap_config_t ** presult)
 } while (0)
 
 static int
-_read_config (const char * configFile, pam_ldap_config_t ** presult)
+_read_config (const char *configFile, pam_ldap_config_t ** presult)
 {
   /* this is the same configuration file as nss_ldap */
   FILE *fp;
   char b[BUFSIZ];
   pam_ldap_config_t *result;
   char errmsg[MAXPATHLEN + 25];
- 
+
   if (_alloc_config (presult) != PAM_SUCCESS)
     {
       return PAM_BUF_ERR;
@@ -538,7 +538,7 @@ _read_config (const char * configFile, pam_ldap_config_t ** presult)
   if (configFile == NULL)
     configFile = "/etc/ldap.conf";
 
-  fp = fopen (configFile, "r"); 
+  fp = fopen (configFile, "r");
 
   if (fp == NULL)
     {
@@ -546,7 +546,8 @@ _read_config (const char * configFile, pam_ldap_config_t ** presult)
        * According to PAM Documentation, such an error in a config file
        * SHOULD be logged at LOG_ALERT level
        */
-      snprintf(errmsg, sizeof (errmsg), "pam_ldap: missing file \"%s\"", configFile);
+      snprintf (errmsg, sizeof (errmsg), "pam_ldap: missing file \"%s\"",
+		configFile);
       syslog (LOG_ALERT, errmsg);
       return PAM_SYSTEM_ERR;
     }
@@ -572,7 +573,7 @@ _read_config (const char * configFile, pam_ldap_config_t ** presult)
       /* skip all whitespaces between keyword and value */
       /* Lars Oergel <lars.oergel@innominate.de>, 05.10.2000 */
       while (*v == ' ' || *v == '\t')
-        v++;
+	v++;
 
       len = strlen (v);
       v[--len] = '\0';
@@ -816,14 +817,23 @@ _open_session (pam_ldap_session_t * session)
   session->ld->ld_deref = session->conf->deref;
 #endif
 
-#ifdef HAVE_LDAP_START_TLS_S 
+#ifdef HAVE_LDAP_START_TLS_S
+  if (session->conf->ssl_on)
+    {
+      int version;
 
-   if (session->conf->ssl_on)
-   {
-      if (ldap_start_tls_s( session->ld, NULL, NULL ) != LDAP_SUCCESS)
-         ldap_perror(session->ld,"ldap_start_tls");
-   }
-
+      if (ldap_get_option (session->ld, LDAP_OPT_PROTOCOL_VERSION, &version)
+	  == LDAP_OPT_SUCCESS)
+	{
+	  if (version < LDAP_VERSION3)
+	    {
+	      version = LDAP_VERSION3;
+	      (void) ldap_set_option (sesion->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+	      if (ldap_start_tls_s (session->ld, NULL, NULL) != LDAP_SUCCESS)
+		ldap_perror (session->ld, "ldap_start_tls");
+	    }
+	}
+    }
 #endif
 
   return PAM_SUCCESS;
@@ -931,15 +941,15 @@ _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp, int freeit)
       if (session->conf->rootbinddn != NULL && geteuid () == 0)
 	{
 	  *whop = strdup (session->conf->rootbinddn);
-	  *credp = session->conf->rootbindpw != NULL ? 
-		strdup (session->conf->rootbindpw) : NULL;
+	  *credp = session->conf->rootbindpw != NULL ?
+	    strdup (session->conf->rootbindpw) : NULL;
 	}
       else
 	{
-	  *whop = session->conf->binddn != NULL ? 
-		strdup (session->conf->binddn) : NULL;
-	  *credp = session->conf->bindpw != NULL ? 
-		strdup (session->conf->bindpw) : NULL;
+	  *whop = session->conf->binddn != NULL ?
+	    strdup (session->conf->binddn) : NULL;
+	  *credp = session->conf->bindpw != NULL ?
+	    strdup (session->conf->bindpw) : NULL;
 	}
     }
 
@@ -1351,9 +1361,10 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
 #ifdef UID_NOBODY
   session->info->uid = UID_NOBODY;
 #else
-  session->info->uid = (uid_t) -2;
+  session->info->uid = (uid_t) - 2;
 #endif /* UID_NOBODY */
-  _get_integer_value (session->ld, msg, "uidNumber", (uid_t *)&session->info->uid);
+  _get_integer_value (session->ld, msg, "uidNumber",
+		      (uid_t *) & session->info->uid);
 
   /*
    * get mapped user; some PAM host applications let PAM_USER be reset
@@ -1403,15 +1414,14 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
 }
 
 static int
-_pam_ldap_get_session (pam_handle_t * pamh, const char *username, const char *configFile, 
-		       pam_ldap_session_t ** psession)
+_pam_ldap_get_session (pam_handle_t * pamh, const char *username,
+		       const char *configFile, pam_ldap_session_t ** psession)
 {
   pam_ldap_session_t *session;
   int rc;
 
   if (pam_get_data
-      (pamh, PADL_LDAP_SESSION_DATA,
-       (const void **) &session) == PAM_SUCCESS)
+      (pamh, PADL_LDAP_SESSION_DATA, (const void **) &session) == PAM_SUCCESS)
     {
       /*
        * we cache the information retrieved from the LDAP server, however
@@ -1551,7 +1561,7 @@ _get_password_policy (pam_ldap_session_t * session,
 
 static int
 _do_authentication (pam_ldap_session_t * session,
-	       const char *user, const char *password)
+		    const char *user, const char *password)
 {
   int rc = PAM_SUCCESS;
 
@@ -1624,7 +1634,7 @@ _update_authtok (pam_ldap_session_t * session,
       mod.mod_vals.modv_strvals = strvalsold;
       mod.mod_type = (char *) "userPassword";
       mod.mod_op = LDAP_MOD_DELETE;
-      
+
       mod2.mod_vals.modv_strvals = strvalsnew;
       mod2.mod_type = (char *) "userPassword";
       mod2.mod_op = LDAP_MOD_REPLACE;
@@ -1635,79 +1645,83 @@ _update_authtok (pam_ldap_session_t * session,
 
       rc = ldap_modify_s (session->ld, session->info->userdn, mods);
       if (rc != LDAP_SUCCESS)
-        {
-          syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
-          rc = PAM_PERM_DENIED;
-        }
+	{
+	  syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s",
+		  ldap_err2string (rc));
+	  rc = PAM_PERM_DENIED;
+	}
       else
-        {
-          rc = PAM_SUCCESS;
-        }
-    }  
+	{
+	  rc = PAM_SUCCESS;
+	}
+    }
   else
-    { 
+    {
       /* Netscape generates hashed automatically, but UMich doesn't. */
       if (session->conf->crypt_local)
-        {
-          switch (method)
+	{
+	  switch (method)
 	    {
 	    case PASSWORD_DES:
 	      _get_salt (saltbuf);
 	      break;
 	    case PASSWORD_MD5:
 	      {
-	        md5_state_t state;
-	        md5_byte_t digest[16];
-	        struct timeval tv;
-	        int i;
+		md5_state_t state;
+		md5_byte_t digest[16];
+		struct timeval tv;
+		int i;
 
-	        md5_init (&state);
-	        gettimeofday (&tv, NULL);
-	        md5_append (&state, (unsigned char *) &tv, sizeof (tv));
-	        i = getpid ();
-	        md5_append (&state, (unsigned char *) &i, sizeof (i));
-	        i = clock ();
-	        md5_append (&state, (unsigned char *) &i, sizeof (i));
-	        md5_append (&state, (unsigned char *) saltbuf, sizeof (saltbuf));
-	        md5_finish (&state, digest);
+		md5_init (&state);
+		gettimeofday (&tv, NULL);
+		md5_append (&state, (unsigned char *) &tv, sizeof (tv));
+		i = getpid ();
+		md5_append (&state, (unsigned char *) &i, sizeof (i));
+		i = clock ();
+		md5_append (&state, (unsigned char *) &i, sizeof (i));
+		md5_append (&state, (unsigned char *) saltbuf,
+			    sizeof (saltbuf));
+		md5_finish (&state, digest);
 
-	        strcpy (saltbuf, "$1$");
-	        for (i = 0; i < 8; i++)
-	          saltbuf[i + 3] = i64c (digest[i] & 0x3f);
+		strcpy (saltbuf, "$1$");
+		for (i = 0; i < 8; i++)
+		  saltbuf[i + 3] = i64c (digest[i] & 0x3f);
 
-	        saltbuf[i + 3] = '\0';
-	        break;
+		saltbuf[i + 3] = '\0';
+		break;
 	      }
 	    }
 
-          snprintf (buf, sizeof buf, "{crypt}%s", crypt (new_password, saltbuf));
-          strvalsnew[0] = buf;
-        }
+	  snprintf (buf, sizeof buf, "{crypt}%s",
+		    crypt (new_password, saltbuf));
+	  strvalsnew[0] = buf;
+	}
       else
-        {
-          strvalsnew[0] = (char *) new_password;
-        }
+	{
+	  strvalsnew[0] = (char *) new_password;
+	}
 
       strvalsnew[1] = NULL;
 
       mod.mod_op = LDAP_MOD_REPLACE;
       mod.mod_type = (char *) "userPassword";
       mod.mod_values = strvalsnew;
-      
+
       mods[0] = &mod;
       mods[1] = NULL;
 
       rc = ldap_modify_s (session->ld, session->info->userdn, mods);
       if (rc != LDAP_SUCCESS)
-        {
-          syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
-          rc = PAM_PERM_DENIED;
-        }
+	{
+	  syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s",
+		  ldap_err2string (rc));
+	  rc = PAM_PERM_DENIED;
+	}
       else
-        {
-          rc = PAM_SUCCESS;
-        }
-  }
+	{
+	  rc = PAM_SUCCESS;
+	}
+    }
 
   return rc;
 }
@@ -1800,8 +1814,8 @@ pam_sm_authenticate (pam_handle_t * pamh,
 	use_first_pass = 1;
       else if (!strcmp (argv[i], "try_first_pass"))
 	try_first_pass = 1;
-      else if (!strncmp(argv[i], "config=", 7))
-	 configFile = argv[i] + 7;
+      else if (!strncmp (argv[i], "config=", 7))
+	configFile = argv[i] + 7;
       else if (!strcmp (argv[i], "no_warn"))
 	;
       else if (!strcmp (argv[i], "debug"))
@@ -1845,7 +1859,10 @@ pam_sm_authenticate (pam_handle_t * pamh,
   if (rc == PAM_SUCCESS && session->info->tmpluser != NULL)
     {
       /* keep original username for posterity */
-      (void) pam_set_data (pamh, PADL_LDAP_AUTH_DATA, (void *) strdup(session->info->username), _cleanup_data);
+      
+	(void) pam_set_data (pamh, PADL_LDAP_AUTH_DATA,
+			     (void *) strdup (session->info->username),
+			     _cleanup_data);
       rc = pam_set_item (pamh, PAM_USER, (void *) session->info->tmpluser);
     }
 
@@ -1897,8 +1914,8 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	use_first_pass = 1;
       else if (!strcmp (argv[i], "try_first_pass"))
 	try_first_pass = 1;
-      else if (!strncmp(argv[i], "config=", 7))
-	 configFile = argv[i] + 7;
+      else if (!strncmp (argv[i], "config=", 7))
+	configFile = argv[i] + 7;
       else if (!strcmp (argv[i], "no_warn"))
 	no_warn = 1;
       else if (!strcmp (argv[i], "debug"))
@@ -1923,8 +1940,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
    * (non-template) user is available to us. If so,
    * use that instead.
    */
-  rc =
-    pam_get_data (pamh, PADL_LDAP_AUTH_DATA, (const void **) &username);
+  rc = pam_get_data (pamh, PADL_LDAP_AUTH_DATA, (const void **) &username);
   if (rc != PAM_SUCCESS)
     {
       rc = pam_get_user (pamh, (CONST_ARG char **) &username, "login: ");
@@ -2258,8 +2274,8 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	;
       else if (!strcmp (argv[i], "try_first_pass"))
 	;
-      else if (!strncmp(argv[i], "config=", 7))
-	 configFile = argv[i] + 7;
+      else if (!strncmp (argv[i], "config=", 7))
+	configFile = argv[i] + 7;
       else if (!strcmp (argv[i], "no_warn"))
 	no_warn = 1;
       else if (!strcmp (argv[i], "debug"))
@@ -2281,8 +2297,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
    * (non-template) user is available to us. If so,
    * use that instead.
    */
-  rc =
-    pam_get_data (pamh, PADL_LDAP_AUTH_DATA, (const void **) &username);
+  rc = pam_get_data (pamh, PADL_LDAP_AUTH_DATA, (const void **) &username);
   if (rc != PAM_SUCCESS)
     {
       rc = pam_get_user (pamh, (CONST_ARG char **) &username, "login: ");
