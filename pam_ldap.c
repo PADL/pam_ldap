@@ -2575,12 +2575,8 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	  curpass = NULL;
 	}
 
-#ifdef solaris
       pam_set_data (pamh, PADL_LDAP_OLDAUTHTOK_DATA,
 		    (void *) strdup(curpass), _cleanup_data);
-#else
-      pam_set_item (pamh, PAM_OLDAUTHTOK, (void *) curpass);
-#endif /* solaris */
       return rc;
     }				/* prelim */
   else if (session->info == NULL)	/* this is no LDAP user */
@@ -2589,14 +2585,10 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if (use_authtok)
     use_first_pass = 1;
 
-#ifdef solaris
   rc = pam_get_data (pamh, PADL_LDAP_OLDAUTHTOK_DATA, (const void **) &curpass);
-#else
-  rc = pam_get_item (pamh, PAM_OLDAUTHTOK, (CONST_ARG void **) &curpass);
-#endif /* solaris */
   if (rc != PAM_SUCCESS)
     {
-      syslog (LOG_ERR, "pam_ldap: error getting PAM_OLDAUTHTOK (%s)",
+      syslog (LOG_ERR, "pam_ldap: error getting old authentication token (%s)",
 	      pam_strerror (pamh, rc));
 #ifdef PAM_AUTHTOK_RECOVERY_ERR
       return PAM_AUTHTOK_RECOVERY_ERR;
@@ -2731,7 +2723,6 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if (cmiscptr != NULL || newpass == NULL)
     return PAM_MAXTRIES;
 
-  pam_set_item (pamh, PAM_AUTHTOK, (void *) newpass);
   rc = _update_authtok (session, username, curpass, newpass);
   if (rc != PAM_SUCCESS)
     {
@@ -2772,6 +2763,9 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
       _conv_sendmsg (appconv, errmsg, PAM_TEXT_INFO,
 		     (flags & PAM_SILENT) ? 1 : 0);
     }
+
+  pam_set_item (pamh, PAM_AUTHTOK, (void *) newpass);
+  pam_set_item (pamh, PAM_OLDAUTHTOK, (void *) curpass);
 
   return rc;
 }

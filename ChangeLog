@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+115	Luke Howard <lukeh@padl.com>
+
+	* fix for updating passwords (consistent for Linux/Solaris)
+
 114	Luke Howard <lukeh@padl.com>
 
 	* patch from Brian Nelson <bnelson@cis.ysu.edu>; if
