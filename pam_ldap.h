@@ -27,40 +27,41 @@
 
 /* /etc/ldap.conf nss_ldap-style configuration */
 typedef struct pam_ldap_config
-{
-        /* space delimited list of servers */
-        char *host;
-        /* port, expected to be common to all servers */
-        int port;
-        /* base DN, eg. dc=gnu,dc=org */
-        char *base;
-        /* scope for searches */
-        int scope;
-        /* bind dn/pw for "anonymous" authentication */
-        char *binddn;
-        char *bindpw;
-        int ssl_on;
-        /* SSL path */
-        char *sslpath;
-        /* filter to AND with uid=%s */
-        char *filter;
-        /* attribute to search on; defaults to uid. Use CN with ADS? */
-        char *userattr;
-        /* search for Netscape password policy */
-        int getpolicy;
-        /* group name; optional, for access authorization */
-        char *groupdn;
-        /* group membership attribute; defaults to uniquemember */
-        char *groupattr;
-        /* LDAP protocol version */
-        int version;
-        /* generate hashes locally */
-        int crypt_local;
-} pam_ldap_config_t;
+  {
+    /* space delimited list of servers */
+    char *host;
+    /* port, expected to be common to all servers */
+    int port;
+    /* base DN, eg. dc=gnu,dc=org */
+    char *base;
+    /* scope for searches */
+    int scope;
+    /* bind dn/pw for "anonymous" authentication */
+    char *binddn;
+    char *bindpw;
+    int ssl_on;
+    /* SSL path */
+    char *sslpath;
+    /* filter to AND with uid=%s */
+    char *filter;
+    /* attribute to search on; defaults to uid. Use CN with ADS? */
+    char *userattr;
+    /* search for Netscape password policy */
+    int getpolicy;
+    /* group name; optional, for access authorization */
+    char *groupdn;
+    /* group membership attribute; defaults to uniquemember */
+    char *groupattr;
+    /* LDAP protocol version */
+    int version;
+    /* generate hashes locally */
+    int crypt_local;
+  }
+pam_ldap_config_t;
 
 /* Netscape global password policy attributes */
 typedef struct pam_ldap_password_policy
-{
+  {
     int password_change;
     int password_check_syntax;
     int password_min_length;
@@ -74,7 +75,8 @@ typedef struct pam_ldap_password_policy
     int password_unlock;
     int password_lockout_duration;
     int password_reset_duration;
-} pam_ldap_password_policy_t;
+  }
+pam_ldap_password_policy_t;
 
 /* Password controls sent to client */
 #ifndef LDAP_CONTROL_PWEXPIRED
@@ -85,7 +87,8 @@ typedef struct pam_ldap_password_policy
 #endif /* LDAP_CONTROL_PWEXPIRING */
 
 /* Netscape per-use password attributes. Unused except for DN. */
-typedef struct pam_ldap_user_info {
+typedef struct pam_ldap_user_info
+  {
     /* user name, to validate info cache */
     char *username;
     /* DN of user in directory */
@@ -98,7 +101,8 @@ typedef struct pam_ldap_user_info {
     int password_expired;
     /* bound as user DN */
     int bound_as_user;
-} pam_ldap_user_info_t;
+  }
+pam_ldap_user_info_t;
 
 /*
  * Per PAM-call LDAP session. We keep the user info and
@@ -107,12 +111,13 @@ typedef struct pam_ldap_user_info {
  * a V2 session.
  */
 typedef struct pam_ldap_session
-{
+  {
     LDAP *ld;
     int ssl_initialized;
     pam_ldap_config_t *conf;
     pam_ldap_user_info_t *info;
-} pam_ldap_session_t;
+  }
+pam_ldap_session_t;
 
 #define OLD_PASSWORD_PROMPT "Enter login(LDAP) password: "
 #define NEW_PASSWORD_PROMPT "New password: "
@@ -123,44 +128,44 @@ typedef struct pam_ldap_session
 #define PADL_LDAP_AUTH_DATA "PADL-LDAP-AUTH-DATA"
 
 /* Configuration file routines */
-static int _alloc_config(pam_ldap_config_t **);
-static void _release_config(pam_ldap_config_t **);
-static int _read_config(pam_ldap_config_t **);
+static int _alloc_config (pam_ldap_config_t **);
+static void _release_config (pam_ldap_config_t **);
+static int _read_config (pam_ldap_config_t **);
 #ifdef YPLDAPD
-static int _ypldapd_read_config(pam_ldap_config_t **);
+static int _ypldapd_read_config (pam_ldap_config_t **);
 #endif /* YPLDAPD */
 
 /* Internal memory management */
-static void _release_user_info(pam_ldap_user_info_t **);
+static void _release_user_info (pam_ldap_user_info_t **);
 
 /* Internal LDAP session management */
-static int _open_session(pam_ldap_session_t *);
-static int _connect_anonymously(pam_ldap_session_t *);
+static int _open_session (pam_ldap_session_t *);
+static int _connect_anonymously (pam_ldap_session_t *);
 #ifdef NETSCAPE_API_EXTENSIONS
-static int _rebind_proc(LDAP *, char **, char **, int *, int, void *);
+static int _rebind_proc (LDAP *, char **, char **, int *, int, void *);
 #endif /* NETSCAPE_API_EXTENSIONS */
-static int _connect_as_user(pam_ldap_session_t *, const char *);
-static int _reopen(pam_ldap_session_t *);
+static int _connect_as_user (pam_ldap_session_t *, const char *);
+static int _reopen (pam_ldap_session_t *);
 
 /* LDAP entry helper routines */
-static int _get_integer_value(LDAP *, LDAPMessage *, const char *, int *);
-static int _get_string_values(LDAP *, LDAPMessage *, const char *, char ***);
-static int _has_value(char **, const char *);
-static int _host_ok(pam_ldap_session_t *session);
-static char *_get_salt(char buf[3]);
-static void _cleanup_authtok_data(pam_handle_t *, void *, int);
+static int _get_integer_value (LDAP *, LDAPMessage *, const char *, int *);
+static int _get_string_values (LDAP *, LDAPMessage *, const char *, char ***);
+static int _has_value (char **, const char *);
+static int _host_ok (pam_ldap_session_t * session);
+static char *_get_salt (char buf[3]);
+static void _cleanup_authtok_data (pam_handle_t *, void *, int);
 
 /* LDAP cover routines */
-static int _get_user_info(pam_ldap_session_t *, const char *);
-static int _get_password_policy(pam_ldap_session_t *, pam_ldap_password_policy_t *);
-static int _authenticate(pam_ldap_session_t *, const char *, const char *);
-static int _update_authtok(pam_ldap_session_t *, const char *, const char *, const char *);
+static int _get_user_info (pam_ldap_session_t *, const char *);
+static int _get_password_policy (pam_ldap_session_t *, pam_ldap_password_policy_t *);
+static int _authenticate (pam_ldap_session_t *, const char *, const char *);
+static int _update_authtok (pam_ldap_session_t *, const char *, const char *, const char *);
 
 /* PAM API helpers, public session management */
-static void _pam_ldap_cleanup_session(pam_handle_t *, void *, int);
-static int _pam_ldap_get_session(pam_handle_t *, const char *, pam_ldap_session_t **);
-static int _get_authtok(pam_handle_t *, int, int);
-static int _conv_sendmsg(struct pam_conv *, const char *, int, int);
+static void _pam_ldap_cleanup_session (pam_handle_t *, void *, int);
+static int _pam_ldap_get_session (pam_handle_t *, const char *, pam_ldap_session_t **);
+static int _get_authtok (pam_handle_t *, int, int);
+static int _conv_sendmsg (struct pam_conv *, const char *, int, int);
 
 #ifndef LINUX
 #define PAM_EXTERN
@@ -168,18 +173,18 @@ static int _conv_sendmsg(struct pam_conv *, const char *, int, int);
 
 /* PAM authentication routine */
 #define PAM_SM_AUTH
-PAM_EXTERN int pam_sm_authenticate(pam_handle_t *, int, int, const char **);
-PAM_EXTERN int pam_sm_setcred(pam_handle_t *, int, int, const char **);
+PAM_EXTERN int pam_sm_authenticate (pam_handle_t *, int, int, const char **);
+PAM_EXTERN int pam_sm_setcred (pam_handle_t *, int, int, const char **);
 
 /* PAM session management */
 #define PAM_SM_SESSION
-PAM_EXTERN int pam_sm_open_session(pam_handle_t *, int, int, const char **);
-PAM_EXTERN int pam_sm_close_session(pam_handle_t *, int, int, const char **);
+PAM_EXTERN int pam_sm_open_session (pam_handle_t *, int, int, const char **);
+PAM_EXTERN int pam_sm_close_session (pam_handle_t *, int, int, const char **);
 
 /* PAM password changing routine */
 #define PAM_SM_PASSWORD
-PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *, int, int, const char **);
+PAM_EXTERN int pam_sm_chauthtok (pam_handle_t *, int, int, const char **);
 
 /* PAM authorization routine */
 #define PAM_SM_ACCOUNT
-PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *, int, int, const char **);
+PAM_EXTERN int pam_sm_acct_mgmt (pam_handle_t *, int, int, const char **);
