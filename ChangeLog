@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+152	Luke Howard <lukeh@padl.com>
+
+	* fix build breakage with OpenLDAP HEAD
+
 151	Luke Howard <lukeh@padl.com>
 
 	* HP-UX port

@@ -312,6 +312,10 @@ if (X) { \
 #define TRUE !FALSE
 #endif
 
+#ifndef LDAP_FILT_MAXSIZ
+#define LDAP_FILT_MAXSIZ 1024
+#endif /* LDAP_FILT_MAXSIZ */
+
 /* PAM authentication routine */
 #define PAM_SM_AUTH
 PAM_EXTERN int pam_sm_authenticate (pam_handle_t *, int, int, const char **);
