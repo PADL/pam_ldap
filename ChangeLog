@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+34	Luke Howard <lukeh@padl.com>
+
+    * put /usr/ucblib back in linker search path on Solaris
+
 33   Luke Howard <lukeh@padl.com>
 
     * fixed pam_ldap.c to support compiling against an API
