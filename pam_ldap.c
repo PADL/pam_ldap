@@ -3216,6 +3216,17 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	}
     }
 
+  if (session->info->shadow.lstchg == 0)
+    {
+      /*
+       * Adhere to convention of a shadow last change
+       * value of 0 implying that the password has 
+       * expired. Apparently this is documented in the
+       * shadow suite (libmisc/isexpired.c).
+       */
+      session->info->password_expired = 1;
+    }
+       
   /*
    * Also check if user hasn't changed password for the inactive
    * amount of time.  This also counts as an expired account.
@@ -3248,18 +3259,10 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		     "You are required to change your LDAP password immediately.",
 		     PAM_ERROR_MSG, no_warn);
 #ifdef LINUX
-      success = PAM_AUTHTOKEN_REQD;
+      rc = success = PAM_AUTHTOKEN_REQD;
 #else
-      success = PAM_NEW_AUTHTOK_REQD;
+      rc = success = PAM_NEW_AUTHTOK_REQD;
 #endif /* LINUX */
-
-#ifdef notdef			/* ?????? */
-#ifdef PAM_AUTHTOK_EXPIRED
-      success = PAM_AUTHTOK_EXPIRED;
-#else
-      success = PAM_AUTHTOKEN_REQD;
-#endif
-#endif /* notdef */
     }
 
   /*
@@ -3271,7 +3274,6 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
   /*
    * If the password's expired, no sense warning
    */
-
   if (!session->info->password_expired)
     {
       if (session->info->shadow.warn > 0)	/* shadowAccount */
