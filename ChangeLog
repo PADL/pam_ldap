@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+97	Luke Howard <lukeh@padl.com>
+
+	* %configure -> ./configure
+
 96	Luke Howard <lukeh@padl.com>
 
 	* put some meaningful content in AUTHORS
