@@ -4,6 +4,9 @@ $Id$
 111	Luke Howard <lukeh@padl.com>
 
 	* further patch from Tero to fix chfn/chsh
+	* further patch from Jarkko for TLS/SSL using
+	  OpenLDAP: support for LDAPS, cipher suite
+	  selection, client key/cert authentication
 
 110	Luke Howard <lukeh@padl.com>
 
