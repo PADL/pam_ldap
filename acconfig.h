@@ -7,3 +7,7 @@
 /* define to support PADL ypldapd locator */
 #undef YPLDAPD
 
+
+#define PAM_LDAP_PATH_CONF              "/etc/ldap.conf"
+#define PAM_LDAP_PATH_ROOTPASSWD        "/etc/ldap.secret"
+

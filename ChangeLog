@@ -1,6 +1,12 @@
 $Id$
 ===============================================================
 
+137	Luke Howard <lukeh@padl.com>
+
+	* treat exceeded time and size limits as a successful
+	  return code; we may still have a single entry back.
+	* BUG#77: make configuration file paths configurable
+
 136	Luke Howard <lukeh@padl.com>
 
 	* module stack fixes from Thorsten Kukuk

@@ -669,7 +669,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 
   /* configuration file location is configurable; default /etc/ldap.conf */
   if (configFile == NULL)
-    configFile = "/etc/ldap.conf";
+    configFile = PAM_LDAP_PATH_CONF;
 
   fp = fopen (configFile, "r");
 
@@ -1000,7 +1000,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
        * According to PAM Documentation, such an error in a config file
        * SHOULD be logged at LOG_ALERT level
        */
-      syslog (LOG_ALERT, "pam_ldap: missing \"host\" in file \"ldap.conf\"");
+      syslog (LOG_ALERT, "pam_ldap: missing \"host\" in file \"%s\"", PAM_LDAP_PATH_CONF);
       return PAM_SERVICE_ERR;
     }
 
@@ -1030,7 +1030,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 
   if ((result->rootbinddn != NULL) && (geteuid () == 0))
     {
-      fp = fopen ("/etc/ldap.secret", "r");
+      fp = fopen (PAM_LDAP_PATH_ROOTPASSWD, "r");
       if (fp != NULL)
 	{
 	  if (fgets (b, sizeof (b), fp) != NULL)
@@ -1049,8 +1049,8 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	{
 	  _pam_drop (result->rootbinddn);
 	  syslog (LOG_WARNING,
-		  "pam_ldap: could not open secret file /etc/ldap.secret (%s)",
-		  strerror (errno));
+		  "pam_ldap: could not open secret file %s (%s)",
+		  PAM_LDAP_PATH_ROOTPASSWD, strerror (errno));
 	}
     }
 
@@ -1948,7 +1948,9 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
 		      session->conf->base,
 		      session->conf->scope, filter, NULL, 0, &res);
 
-  if (rc != LDAP_SUCCESS)
+  if (rc != LDAP_SUCCESS &&
+      rc != LDAP_TIMELIMIT_EXCEEDED &&
+      rc != LDAP_SIZELIMIT_EXCEEDED)
     {
       syslog (LOG_ERR, "pam_ldap: ldap_search_s %s", ldap_err2string (rc));
       return PAM_USER_UNKNOWN;
@@ -2184,7 +2186,9 @@ _get_password_policy (pam_ldap_session_t * session,
 		      LDAP_SCOPE_BASE,
 		      "(objectclass=passwordPolicy)", NULL, 0, &res);
 
-  if (rc == LDAP_SUCCESS)
+  if (rc == LDAP_SUCCESS ||
+      rc == LDAP_TIMELIMIT_EXCEEDED ||
+      rc == LDAP_SIZELIMIT_EXCEEDED)
     {
       msg = ldap_first_entry (session->ld, res);
       if (msg != NULL)
