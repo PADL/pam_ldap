@@ -1,257 +1,261 @@
 $Id$
 ===============================================================
 
+68	Luke Howard <lukeh@padl.com>
+
+	* initialize tmplattr/tmpluser fields
+
 67	Luke Howard <lukeh@padl.com>
 
-    * check _authenticate() return code before setting
-      template user
+	* check _authenticate() return code before setting
+	  template user
 
 66	Luke Howard <lukeh@padl.com>
 
-    * ypldapd locator support is now a configure option
+	* ypldapd locator support is now a configure option
 
 65	Luke Howard <lukeh@padl.com>
 
-    * set shadowLastChange silently (allow it to fail)
+	* set shadowLastChange silently (allow it to fail)
 
 64	Luke Howard <lukeh@padl.com>
 
-    * more consistent log messages (removed brackets)
-    * set uid to nobody if unreadable from directory
-    * support template users so users can login with
-      a name without a local POSIX account.
-    * PAM_AUTHTOK_RECOVERY_ERR (not ...RECOVER_ERR) 
-      on Soalris
+	* more consistent log messages (removed brackets)
+	* set uid to nobody if unreadable from directory
+	* support template users so users can login with
+	  a name without a local POSIX account.
+	* PAM_AUTHTOK_RECOVERY_ERR (not ...RECOVER_ERR) 
+	  on Soalris
 
 63	Luke Howard <lukeh@padl.com>
 
-    * return PAM_MAXTRIES if number of tries exceeded
+	* return PAM_MAXTRIES if number of tries exceeded
 
 62	Luke Howard <lukeh@padl.com>
 
-    * new spec file from Dan Berry
+	* new spec file from Dan Berry
 
 61	Luke Howard <lukeh@padl.com>
 
-    * patch from norbert.klasen@zdv.uni-tuebingen.de (bug);
-      was logging plaintext password in pam_ldap.c
-    * log pam_strerror() not integer status code
+	* patch from norbert.klasen@zdv.uni-tuebingen.de (bug);
+	  was logging plaintext password in pam_ldap.c
+	* log pam_strerror() not integer status code
 
 60	Luke Howard <lukeh@padl.com>
 
-    * patch from Jungle Lin@judicial.gov.tw to fix
-      logic bug in pam_sm_chauthtok()
+	* patch from Jungle Lin@judicial.gov.tw to fix
+	  logic bug in pam_sm_chauthtok()
 
 59	Luke Howard <lukeh@padl.com>
 
-    * fixed some assumptions in chsh/chfn, need to look
-      further at this though
+	* fixed some assumptions in chsh/chfn, need to look
+	  further at this though
 
 58	Tom Lear <tom@trap.mtview.ca.us>
 
-    * Debian bug #64217: remove redunant code in pam_ldap.c
-    * Debian bug #64220: add minuid and maxuid parameters
-    * Debian bug #65295: chsh/chfn implementation
+	* Debian bug #64217: remove redunant code in pam_ldap.c
+	* Debian bug #64220: add minuid and maxuid parameters
+	* Debian bug #65295: chsh/chfn implementation
 
 55	Doug Nazar <nazard@dragoninc.on.ca>
 
-    * md5 crypt support
-    * rootbinddn support
-    * rebind support for openldap
-    * async ldap calls for bind
-    * use_authtok support
-    * autoconf/automake support
+	* md5 crypt support
+	* rootbinddn support
+	* rebind support for openldap
+	* async ldap calls for bind
+	* use_authtok support
+	* autoconf/automake support
 
 51	Luke Howard <lukeh@padl.com>
 
-    * updated spec file
+	* updated spec file
 
 50	Luke Howard <lukeh@padl.com>
 
-    * more patches from Scott Balneaves
-    * use PAM_NEW_AUTHTOK_REQD instead of PAM_AUTHTOK_REQD
-    * return PAM_SUCCESS for pam_sm_open_session()
-    * reorganization of shadow code
+	* more patches from Scott Balneaves
+	* use PAM_NEW_AUTHTOK_REQD instead of PAM_AUTHTOK_REQD
+	* return PAM_SUCCESS for pam_sm_open_session()
+	* reorganization of shadow code
 
 49	Luke Howard <lukeh@padl.com>
 
-    * more patches from Scott Balneaves; now just check
-      for shadow expiry date rather than shadowAccount
-      object class
-    * added deref parameter to ldap.conf for parity with
-      OpenLDAP
+	* more patches from Scott Balneaves; now just check
+	  for shadow expiry date rather than shadowAccount
+	  object class
+	* added deref parameter to ldap.conf for parity with
+	  OpenLDAP
 
 48	Luke Howard <lukeh@padl.com>
 
-    * added patch from Scott Balneaves <sbalneav@legalaid.mb.ca>
-      to read shadowAccount attributes
+	* added patch from Scott Balneaves <sbalneav@legalaid.mb.ca>
+	  to read shadowAccount attributes
 
 47	Luke Howard <lukeh@padl.com>
 
-    * removed _connect_anonymously() clause when updating
-      shadowLastChange
+	* removed _connect_anonymously() clause when updating
+	  shadowLastChange
 
 46	Luke Howard <lukeh@padl.com>
 
-    * incorporated new spec file
+	* incorporated new spec file
 
 44	Luke Howard <lukeh@padl.com>
 
-    * incorporated patch for shadowLastChange attribute
+	* incorporated patch for shadowLastChange attribute
 
 40	Luke Howard <lukeh@padl.com>
 
-    * added support for NDSv8 password changing
-      (this is experimental)
+	* added support for NDSv8 password changing
+	  (this is experimental)
 
 39	Luke Howard <lukeh@padl.com>
 
-    * added some comments in Make.defs about different
-      SDKs
+	* added some comments in Make.defs about different
+	  SDKs
 
 38	Luke Howard <lukeh@padl.com>
 
-    * fixed typo in pam.d/ssh
+	* fixed typo in pam.d/ssh
 
 37	Luke Howard <lukeh@padl.com>
 
-    * merged in BUG#37 branch
-    * added Makefile.freebsd
+	* merged in BUG#37 branch
+	* added Makefile.freebsd
 
 36.BZ37.6	Luke Howard <lukeh@padl.com>
 
-    * updated ChangeLog (this file)
+	* updated ChangeLog (this file)
 
 36.BZ37.5	Luke Howard <lukeh@padl.com>
 
-    * included FreeBSD porting fixes
+	* included FreeBSD porting fixes
 
 36.BZ37.4	Luke Howard <lukeh@padl.com>
 
-    * send user credentials of bound_as_user is
-      set, rather than if userpw != NULL
+	* send user credentials of bound_as_user is
+	  set, rather than if userpw != NULL
 
 36.BZ37.3	Luke Howard <lukeh@padl.com>
 
-    * drop userpw if it is already set
+	* drop userpw if it is already set
 
 36.BZ37.2	Luke Howard <lukeh@padl.com>
 
-    * fixed reordered include to compile properly
+	* fixed reordered include to compile properly
 
 36.BZ37.1	Luke Howard <lukeh@padl.com>
 
-    * patch release with possible fix for BUG#37, where
-      user credentials were not being forwarded to
-      referred servers (whilst password changing)
+	* patch release with possible fix for BUG#37, where
+	  user credentials were not being forwarded to
+	  referred servers (whilst password changing)
 
 36   Luke Howard <lukeh@padl.com>
 
-    * added -lresolv to library search path
-    * incorporated stein@terminator.net's patches for RPM
-      builds
+	* added -lresolv to library search path
+	* incorporated stein@terminator.net's patches for RPM
+	  builds
 
 35   Luke Howard <lukeh@padl.com>
 
-    * put /usr/ucblib back in linker search path on Solaris
+	* put /usr/ucblib back in linker search path on Solaris
 
 33   Luke Howard <lukeh@padl.com>
 
-    * fixed pam_ldap.c to support compiling against an API
-      which conforms to draft-ietf-ldapext-ldap-c-api-02.txt.
-      Should make it easier to work with OpenLDAP 2. Netscape
-      specific extensions are guarded with NETSCAPE_API_EXTENSIONS.
+	* fixed pam_ldap.c to support compiling against an API
+	  which conforms to draft-ietf-ldapext-ldap-c-api-02.txt.
+	  Should make it easier to work with OpenLDAP 2. Netscape
+	  specific extensions are guarded with NETSCAPE_API_EXTENSIONS.
 
 30   Luke Howard <lukeh@padl.com>
 
-    * fixed Make.defs for linking against OpenLDAP libldap
-      (recall #279)
-    * more SSL stuff
+	* fixed Make.defs for linking against OpenLDAP libldap
+	  (recall #279)
+	* more SSL stuff
 
 28   Luke Howard <lukeh@padl.com>
 
-    * added patch from gero@faveve.uni-stuttgart.de for
-      parsing of ldap.conf with tabs
-    * various patches hopefully to get SSL to work
+	* added patch from gero@faveve.uni-stuttgart.de for
+	  parsing of ldap.conf with tabs
+	* various patches hopefully to get SSL to work
 
 27   Luke Howard <lukeh@padl.com>
 
-    * fix for recall 256: free() smasher 
+	* fix for recall 256: free() smasher 
 
 26   Luke Howard <lukeh@padl.com>
 
-    * added commented out flags for non-V3 SDKs
+	* added commented out flags for non-V3 SDKs
 
 25   Luke Howard <lukeh@padl.com>
 
-    * removed ucblib search path
+	* removed ucblib search path
 
 24   Luke Howard <lukeh@padl.com>
 
-    * compile with -D_REENTRANT and link against -lpthread
-      to satisfy dependancies in libldapssl30. (BUG#7)
+	* compile with -D_REENTRANT and link against -lpthread
+	  to satisfy dependancies in libldapssl30. (BUG#7)
 
 23   Luke Howard <lukeh@padl.com>
 
-    * no longer use LDAP_VERSION3 to select API
-      (BUG#6)
+	* no longer use LDAP_VERSION3 to select API
+	  (BUG#6)
 
 21   Luke Howard <lukeh@padl.com>
 
-    * added rebind function
-    * various stuff for RC added
-    * broke out makefiles
-    * ldap.conf keys case-insensitive for compat with
-      OpenLDAP
+	* added rebind function
+	* various stuff for RC added
+	* broke out makefiles
+	* ldap.conf keys case-insensitive for compat with
+	  OpenLDAP
 
 17   Luke Howard <lukeh@padl.com>
 
-    * force users to change passwords if their account has
-      expired
-    * updated mapfile for Solaris
+	* force users to change passwords if their account has
+	  expired
+	* updated mapfile for Solaris
 
 14   Luke Howard <lukeh@padl.com>
 
-    * fall back to /etc/ldap.conf if ypldapd is configured
-      for configuration lookup
-    * fixed up pam.conf
+	* fall back to /etc/ldap.conf if ypldapd is configured
+	  for configuration lookup
+	* fixed up pam.conf
 
 13   Luke Howard <lukeh@padl.com>
 
-    * added -lcrypt for Linux
+	* added -lcrypt for Linux
 
 12   Luke Howard <lukeh@padl.com>
 
-    * Use ldap_open() for V2 as ldap_init() doesn't work
-    * Support hashing passwords locally for UMich crypt
-      patched server
-    * Tested against Microsoft Exchange Server
-    * Fixed some errors in ldap.conf and mapfile
+	* Use ldap_open() for V2 as ldap_init() doesn't work
+	* Support hashing passwords locally for UMich crypt
+	  patched server
+	* Tested against Microsoft Exchange Server
+	* Fixed some errors in ldap.conf and mapfile
 
 11   Luke Howard <lukeh@padl.com>
 
-    * Added support for group membership as in Chris'
-      pam_ldap_auth module; see the pam_groupdn and
-      pam_group_attribute configuration keys.
-    * Changed pam_attribute to pam_login_attribute to
-      avoid confusion with pam_group_attribute.
-    * Support Netscape password expiration controls
-    * Avoid authenticating users with empty passwords,
-      even if the directory server does
-    * Fill in pam_sm_{open,close}_session for completeness
-      (they return PAM_IGNORE)
+	* Added support for group membership as in Chris'
+	  pam_ldap_auth module; see the pam_groupdn and
+	  pam_group_attribute configuration keys.
+	* Changed pam_attribute to pam_login_attribute to
+	  avoid confusion with pam_group_attribute.
+	* Support Netscape password expiration controls
+	* Avoid authenticating users with empty passwords,
+	  even if the directory server does
+	* Fill in pam_sm_{open,close}_session for completeness
+	  (they return PAM_IGNORE)
 
 10   Luke Howard <lukeh@padl.com>
 
-    * tested with Linux-PAM 0.57
-    * made all functions static
-    * added prototypes
-    * LDAP connections can be persistent over an entire PAM
-      session through the use of pam_set_data() and
-      pam_get_data()
-    * fixed some bugs
-    
+	* tested with Linux-PAM 0.57
+	* made all functions static
+	* added prototypes
+	* LDAP connections can be persistent over an entire PAM
+	  session through the use of pam_set_data() and
+	  pam_get_data()
+	* fixed some bugs
+	
 9   Luke Howard <lukeh@padl.com>
 
-    * first publically available version.
+	* first publically available version.
 

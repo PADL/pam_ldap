@@ -398,7 +398,9 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->crypt_local = 0;
   result->min_uid = 0;
   result->max_uid = 0;
-
+  result->tmplattr = NULL;
+  result->tmpluser = NULL;
+ 
   return PAM_SUCCESS;
 }
 
