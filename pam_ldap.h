@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1998-2003 Luke Howard.
+ * Copyright (C) 1998-2004 Luke Howard.
  * This file is part of the pam_ldap library.
  * Contributed by Luke Howard, <lukeh@padl.com>, 1998.
  *
@@ -43,13 +43,13 @@ typedef struct pam_ssd
     int scope;
     char *filter;
     struct pam_ssd *next;
-  } pam_ssd_t;
+} pam_ssd_t;
 
 /* /etc/ldap.conf nss_ldap-style configuration */
 typedef struct pam_ldap_config
   {
-	/* file name read from */
-	char *configFile;
+    /* file name read from */
+    char *configFile;
     /* URI */
     char *uri;
     /* space delimited list of servers */
@@ -137,6 +137,8 @@ typedef struct pam_ldap_config
     char *logdir;
     /* ldap debug level */
     int debug;
+    /* SASL mechanism */
+    char *sasl_mechanism;
   }
 pam_ldap_config_t;
 

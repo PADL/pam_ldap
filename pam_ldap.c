@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1998-2003 Luke Howard.
+ * Copyright (C) 1998-2004 Luke Howard.
  * This file is part of the pam_ldap library.
  * Contributed by Luke Howard, <lukeh@padl.com>, 1998.
  *
@@ -117,7 +117,11 @@
 #ifdef HAVE_LDAP_SSL_H
 #include <ldap_ssl.h>
 #endif
-
+#ifdef HAVE_SASL_SASL_H
+#include <sasl/sasl.h>
+#elif defined(HAVE_SASL_H)
+#include <sasl.h>
+#endif
 
 #ifdef YPLDAPD
 #include <rpcsvc/yp_prot.h>
@@ -235,8 +239,13 @@ static int _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp,
 #endif
 #endif
 
+#if (defined(HAVE_SASL_SASL_H) || defined(HAVE_SASL_H)) && defined(HAVE_LDAP_SASL_INTERACTIVE_BIND_S)
+static int _do_sasl_interaction (pam_handle_t *handle, pam_ldap_session_t *session, unsigned flags, sasl_interact_t *interact);
+static int _do_sasl_interact (LDAP *ld, unsigned flags, void *defaults, void *interact);
+#endif
 
-static int _connect_as_user (pam_ldap_session_t * session,
+static int _connect_as_user (pam_handle_t *handle,
+			     pam_ldap_session_t * session,
 			     const char *password);
 static int _get_integer_value (LDAP * ld, LDAPMessage * e, const char *attr,
 			       int *ptr);
@@ -260,9 +269,10 @@ static int _pam_ldap_get_session (pam_handle_t * pamh, const char *username,
 static int _session_reopen (pam_ldap_session_t * session);
 static int _get_password_policy (pam_ldap_session_t * session,
 				 pam_ldap_password_policy_t * policy);
-static int _do_authentication (pam_ldap_session_t * session,
+static int _do_authentication (pam_handle_t *pamh, pam_ldap_session_t * session,
 			       const char *user, const char *password);
-static int _update_authtok (pam_ldap_session_t * session,
+static int _update_authtok (pam_handle_t *pamh,
+			    pam_ldap_session_t * session,
 			    const char *user,
 			    const char *old_password,
 			    const char *new_password);
@@ -496,6 +506,11 @@ _release_config (pam_ldap_config_t ** pconfig)
       free (c->logdir);
     }
 
+  if (c->sasl_mechanism != NULL)
+    {
+      free (c->sasl_mechanism);
+    }
+
   if (c->password_prohibit_message != NULL)
     {
       free (c->password_prohibit_message);
@@ -646,6 +661,7 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->tls_key = NULL;
   result->tls_randfile = NULL;
   result->logdir = NULL;
+  result->sasl_mechanism = NULL;
   result->debug = 0;
   return PAM_SUCCESS;
 }
@@ -1071,6 +1087,10 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	{
 	  CHECKPOINTER (result->logdir = strdup (v));
 	}
+      else if (!strcasecmp (k, "pam_sasl_mechanism"))
+	{
+	  CHECKPOINTER (result->sasl_mechanism = strdup (v));
+	}
       else if (!strcasecmp (k, "debug"))
 	{
 	  result->debug = atol (v);
@@ -1091,6 +1111,15 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	      configFile);
       return PAM_SERVICE_ERR;
     }
+
+#if !(defined(HAVE_SASL_SASL_H) || defined(HAVE_SASL_H)) && !defined(HAVE_LDAP_SASL_INTERACTIVE_BIND_S)
+  if (result->sasl_mechanism != NULL)
+    {
+      syslog (LOG_ERR, "pam_ldap: SASL mechanism \"%s\" requested, "
+	      "but module not built with SASL support", result->sasl_mechanism);
+      return PAM_SERVICE_ERR;
+    }
+#endif
 
   if (result->userattr == NULL)
     {
@@ -1702,8 +1731,131 @@ _get_password_policy_response_value (struct berval *response_value,
   return rc;
 }
 
+#if (defined(HAVE_SASL_SASL_H) || defined(HAVE_SASL_H)) && defined(HAVE_LDAP_SASL_INTERACTIVE_BIND_S)
+/*
+ * Assign a single value as a result of a SASL interaction
+ */
 static int
-_connect_as_user (pam_ldap_session_t * session, const char *password)
+_do_sasl_assign_cb (sasl_interact_t *interact, const char *dflt)
+{
+  const char *result;
+
+  if (dflt != NULL)
+    result = dflt;
+  else if (interact->defresult != NULL)
+    result = interact->defresult;
+  else
+    result = "";
+
+#if SASL_VERSION_MAJOR < 2
+  intereact->result = strdup (result);
+  if (interact->result == NULL)
+    {
+      return LDAP_NO_MEMORY;
+    }
+#else
+  interact->result = result;
+#endif
+
+  interact->len = strlen(interact->result);
+
+  return LDAP_SUCCESS;
+}
+
+/*
+ * Provide a value to the SASL layer based on pam_ldap defaults or
+ * interaction with the user via the application-supplied conversation
+ * function
+ */
+static int
+_do_sasl_interaction (pam_handle_t *pamh, pam_ldap_session_t *session,
+		      unsigned flags, sasl_interact_t *interact)
+{
+  int rc;
+  const char *dflt = NULL;
+
+  switch (interact->id)
+    {
+      case SASL_CB_AUTHNAME:
+	dflt = session->info->username;
+	break;
+      case SASL_CB_PASS:
+	dflt = session->info->userpw;
+	break;
+      default:
+	dflt = NULL;
+	break;
+    }
+
+  if (dflt != NULL && dflt[0] == '\0')
+    dflt = NULL;
+
+  if (dflt == NULL &&
+      flags != LDAP_SASL_QUIET &&
+      (interact->id == SASL_CB_ECHOPROMPT || interact->id == SASL_CB_NOECHOPROMPT))
+    {
+      struct pam_message *pmsg[2];
+      struct pam_message challenge_msg;
+      struct pam_message prompt_msg;
+      struct pam_response *resp = NULL;
+      struct pam_conv *conv;
+      int i = 0;
+
+      if (interact->challenge != NULL)
+	{
+	  challenge_msg.msg_style = PAM_TEXT_INFO;
+	  challenge_msg.msg = interact->challenge;
+	  pmsg[i++] = &challenge_msg;
+	}
+
+      prompt_msg.msg_style = (interact->id == SASL_CB_ECHOPROMPT) ?
+			     PAM_PROMPT_ECHO_ON : PAM_PROMPT_ECHO_OFF;
+      prompt_msg.msg = (interact->prompt != NULL) ? interact->prompt : "Enter SASL response: ";
+      pmsg[i++] = &prompt_msg;
+
+      rc = pam_get_item(pamh, PAM_CONV, (CONST_ARG void **)&conv);
+      if (rc != PAM_SUCCESS)
+	return LDAP_OTHER;
+
+      rc = conv->conv (i,
+		(CONST_ARG struct pam_message **)pmsg,
+		&resp, conv->appdata_ptr);
+      if (rc != PAM_SUCCESS || resp == NULL)
+	return LDAP_OTHER;
+
+      /* XXX leaks with SASL v2 */
+      dflt = resp->resp;
+      free (resp);
+    }
+
+  rc = _do_sasl_assign_cb (interact, dflt);
+
+  return rc;
+}
+
+static int
+_do_sasl_interact (LDAP *ld, unsigned flags, void *defaults, void *_interact)
+{
+  sasl_interact_t *interact = (sasl_interact_t *)_interact;
+  void **args = (void **)defaults;
+  int rc;
+
+  while (interact->id != SASL_CB_LIST_END)
+    {
+      rc = _do_sasl_interaction((pam_handle_t *)args[0], (pam_ldap_session_t *)args[1], flags, interact);
+      if (rc != LDAP_SUCCESS)
+	return rc;
+
+      interact++;
+    }
+
+  return LDAP_SUCCESS;
+}
+#endif /* HAVE_LDAP_SASL_INTERACTIVE_BIND_S */
+
+
+static int
+_connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char *password)
 {
   int rc, msgid;
   struct timeval timeout;
@@ -1750,6 +1902,38 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
   if (session->info->userpw == NULL)
     return PAM_BUF_ERR;
 
+#if (defined(HAVE_SASL_SASL_H) || defined(HAVE_SASL_H)) && defined(HAVE_LDAP_SASL_INTERACTIVE_BIND_S)
+  if (session->conf->sasl_mechanism != NULL)
+    {
+      void *args[]  = { pamh, session };
+
+      passwd_policy_req.ldctl_oid = LDAP_CONTROL_PASSWORDPOLICYREQUEST;
+      passwd_policy_req.ldctl_value.bv_val = 0;	/* none */
+      passwd_policy_req.ldctl_value.bv_len = 0;
+      passwd_policy_req.ldctl_iscritical = 0;	/* not critical */
+      srvctrls[0] = &passwd_policy_req;
+      srvctrls[1] = 0;
+
+      /*
+       * XXX this API is broken - how can we extract the password policy
+       * controls? do we need to implement DIGEST-MD5 ourself?
+       */
+      rc = ldap_sasl_interactive_bind_s (session->ld, session->info->userdn,
+					 session->conf->sasl_mechanism,
+					 srvctrls, NULL, LDAP_SASL_AUTOMATIC,
+					 _do_sasl_interact, &args);
+      if (rc != LDAP_SUCCESS)
+	{
+	  syslog (LOG_ERR, "pam_ldap: ldap_sasl_interactive_bind %s",
+		  ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
+	  _pam_overwrite (session->info->userpw);
+	  _pam_drop (session->info->userpw);
+	  return PAM_AUTHINFO_UNAVAIL;
+	}
+      session->info->bound_as_user = 1;
+      return PAM_SUCCESS;
+    }
+#endif
 #if defined(HAVE_LDAP_SASL_BIND) && defined(LDAP_SASL_SIMPLE)
   if (session->conf->version > LDAP_VERSION2)
     {
@@ -2571,7 +2755,8 @@ _get_password_policy (pam_ldap_session_t * session,
 }
 
 static int
-_do_authentication (pam_ldap_session_t * session,
+_do_authentication (pam_handle_t *pamh,
+		    pam_ldap_session_t * session,
 		    const char *user, const char *password)
 {
   int rc = PAM_SUCCESS;
@@ -2587,14 +2772,15 @@ _do_authentication (pam_ldap_session_t * session,
   if (rc != PAM_SUCCESS)
     return rc;
 
-  rc = _connect_as_user (session, password);
+  rc = _connect_as_user (pamh, session, password);
   _session_reopen (session);
   _connect_anonymously (session);
   return rc;
 }
 
 static int
-_update_authtok (pam_ldap_session_t * session,
+_update_authtok (pam_handle_t *pamh,
+		 pam_ldap_session_t * session,
 		 const char *user,
 		 const char *old_password, const char *new_password)
 {
@@ -2646,7 +2832,7 @@ _update_authtok (pam_ldap_session_t * session,
       if (rc != PAM_SUCCESS)
 	return rc;
 
-      rc = _connect_as_user (session, old_password);
+      rc = _connect_as_user (pamh, session, old_password);
       if (rc != PAM_SUCCESS)
 	return rc;
     }
@@ -2982,7 +3168,7 @@ pam_sm_authenticate (pam_handle_t * pamh,
   rc = pam_get_item (pamh, PAM_AUTHTOK, (CONST_ARG void **) &p);
   if (rc == PAM_SUCCESS && (use_first_pass || try_first_pass))
     {
-      rc = _do_authentication (session, username, p);
+      rc = _do_authentication (pamh, session, username, p);
       if (rc == PAM_SUCCESS || use_first_pass)
 	{
 	  STATUS_MAP_IGNORE_POLICY (rc, ignore_flags);
@@ -3009,7 +3195,7 @@ pam_sm_authenticate (pam_handle_t * pamh,
 
   rc = pam_get_item (pamh, PAM_AUTHTOK, (CONST_ARG void **) &p);
   if (rc == PAM_SUCCESS)
-    rc = _do_authentication (session, username, p);
+    rc = _do_authentication (pamh, session, username, p);
   STATUS_MAP_IGNORE_POLICY (rc, ignore_flags);
 
   /*
@@ -3166,7 +3352,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		   (CONST_ARG void **) &curpass) == PAM_SUCCESS &&
 		  curpass != NULL)
 		{
-		  rc = _do_authentication (session, username, curpass);
+		  rc = _do_authentication (pamh, session, username, curpass);
 		  if (rc != PAM_SUCCESS)
 		    {
 		      if (use_first_pass)
@@ -3213,7 +3399,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	      free (resp);
 
 	      /* authenticate the old password */
-	      rc = _do_authentication (session, username, curpass);
+	      rc = _do_authentication (pamh, session, username, curpass);
 	      if (rc != PAM_SUCCESS)
 		{
 		  int abortme = 0;
@@ -3407,7 +3593,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if (cmiscptr != NULL || newpass == NULL)
     return PAM_MAXTRIES;
 
-  rc = _update_authtok (session, username, curpass, newpass);
+  rc = _update_authtok (pamh, session, username, curpass, newpass);
   if (rc != PAM_SUCCESS)
     {
       int lderr;
