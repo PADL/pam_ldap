@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+48	Luke Howard <lukeh@padl.com>
+
+    * added patch from Scott Balneaves <sbalneav@legalaid.mb.ca>
+      to read shadowAccount attributes
+
 47	Luke Howard <lukeh@padl.com>
 
     * removed _connect_anonymously() clause when updating

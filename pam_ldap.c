@@ -187,8 +187,8 @@ _release_config (
 
   if (c->bindpw != NULL)
     {
-	_pam_overwrite(c->bindpw);
-	_pam_drop(c->bindpw);
+      _pam_overwrite (c->bindpw);
+      _pam_drop (c->bindpw);
     }
 
   if (c->sslpath != NULL)
@@ -935,9 +935,9 @@ _get_integer_value (
 
 static int
 _oc_check (
-		    LDAP * ld,
-		    LDAPMessage * e,
-		    const char *oc
+	    LDAP * ld,
+	    LDAPMessage * e,
+	    const char *oc
 )
 {
   char **vals, **p;
@@ -949,14 +949,14 @@ _oc_check (
       return PAM_SYSTEM_ERR;
     }
 
-  for (p = vals; *p != NULL; p++) 
+  for (p = vals; *p != NULL; p++)
+    {
+      if (!strcasecmp (*p, oc))
 	{
-		if (!strcasecmp(*p, oc))
-			{
-			rc = 1;
-			break;
-			}
+	  rc = 1;
+	  break;
 	}
+    }
 
   ldap_value_free (vals);
 
@@ -1061,7 +1061,7 @@ _host_ok (
     }
 
 #if defined(FREEBSD)
-  h = gethostbyname(hostname);
+  h = gethostbyname (hostname);
   if (h == NULL)
     {
       return PAM_SYSTEM_ERR;
@@ -1235,21 +1235,21 @@ _get_user_info (
    */
   _get_string_values (session->ld, msg, "host", &session->info->hosts_allow);
 
-  if (_oc_check(session->ld, msg, "shadowAccount"))
-  {
-  /*
-   * Obtain the shadow information.
-   */
-  session->info->shadow.shadowacct = 1;
-  _get_integer_value (session->ld, msg, "shadowLastChange", &session->info->shadow.lstchg);
-  _get_integer_value (session->ld, msg, "shadowMin", &session->info->shadow.min);
-  _get_integer_value (session->ld, msg, "shadowMax", &session->info->shadow.max);
-  _get_integer_value (session->ld, msg, "shadowWarning", &session->info->shadow.warn);
-  _get_integer_value (session->ld, msg, "shadowInactive", &session->info->shadow.inact);
-  _get_integer_value (session->ld, msg, "shadowExpire", &session->info->shadow.expire);
-  _get_integer_value (session->ld, msg, "shadowFlag", &session->info->shadow.flag);
-  }
- 
+  if (_oc_check (session->ld, msg, "shadowAccount"))
+    {
+      /*
+       * Obtain the shadow information.
+       */
+      session->info->shadow.shadowacct = 1;
+      _get_integer_value (session->ld, msg, "shadowLastChange", &session->info->shadow.lstchg);
+      _get_integer_value (session->ld, msg, "shadowMin", &session->info->shadow.min);
+      _get_integer_value (session->ld, msg, "shadowMax", &session->info->shadow.max);
+      _get_integer_value (session->ld, msg, "shadowWarning", &session->info->shadow.warn);
+      _get_integer_value (session->ld, msg, "shadowInactive", &session->info->shadow.inact);
+      _get_integer_value (session->ld, msg, "shadowExpire", &session->info->shadow.expire);
+      _get_integer_value (session->ld, msg, "shadowFlag", &session->info->shadow.flag);
+    }
+
   ldap_msgfree (res);
 
   return PAM_SUCCESS;
@@ -2016,33 +2016,33 @@ pam_sm_chauthtok (
     }
   else
     {
-      if (session->info->shadow.shadowacct) 
-      {
-	      /* update shadowLastChange */
-	      snprintf (buf, sizeof buf, "%ld", time(NULL) / (60 * 60 * 24));
-	      strvals[0] = buf;
-	      strvals[1] = NULL;
+      if (session->info->shadow.shadowacct)
+	{
+	  /* update shadowLastChange */
+	  snprintf (buf, sizeof buf, "%ld", time (NULL) / (60 * 60 * 24));
+	  strvals[0] = buf;
+	  strvals[1] = NULL;
 
-	      mod.mod_vals.modv_strvals = strvals;
-	      mod.mod_type = (char *) "shadowLastChange";
-	      mod.mod_op = LDAP_MOD_REPLACE;
+	  mod.mod_vals.modv_strvals = strvals;
+	  mod.mod_type = (char *) "shadowLastChange";
+	  mod.mod_op = LDAP_MOD_REPLACE;
 #ifndef LDAP_VERSION3_API
-	      mod.mod_next = NULL;
+	  mod.mod_next = NULL;
 #endif /* LDAP_VERSION3_API */
 
-	      mods[0] = &mod;
-	      mods[1] = NULL;
+	  mods[0] = &mod;
+	  mods[1] = NULL;
 
-	      rc = ldap_modify_s (
-       	                 session->ld,
-       	                 session->info->userdn,
-       	                 mods
-       	                 );
-	
-	      if (rc != LDAP_SUCCESS)
-	      {
-       	 syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
-	      }
+	  rc = ldap_modify_s (
+			       session->ld,
+			       session->info->userdn,
+			       mods
+	    );
+
+	  if (rc != LDAP_SUCCESS)
+	    {
+	      syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
+	    }
 	}
 
       snprintf (errmsg, sizeof errmsg, "LDAP password information changed for %s", username);
@@ -2120,35 +2120,35 @@ pam_sm_acct_mgmt (
 	  return rc;
 	}
     }
- 
+
   /* Grab the current time */
-  time(&currenttime);
+  time (&currenttime);
 
   /* Is the account expired? */
   if (session->info->shadow.shadowacct)
-  {
-  if (currenttime > (session->info->shadow.expire * 86400))
     {
-      return PAM_ACCT_EXPIRED;
-    }
+      if (currenttime > (session->info->shadow.expire * 86400))
+	{
+	  return PAM_ACCT_EXPIRED;
+	}
 
-  /* Our shadow information should be populated, so do some calculations */
-  if ((session->info->shadow.lstchg != 0) && (session->info->shadow.max != 0))
-    {
-      if ( currenttime > ((session->info->shadow.lstchg + session->info->shadow.max) * 86400))
-        session->info->password_expired = 1;
-    }
-  else
-    {
-      /* 
-       * Our password hasn't expired yet, so fill in the time into the info
-       * structure.
-       */
+      /* Our shadow information should be populated, so do some calculations */
+      if ((session->info->shadow.lstchg != 0) && (session->info->shadow.max != 0))
+	{
+	  if (currenttime > ((session->info->shadow.lstchg + session->info->shadow.max) * 86400))
+	    session->info->password_expired = 1;
+	}
+      else
+	{
+	  /* 
+	   * Our password hasn't expired yet, so fill in the time into the info
+	   * structure.
+	   */
 
-      session->info->password_expiration_time = 
-        ((session->info->shadow.lstchg + session->info->shadow.max) * 86400) - currenttime;
+	  session->info->password_expiration_time =
+	    ((session->info->shadow.lstchg + session->info->shadow.max) * 86400) - currenttime;
+	}
     }
-  }
 
   /* check whether the password has expired */
   if (session->info->password_expired)
