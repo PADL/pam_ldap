@@ -412,39 +412,39 @@ static int _read_config(
         len = strlen(v);
         v[--len] = '\0';
     
-        if (!strcmp(k, "host")) {
+        if (!strcasecmp(k, "host")) {
             CHECKPOINTER(result->host = strdup(v));
-        } else if (!strcmp(k, "base")) {
+        } else if (!strcasecmp(k, "base")) {
             CHECKPOINTER(result->base = strdup(v));
-        } else if (!strcmp(k, "binddn")) {
+        } else if (!strcasecmp(k, "binddn")) {
             CHECKPOINTER(result->binddn = strdup(v));
-        } else if (!strcmp(k, "bindpw")) {
+        } else if (!strcasecmp(k, "bindpw")) {
             CHECKPOINTER(result->bindpw = strdup(v));
-        } else if (!strcmp(k, "scope")) {
-            if (!strcmp(v, "sub")) {
+        } else if (!strcasecmp(k, "scope")) {
+            if (!strcasecmp(v, "sub")) {
                 result->scope = LDAP_SCOPE_SUBTREE;
-            } else if (!strcmp(v, "one")) {
+            } else if (!strcasecmp(v, "one")) {
                 result->scope = LDAP_SCOPE_ONELEVEL;
-            } else if (!strcmp(v, "base")) {
+            } else if (!strcasecmp(v, "base")) {
                 result->scope = LDAP_SCOPE_BASE;
             }
-        } else if (!strcmp(k, "port")) {
+        } else if (!strcasecmp(k, "port")) {
             result->port = atoi(v);
-        } else if (!strcmp(k, "ldap_version")) {
+        } else if (!strcasecmp(k, "ldap_version")) {
             result->version = atoi(v);
-        } else if (!strcmp(k, "sslpath")) {
+        } else if (!strcasecmp(k, "sslpath")) {
             CHECKPOINTER(result->sslpath = strdup(v));
-        } else if (!strcmp(k, "pam_filter")) {
+        } else if (!strcasecmp(k, "pam_filter")) {
             CHECKPOINTER(result->filter = strdup(v));
-        } else if (!strcmp(k, "pam_login_attribute")) {
+        } else if (!strcasecmp(k, "pam_login_attribute")) {
             CHECKPOINTER(result->userattr = strdup(v));
-        } else if (!strcmp(k, "pam_lookup_policy")) {
-            result->getpolicy = !strcmp(v, "yes");
-        } else if (!strcmp(k, "pam_groupdn")) {
+        } else if (!strcasecmp(k, "pam_lookup_policy")) {
+            result->getpolicy = !strcasecmp(v, "yes");
+        } else if (!strcasecmp(k, "pam_groupdn")) {
             CHECKPOINTER(result->groupdn = strdup(v));
-        } else if (!strcmp(k, "pam_crypt")) {
-            result->crypt_local = !strcmp(v, "local");
-        } else if (!strcmp(k, "pam_member_attribute")) {
+        } else if (!strcasecmp(k, "pam_crypt")) {
+            result->crypt_local = !strcasecmp(v, "local");
+        } else if (!strcasecmp(k, "pam_member_attribute")) {
             CHECKPOINTER(result->groupattr = strdup(v));
         }
     }
