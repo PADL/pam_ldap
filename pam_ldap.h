@@ -30,3 +30,5 @@ typedef struct
 #define NEW_PASSWORD_PROMPT "New password: "
 #define AGAIN_PASSWORD_PROMPT "Re-enter new password: "
 
+#define PAM_SM_AUTH
+#define PAM_SM_PASSWORD

@@ -17,7 +17,9 @@
  * License along with the nss_ldap library; see the file COPYING.LIB.  If not,
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
- *
+ */
+
+/*
  * Portions Copyright Andrew Morgan, 1996.  All rights reserved.
  * Modified by Alexander O. Yuriev
  *
@@ -102,6 +104,9 @@
 #ifndef LINUX
 #include <security/pam_appl.h>
 #define PAM_EXTERN
+#define CONST_ARG
+#else
+#define CONST_ARG const
 #endif /* LINUX */
 #include <security/pam_modules.h>
 
@@ -110,12 +115,6 @@
 #else
 #define LDAP_MEMFREE(x)	free(x)
 #endif /* LDAP_VERSION3 */
-
-#define PAM_SM_PASSWORD
-
-#define TRACE(x)	do { fprintf(stderr, "%s\n", x); \
-    syslog(LOG_DEBUG, "pam_ldap: %s\n", x); \
-    } while (0)
 
 static char rcsid[] = "$Id$";
 
@@ -576,47 +575,34 @@ out:
     return rc;        
 }    
 
-static int _converse(
-                     pam_handle_t *pamh,
-                     int nargs,
-                     struct pam_message **message,
-                     struct pam_response **response
-                     )
-{
-    int rc;
-    struct pam_conv *conv;
-
-    rc = pam_get_item(pamh, PAM_CONV, (const void **)&conv);
-    if (rc == PAM_SUCCESS) {
-        rc = conv->conv(
-                        nargs,
-                        (const struct pam_message **)message,
-                        response,
-                        conv->appdata_ptr
-                        );
-    }
-    return rc;
-}
-
 static int _set_auth_tok(
                          pam_handle_t *pamh,
                          int flags,
-                         int argc,
-                         const char **argv
+                         int first
                          )
 {
     int rc;
     char *p;
     struct pam_message msg[1], *pmsg[1];
     struct pam_response *resp;
+    struct pam_conv *conv;
 
     pmsg[0] = &msg[0];
     msg[0].msg_style = PAM_PROMPT_ECHO_OFF;
-    msg[0].msg = "LDAP Password: ";
+    msg[0].msg = first ? "Password: " : "LDAP Password: ";
     resp = NULL;
 
-    if ((rc = _converse(pamh, 1, pmsg, &resp)) != PAM_SUCCESS)
+    rc = pam_get_item(pamh, PAM_CONV, (CONST_ARG void **)&conv);
+    if (rc == PAM_SUCCESS) {
+        rc = conv->conv(
+                        1,
+                        (CONST_ARG struct pam_message **)pmsg,
+                        &resp,
+                        conv->appdata_ptr
+                        );
+    } else {
         return rc;
+    }
 
     if (resp != NULL) {
         if ((flags & PAM_DISALLOW_NULL_AUTHTOK) && resp[0].resp == NULL) {
@@ -627,7 +613,7 @@ static int _set_auth_tok(
         p = resp[0].resp;
         /* leak if resp[0].resp is malloced. */
         resp[0].resp = NULL;
-    } else {
+            } else {
         return PAM_CONV_ERR;
     }
 
@@ -640,19 +626,28 @@ static int _set_auth_tok(
 static int conv_sendmsg(
                         struct pam_conv *aconv,
                         const char *message,
-                        int style
+                        int style,
+                        int no_warn
                         )
 {
     struct pam_message msg, *pmsg;
     struct pam_response *resp;
 
+    if (no_warn)
+        return PAM_SUCCESS;
+            
     pmsg = &msg;
 
     msg.msg_style = style;
-    msg.msg = message;
+    msg.msg = (char *)message;
     resp = NULL;
 
-    return aconv->conv(1, (const struct pam_message **)&pmsg, &resp, aconv->appdata_ptr);
+    return aconv->conv(
+                       1,
+                       (CONST_ARG struct pam_message **)&pmsg,
+                       &resp,
+                       aconv->appdata_ptr
+                       );
 }
 
 PAM_EXTERN int pam_sm_authenticate(
@@ -673,11 +668,15 @@ PAM_EXTERN int pam_sm_authenticate(
             use_first_pass = 1;
         else if (!strcmp(argv[i], "try_first_pass"))
             try_first_pass = 1;
+        else if (!strcmp(argv[i], "no_warn"))
+            ;
+        else if (!strcmp(argv[i], "debug"))
+            ;
         else
             syslog(LOG_DEBUG, "unknown module option %s", argv[i]);
     }
 
-    rc = pam_get_user(pamh, &name, NULL);
+    rc = pam_get_user(pamh, (CONST_ARG char **)&name, NULL);
     if (rc != PAM_SUCCESS)
         return rc;
 
@@ -689,11 +688,8 @@ PAM_EXTERN int pam_sm_authenticate(
         }
     }
 
-    rc = _set_auth_tok(pamh, flags, argc, argv);
+    rc = _set_auth_tok(pamh, flags, (p == NULL) ? 1 : 0);
     if (rc != PAM_SUCCESS) {
-        return rc;
-    } else {
-        syslog(LOG_ERR, "pam_ldap: _set_auth_tok failed");
         return rc;
     }
     
@@ -720,7 +716,7 @@ PAM_EXTERN int pam_sm_chauthtok(
     const char *cmiscptr = NULL;
     int tries = 0, i;
     pam_ldap_session *session = NULL;
-    int use_first_pass = 0, try_first_pass = 0;
+    int use_first_pass = 0, try_first_pass = 0, no_warn = 0;
     char errmsg[1024];
 
     for (i = 0; i < argc; i++) {
@@ -728,15 +724,19 @@ PAM_EXTERN int pam_sm_chauthtok(
             use_first_pass = 1;
         else if (!strcmp(argv[i], "try_first_pass"))
             try_first_pass = 1;
+        else if (!strcmp(argv[i], "no_warn"))
+            no_warn = 1;
+        else if (!strcmp(argv[i], "debug"))
+            ;
         else
             syslog(LOG_DEBUG, "unknown module option %s", argv[i]);
     }
 
-    rc = pam_get_item(pamh, PAM_CONV, (const void **)&appconv);
+    rc = pam_get_item(pamh, PAM_CONV, (CONST_ARG void **)&appconv);
     if (rc != PAM_SUCCESS)
         return rc;
 
-    rc = pam_get_item(pamh, PAM_USER, (const void **)&usrname);
+    rc = pam_get_item(pamh, PAM_USER, (CONST_ARG void **)&usrname);
     if (rc != PAM_SUCCESS)
         return rc;
 
@@ -756,13 +756,13 @@ PAM_EXTERN int pam_sm_chauthtok(
     }
 
     if (try_first_pass || use_first_pass) {
-        if (pam_get_item(pamh, PAM_OLDAUTHTOK, (const void **)&curpass) == PAM_SUCCESS) {
+        if (pam_get_item(pamh, PAM_OLDAUTHTOK, (CONST_ARG void **)&curpass) == PAM_SUCCESS) {
             rc = _validate(usrname, curpass, &session);
             if (use_first_pass && rc != PAM_SUCCESS) {
-                conv_sendmsg(appconv, "LDAP Password incorrect", PAM_ERROR_MSG);
+                conv_sendmsg(appconv, "LDAP Password incorrect", PAM_ERROR_MSG, no_warn);
                 goto out;
             } else {
-                conv_sendmsg(appconv, "LDAP Password incorrect: try again", PAM_ERROR_MSG);
+                conv_sendmsg(appconv, "LDAP Password incorrect: try again", PAM_ERROR_MSG, no_warn);
             }
         } else {
             curpass = NULL;
@@ -779,7 +779,7 @@ PAM_EXTERN int pam_sm_chauthtok(
 
         rc = appconv->conv(
                            1,
-                           (const struct pam_message **)&pmsg,
+                           (CONST_ARG struct pam_message **)&pmsg,
                            &resp,
                            appconv->appdata_ptr
                            );
@@ -804,11 +804,11 @@ PAM_EXTERN int pam_sm_chauthtok(
             }
             curpass = NULL;
             if (abortme) {
-                conv_sendmsg(appconv, "Password change aborted", PAM_ERROR_MSG);
+                conv_sendmsg(appconv, "Password change aborted", PAM_ERROR_MSG, no_warn);
                 rc = PAM_AUTHTOK_ERR;
                 goto out;
             } else {
-                conv_sendmsg(appconv, "LDAP Password incorrect: try again", PAM_ERROR_MSG);
+                conv_sendmsg(appconv, "LDAP Password incorrect: try again", PAM_ERROR_MSG, no_warn);
             }
         }
     }
@@ -821,20 +821,18 @@ PAM_EXTERN int pam_sm_chauthtok(
     pam_set_item(pamh, PAM_OLDAUTHTOK, (void *)curpass);
 
     if (try_first_pass || use_first_pass) {
-        if (pam_get_item(pamh, PAM_AUTHTOK, (const void **)&newpass) != PAM_SUCCESS) {
+        if (pam_get_item(pamh, PAM_AUTHTOK, (CONST_ARG void **)&newpass) != PAM_SUCCESS) {
             newpass = NULL;
+        }
+        if (use_first_pass && newpass == NULL) {
+            rc = PAM_AUTHTOK_ERR;
+            goto out;
         }
     }
 
     tries = 0;
 
     while ((newpass == NULL) && (tries++ < MAX_PASSWD_TRIES)) {
-        if (use_first_pass) {
-            /* curpass was NULL. Abort. */
-            rc = PAM_AUTHTOK_ERR;
-            goto out;
-        }
-
         pmsg = &msg;
         msg.msg_style = PAM_PROMPT_ECHO_OFF;
         msg.msg = NEW_PASSWORD_PROMPT;
@@ -842,7 +840,7 @@ PAM_EXTERN int pam_sm_chauthtok(
 
         rc = appconv->conv(
                            1,
-                           (const struct pam_message **)&pmsg,
+                           (CONST_ARG struct pam_message **)&pmsg,
                            &resp,
                            appconv->appdata_ptr
                            );
@@ -879,7 +877,7 @@ PAM_EXTERN int pam_sm_chauthtok(
 
             rc = appconv->conv(
                                1,
-                               (const struct pam_message **)&pmsg,
+                               (CONST_ARG struct pam_message **)&pmsg,
                                &resp,
                                appconv->appdata_ptr
                                );
@@ -894,7 +892,7 @@ PAM_EXTERN int pam_sm_chauthtok(
                 miscptr = NULL;
             }
             if (miscptr == NULL) {
-                conv_sendmsg(appconv, "Password change aborted", PAM_ERROR_MSG);
+                conv_sendmsg(appconv, "Password change aborted", PAM_ERROR_MSG, no_warn);
                 rc = PAM_AUTHTOK_ERR;
                 goto out;
             }
@@ -902,11 +900,11 @@ PAM_EXTERN int pam_sm_chauthtok(
                 miscptr = NULL;
                 break;
             }
-            conv_sendmsg(appconv, "You must enter the same password twice", PAM_ERROR_MSG);
+            conv_sendmsg(appconv, "You must enter the same password", PAM_ERROR_MSG, no_warn);
             miscptr = NULL;
             newpass = NULL;
         } else {
-            conv_sendmsg(appconv, cmiscptr, PAM_ERROR_MSG);
+            conv_sendmsg(appconv, cmiscptr, PAM_ERROR_MSG, no_warn);
             cmiscptr = NULL;
             newpass = NULL;
         }
@@ -927,10 +925,10 @@ PAM_EXTERN int pam_sm_chauthtok(
         lderr = session->pls_ld->ld_errno;
 #endif /* LDAP_VERSION3 */
         snprintf(errmsg, sizeof errmsg, "LDAP password information update failed (%s)", ldap_err2string(lderr));
-        conv_sendmsg(appconv, errmsg, PAM_ERROR_MSG);
+        conv_sendmsg(appconv, errmsg, PAM_ERROR_MSG, no_warn);
     } else {
         snprintf(errmsg, sizeof errmsg, "LDAP password information changed for %s", usrname);
-        conv_sendmsg(appconv, errmsg, PAM_TEXT_INFO);
+        conv_sendmsg(appconv, errmsg, PAM_TEXT_INFO, 0);
     }                    
 
 out:
@@ -940,12 +938,39 @@ out:
     return rc;
 }
 
+PAM_EXTERN int pam_sm_setcred(
+                   pam_handle_t *pamh,
+                   int flags,
+                   int argc,
+                   const char **argv
+                   )
+{
+    return PAM_SUCCESS;
+}
+
+#if 0
+PAM_EXTERN int pam_sm_acct_mgmt(
+                                pam_handle_t *pamh,
+                                int flags,
+                                int argc
+                                const char **argv
+                                )
+{
+    /* check whether the user can login */
+    /* returns PAM_ACCT_EXPIRED
+       PAM_AUTH_ERR
+       PAM_AUTHTOKEN_REQD (expired)
+       PAM_USER_UNKNOWN
+     */
+}
+#endif
+
 /* static module data */
 #ifdef PAM_STATIC
 struct pam_module _modstruct = {
     "pam_ldap",
     pam_sm_authenticate,
-    NULL,
+    pam_sm_setcred,
     NULL,
     NULL,
     NULL,
@@ -964,4 +989,3 @@ main(int argc, char **argv)
 	return rc;
 }
 #endif
-

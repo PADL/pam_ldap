@@ -12,9 +12,9 @@ SECURITY_DIR = /lib/security
 # The Mozilla LDAP libraries
 LDAP_LIB_DIR = /usr/local/ldapsdk/lib
 LDAP_INC_DIR = /usr/local/ldapsdk/include
-LDAPLIBS = -lpam -L$(LDAP_LIB_DIR) -lldap -llber
+LDAPLIBS = -L$(LDAP_LIB_DIR) -lldap -llber -lpam
 #OPT_FLAGS = -O2
-OPT_FLAGS = -g
+OPT_FLAGS = -g 
 
 # Which Make is gnu make
 MAKE = make
@@ -29,14 +29,14 @@ LD_FLAGS = -x --shared -rpath $(LDAP_LIB_DIR)
 # Solaris 2.6 Sun Pro C Compiler
 #CC = /opt/SUNWspro/bin/cc
 #CFLAGS = -I$(LDAP_INC_DIR) $(CON_FILE) -DSOLARIS $(OPT_FLAGS) -K PIC 
-#LD_FLAGS = -B dynamic -G -R$(LDAP_LIB_DIR)
 
 # Solaris 2.6 GCC 2.7.2.3
 CC = gcc
 CFLAGS = -Wall -I$(LDAP_INC_DIR) -DSOLARIS $(OPT_FLAGS) -fPIC
-LD_FLAGS = -B dynamic -G -R$(LDAP_LIB_DIR) -R/usr/ucblib
+LD_FLAGS = -M mapfile -G -h $(LIBAUTHSH) -z text -Bsymbolic \
+			-R$(LDAP_LIB_DIR) -R/usr/ucblib
 
-LIBAUTHSH = pam_ldap.so
+LIBAUTHSH = pam_ldap.so.1
 
 LIBAUTHOBJ =  pam_ldap.o
 LIBAUTHSRC =  pam_ldap.c
@@ -61,9 +61,10 @@ static/%.o: %.c
 dummy: all
 
 install: all
-	chmod 755 pam_ldap.so
-	cp pam_ldap.so $(SECURITY_DIR)
-	chown root $(SECURITY_DIR)/pam_ldap.so
+	chmod 755 pam_ldap.so.1
+	cp pam_ldap.so.1 $(SECURITY_DIR)
+	chown root $(SECURITY_DIR)/pam_ldap.so.1
+	-ln -s $(SECURITY_DIR)/pam_ldap.so.1 $(SECURITY_DIR)/pam_ldap.so
 
 all: dirs $(LIBSHARED) 
 
