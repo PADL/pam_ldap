@@ -65,6 +65,37 @@ any libraries that it depends on (such as the LDAP client
 library) can be located by the dynamic linker. Otherwise,
 libpam may fail to load the pam_ldap module.
 
+Q: Why does linking fail on Solaris (complaining about
+relocations remaining against libcrypt)? David Begley
+writes:
+
+The link command that used to work (from pam_ldap-46, with the appropriate
+paths for the local libraries here):
+
+  ld -M mapfile -G -h pam_ldap.so.1 -z text -Bsymbolic \
+    -R/usr/local/ldapsdk4/lib -R/usr/ucblib -lcrypt -lpam -lnsl -lpthread \
+    -lresolv -o pam_ldap.so.1 dynamic/pam_ldap.o -L/usr/local/ldapsdk4/lib \
+    -lldapssl40
+
+I just tried this with pam_ldap-72:
+
+  ld -M mapfile -G -h pam_ldap.so.1 -z text -Bsymbolic \
+    -R/usr/local/ldapsdk4/lib -R/usr/ucblib -lcrypt -lpam -lnsl -lpthread \
+    -lresolv -o pam_ldap.so.1 pam_ldap.o md5.o -L/usr/local/ldapsdk4/lib \
+    -lldapssl40
+
+and it at least links cleanly this time (haven't tried to use it yet).  I even
+dropped "-lcrypt" completely and the exact same binary was output so I don't
+think it's even necessary (this is on Solaris 2.6), at least not with the
+Netscape LDAP library anyway.
+
+Try this - search your Makefile for "--shared" and change it to "-G" before
+trying to relink/rebuild;  Solaris 7 has a shared libcrypt whereas Solaris 2.6
+does not.  The GCC manual says "-shared" (note, one dash - there's no
+documented option with two dashes) will produce a shared object but appears to
+have the side-effect of requiring all "-l" linked libraries to also be shared
+(whereas using "-G" doesn't have this problem).
+
 Q: Where is ldap_ssl.h? It's in the Netscape LDAP
 C SDK. Download it from developer.netscape.com. If you
 don't want to use SSL, removed -DSSL from CFLAGS. I

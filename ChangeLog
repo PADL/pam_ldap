@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+75	Luke Howard <lukeh@padl.com>
+
+	* updated README with Solaris crypt(3) FAQ
+
 74	Luke Howard <lukeh@padl.com>
 
 	* fixed support for NDS password changing,
