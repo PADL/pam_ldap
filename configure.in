@@ -24,9 +24,10 @@ CPPFLAGS="$CPPFLAGS -D_REENTRANT"
 if test -n "$with_ldap_dir"; then
   CPPFLAGS="$CPPFLAGS -I$with_ldap_dir/include"
   LDFLAGS="$LDFLAGS -L$with_ldap_dir/lib"
-  if test "$target_os" = "linux" -o "$target_os" = "linux-gnu"; then
-    LDFLAGS="$LDFLAGS -Wl,-rpath,$with_ldap_dir/lib"
-  fi
+  case "$target_os" in  
+  linux*) LDFLAGS="$LDFLAGS -Wl,-rpath,$with_ldap_dir/lib" ;;
+  solaris*) LDFLAGS="$LDFLAGS -R$with_ldap_dir/lib" ;;  
+  esac  
 fi
 
 AC_CHECK_HEADERS(security/pam_appl.h security/pam_misc.h)

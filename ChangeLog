@@ -1,6 +1,15 @@
 $Id$
 ===============================================================
 
+80	Luke Howard <lukeh@padl.com>
+
+	* added support for configurable configuration files;
+	  you can now specify an alternate configuration file
+	  using the config= parameter in pam.conf. This patch
+	  was provided by scremer@dohle.com
+	* added Solaris-specific linker flag patch from
+	  David Begley
+
 79	Luke Howard <lukeh@padl.com>
 
 	* updated shipables for RC

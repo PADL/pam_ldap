@@ -182,7 +182,7 @@ pam_ldap_session_t;
 /* Configuration file routines */
 static int _alloc_config (pam_ldap_config_t **);
 static void _release_config (pam_ldap_config_t **);
-static int _read_config (pam_ldap_config_t **);
+static int _read_config (const char *, pam_ldap_config_t **);
 #ifdef YPLDAPD
 static int _ypldapd_read_config (pam_ldap_config_t **);
 #endif /* YPLDAPD */
@@ -217,7 +217,9 @@ static int _update_authtok (pam_ldap_session_t *, const char *, const char *, co
 
 /* PAM API helpers, public session management */
 static void _pam_ldap_cleanup_session (pam_handle_t *, void *, int);
-static int _pam_ldap_get_session (pam_handle_t *, const char *, pam_ldap_session_t **);
+
+static int _pam_ldap_get_session (pam_handle_t *, const char *, const char *, pam_ldap_session_t **);
+
 static int _get_authtok (pam_handle_t *, int, int);
 static int _conv_sendmsg (struct pam_conv *, const char *, int, int);
 

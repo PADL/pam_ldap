@@ -519,13 +519,14 @@ _ypldapd_read_config (pam_ldap_config_t ** presult)
 } while (0)
 
 static int
-_read_config (pam_ldap_config_t ** presult)
+_read_config (const char * configFile, pam_ldap_config_t ** presult)
 {
   /* this is the same configuration file as nss_ldap */
   FILE *fp;
   char b[BUFSIZ];
   pam_ldap_config_t *result;
-
+  char errmsg[PATH_MAX + 25];
+ 
   if (_alloc_config (presult) != PAM_SUCCESS)
     {
       return PAM_BUF_ERR;
@@ -533,14 +534,20 @@ _read_config (pam_ldap_config_t ** presult)
 
   result = *presult;
 
-  fp = fopen ("/etc/ldap.conf", "r");
+  /* configuration file location is configurable; default /etc/ldap.conf */
+  if (configFile == NULL)
+    configFile = "/etc/ldap.conf";
+
+  fp = fopen (configFile, "r"); 
+
   if (fp == NULL)
     {
       /* 
        * According to PAM Documentation, such an error in a config file
        * SHOULD be logged at LOG_ALERT level
        */
-      syslog (LOG_ALERT, "pam_ldap: missing file \"ldap.conf\"");
+      snprintf(errmsg, sizeof (errmsg), "pam_ldap: missing file \"%s\"", configFile);
+      syslog (LOG_ALERT, errmsg);
       return PAM_SYSTEM_ERR;
     }
 
@@ -1396,8 +1403,8 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
 }
 
 static int
-_pam_ldap_get_session (pam_handle_t * pamh,
-		       const char *username, pam_ldap_session_t ** psession)
+_pam_ldap_get_session (pam_handle_t * pamh, const char *username, const char *configFile, 
+		       pam_ldap_session_t ** psession)
 {
   pam_ldap_session_t *session;
   int rc;
@@ -1445,7 +1452,7 @@ _pam_ldap_get_session (pam_handle_t * pamh,
     {
       _release_config (&session->conf);
 #endif /* YPLDAPD */
-      rc = _read_config (&session->conf);
+      rc = _read_config (configFile, &session->conf);
       if (rc != PAM_SUCCESS)
 	{
 	  _release_config (&session->conf);
@@ -1785,6 +1792,7 @@ pam_sm_authenticate (pam_handle_t * pamh,
   int use_first_pass = 0, try_first_pass = 0;
   int i;
   pam_ldap_session_t *session = NULL;
+  const char *configFile = NULL;
 
   for (i = 0; i < argc; i++)
     {
@@ -1792,6 +1800,8 @@ pam_sm_authenticate (pam_handle_t * pamh,
 	use_first_pass = 1;
       else if (!strcmp (argv[i], "try_first_pass"))
 	try_first_pass = 1;
+      else if (!strncmp(argv[i], "conffile=", 7))
+	 configFile = argv[i] + 7;
       else if (!strcmp (argv[i], "no_warn"))
 	;
       else if (!strcmp (argv[i], "debug"))
@@ -1804,7 +1814,7 @@ pam_sm_authenticate (pam_handle_t * pamh,
   if (rc != PAM_SUCCESS)
     return rc;
 
-  rc = _pam_ldap_get_session (pamh, username, &session);
+  rc = _pam_ldap_get_session (pamh, username, configFile, &session);
   if (rc != PAM_SUCCESS)
     return rc;
 
@@ -1879,7 +1889,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   char errmsg[1024];
   pam_ldap_password_policy_t policy;
   LDAPMod *mods[2], mod;
-
+  const char *configFile = NULL;
 
   for (i = 0; i < argc; i++)
     {
@@ -1887,6 +1897,8 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	use_first_pass = 1;
       else if (!strcmp (argv[i], "try_first_pass"))
 	try_first_pass = 1;
+      else if (!strncmp(argv[i], "conffile=", 7))
+	 configFile = argv[i] + 7;
       else if (!strcmp (argv[i], "no_warn"))
 	no_warn = 1;
       else if (!strcmp (argv[i], "debug"))
@@ -1927,7 +1939,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if (rc == PAM_SUCCESS && expuser != NULL)
     canabort = (strcmp (username, expuser) == 0) ? 0 : 1;
 
-  rc = _pam_ldap_get_session (pamh, username, &session);
+  rc = _pam_ldap_get_session (pamh, username, configFile, &session);
   if (rc != PAM_SUCCESS)
     return rc;
 
@@ -2238,6 +2250,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
   char buf[1024];
   time_t currenttime;
   int expirein = 0;		/* seconds until password expires */
+  const char *configFile = NULL;
 
   for (i = 0; i < argc; i++)
     {
@@ -2245,6 +2258,8 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	;
       else if (!strcmp (argv[i], "try_first_pass"))
 	;
+      else if (!strncmp(argv[i], "conffile=", 7))
+	 configFile = argv[i] + 7;
       else if (!strcmp (argv[i], "no_warn"))
 	no_warn = 1;
       else if (!strcmp (argv[i], "debug"))
@@ -2278,7 +2293,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if (username == NULL)
     return PAM_USER_UNKNOWN;
 
-  rc = _pam_ldap_get_session (pamh, username, &session);
+  rc = _pam_ldap_get_session (pamh, username, configFile, &session);
   if (rc != PAM_SUCCESS)
     {
       return rc;
