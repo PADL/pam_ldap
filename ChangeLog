@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+178	Luke Howard <lukeh@padl.com>
+
+	* manual page updates
+
 177	Luke Howard <lukeh@padl.com>
 
 	* fix for BUG#188: better documentation for OpenLDAP
