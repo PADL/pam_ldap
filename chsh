@@ -32,7 +32,7 @@ if($user eq '') {
 # use pam_ldap's config file since this script is ldap specific and
 # is a work around for a deficiency in pam
 $CONF{'pam_login_attribute'}='uid';
-open(CONF,"/etc/pam_ldap.conf") or die "$!\n";
+open(CONF,"/etc/ldap.conf") or die "$!\n";
 while(<CONF>) {
   next if(m/^\s*($|#)/);
   m/^\s*(\S+)\s+(.*?)\s*$/;
