@@ -2145,10 +2145,8 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
       mods[0] = &mod;
       mods[1] = NULL;
 
-      rc = ldap_modify_s (session->ld, session->info->userdn, mods);
-      if (rc != LDAP_SUCCESS)
-	syslog (LOG_WARNING, "pam_ldap: ldap_modify_s %s",
-		ldap_err2string (rc));
+      /* do this silently because it may fail */
+      (void) ldap_modify_s (session->ld, session->info->userdn, mods);
 
       snprintf (errmsg, sizeof errmsg,
 		"LDAP password information changed for %s", username);

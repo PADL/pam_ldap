@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+65	Luke Howard <lukeh@padl.com>
+
+    * set shadowLastChange silently (allow it to fail)
+
 64	Luke Howard <lukeh@padl.com>
 
     * more consistent log messages (removed brackets)
