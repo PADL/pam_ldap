@@ -673,7 +673,16 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 
   /* configuration file location is configurable; default /etc/ldap.conf */
   if (configFile == NULL)
-    configFile = PAM_LDAP_PATH_CONF;
+    {
+      configFile = PAM_LDAP_PATH_CONF;
+      result->configFile = NULL;
+    }
+  else
+    {
+      result->configFile = strdup (configFile);
+      if (result->configFile == NULL)
+	return PAM_BUF_ERR;
+    }      
 
   fp = fopen (configFile, "r");
 
@@ -696,8 +705,6 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
   passwdBase = NULL;
   passwdFilter = NULL;
   passwdScope = -1;
-
-  CHECKPOINTER (result->configFile = strdup (configFile));
 
   while (fgets (b, sizeof (b), fp) != NULL)
     {
@@ -2074,16 +2081,31 @@ _pam_ldap_get_session (pam_handle_t * pamh, const char *username,
     {
       /*
        * we cache the information retrieved from the LDAP server, however
-       * we need to flush this if the application has changed the user or
-       * configuration file.
+       * we need to flush this if the application has changed the user
+       * or configuration file.
        *
        * For template users, note that pam_ldap may _RESET_ the username!
        */
       if (session->info != NULL &&
-	  ((strcmp (username, session->info->username) != 0) ||
-	   (strcmp (configFile, session->conf->configFile) != 0)))
+	  (strcmp (username, session->info->username) != 0))
 	{
 	  _release_user_info (&session->info);
+	}
+
+      if (configFile == NULL)
+	{
+	  /* Default configuration file requested. */
+	  if (session->conf->configFile != NULL)
+	    _release_user_info (&session->info);
+	}
+      else
+	{
+	  /* Non-default configuration file requested. */
+	  if (session->conf->configFile == NULL ||
+	      (strcmp (configFile, session->conf->configFile) != 0))
+	    {
+	      _release_user_info (&session->info);
+	    }
 	}
 
       *psession = session;
@@ -3074,7 +3096,6 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
       else
 	syslog (LOG_ERR, "illegal option %s", argv[i]);
     }
-
 
   if (flags & PAM_SILENT)
     no_warn = 1;
