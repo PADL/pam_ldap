@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+112	Luke Howard <lukeh@padl.com>
+
+	* SSL fix
+
 111	Luke Howard <lukeh@padl.com>
 
 	* further patch from Tero to fix chfn/chsh

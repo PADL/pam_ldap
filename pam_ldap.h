@@ -312,4 +312,6 @@ PAM_EXTERN int pam_sm_chauthtok (pam_handle_t *, int, int, const char **);
 PAM_EXTERN int pam_sm_acct_mgmt (pam_handle_t *, int, int, const char **);
 
 /* TLS routines */
+#if defined HAVE_LDAP_START_TLS_S || (defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_X_TLS))
 static int _set_ssl_options(pam_ldap_config_t **);
+#endif

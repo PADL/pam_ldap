@@ -1094,6 +1094,7 @@ _open_session (pam_ldap_session_t * session)
   return PAM_SUCCESS;
 }
 
+#if defined HAVE_LDAP_START_TLS_S || (defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_X_TLS))
 static int
 _set_ssl_options(pam_ldap_config_t ** presult)
 {
@@ -1166,6 +1167,7 @@ _set_ssl_options(pam_ldap_config_t ** presult)
     }
     return LDAP_SUCCESS;
 }
+#endif
 
 static int
 _connect_anonymously (pam_ldap_session_t * session)
