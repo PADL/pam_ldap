@@ -820,13 +820,13 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 		passwdScope = LDAP_SCOPE_ONELEVEL;
 	      else if (!strcasecmp (s, "base"))
 		passwdScope = LDAP_SCOPE_BASE;
-	    }
-	  s = strchr (s, '?');
-	  if (s != NULL)
-	    {
-	      *s = '\0';
-	      s++;
-	      CHECKPOINTER (passwdFilter = strdup (s));
+	      s = strchr (s, '?');
+	      if (s != NULL)
+		{
+		  *s = '\0';
+		  s++;
+		  CHECKPOINTER (passwdFilter = strdup (s));
+		}
 	    }
 	}
       else if (!strcasecmp (k, "ldap_version"))
@@ -1024,7 +1024,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 
   fclose (fp);
 
-  if ((result->rootbinddn != NULL) && (getuid() == 0))
+  if ((result->rootbinddn != NULL) && (getuid () == 0))
     {
       fp = fopen ("/etc/ldap.secret", "r");
       if (fp != NULL)
@@ -1089,11 +1089,11 @@ _open_session (pam_ldap_session_t * session)
 #endif /* HAVE_LDAPSSL_INIT */
     {
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_X_TLS)
-    /* set defaults for global TLS-related options */
+      /* set defaults for global TLS-related options */
       if (_set_ssl_default_options (session) != LDAP_SUCCESS)
-        {
-          syslog (LOG_ERR, "pam_ldap: _set_ssl_default_options failed");
-        }
+	{
+	  syslog (LOG_ERR, "pam_ldap: _set_ssl_default_options failed");
+	}
 #endif
 #ifdef HAVE_LDAP_INITIALIZE
       if (session->conf->uri != NULL)
@@ -1187,14 +1187,14 @@ _open_session (pam_ldap_session_t * session)
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_REFERRALS)
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->
-			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_RESTART)
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->
-			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
@@ -1396,7 +1396,8 @@ _connect_anonymously (pam_ldap_session_t * session)
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
 #if LDAP_SET_REBIND_PROC_ARGS == 3
 static int
-_rebind_proc (LDAP * ld, LDAP_CONST char *url, ber_tag_t request, ber_int_t msgid, void *arg)
+_rebind_proc (LDAP * ld, LDAP_CONST char *url, ber_tag_t request,
+	      ber_int_t msgid, void *arg)
 #else
 static int
 _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid)
@@ -3202,9 +3203,10 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
     {
       rc = _host_ok (session);
       if (rc != PAM_SUCCESS)
-	_conv_sendmsg (appconv, "Access denied for this host", PAM_ERROR_MSG, no_warn);
+	_conv_sendmsg (appconv, "Access denied for this host", PAM_ERROR_MSG,
+		       no_warn);
       else
-        rc = success;
+	rc = success;
     }
 
   if (session->conf->min_uid && session->info->uid < session->conf->min_uid)

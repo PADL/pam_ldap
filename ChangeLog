@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+127	Luke Howard <lukeh@padl.com>
+
+	* fixed segfault bug if nss_base_passwd contains
+	  a scope but no filter (BUG#69)
+
 126	Luke Howard <lukeh@padl.com>
 
 	* fixed rebind prototype in pam_ldap.h for new
