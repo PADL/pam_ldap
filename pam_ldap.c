@@ -2444,6 +2444,11 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 
   tries = 0;
 
+  /* support Netscape Directory Server's password policy */
+  rc = _get_password_policy (session, &policy);
+  if (rc != PAM_SUCCESS)
+      return rc;
+
   while ((newpass == NULL) && (tries++ < policy.password_max_failure))
     {
       pmsg = &msg;
