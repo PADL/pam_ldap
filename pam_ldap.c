@@ -382,7 +382,7 @@ ldap_set_lderrno (LDAP * ld, int lderrno, const char *m, const char *s)
       if (rc != LDAP_SUCCESS)
 	return rc;
 #else
-      (*ld)->ld_error = s;
+      ld->ld_error = s;
 #endif
     }
 
@@ -393,7 +393,7 @@ ldap_set_lderrno (LDAP * ld, int lderrno, const char *m, const char *s)
       if (rc != LDAP_SUCCESS)
 	return rc;
 #else
-      (*ld)->ld_matched = m;
+      ld->ld_matched = m;
 #endif
     }
 

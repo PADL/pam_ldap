@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+145	Luke Howard <lukeh@padl.com>
+
+	* patch for building on OpenLDAP 1.x from Nalin
+	  at RedHat
+
 144	Luke Howard <lukeh@padl.com>
 
 	* avoid use of temporary variable when reporting
