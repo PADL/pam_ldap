@@ -21,9 +21,13 @@ install-exec-local: pam_ldap.so
 if EXTENSION_SO
 	$(INSTALL_PROGRAM) -o root -g root pam_ldap.so $(DESTDIR)$(libdir)/security/pam_ldap.so
 else
+if EXTENSION_1
+	$(INSTALL_PROGRAM) -o root -g root pam_ldap.so $(DESTDIR)$(libdir)/security/pam_ldap.1
+else
 	$(INSTALL_PROGRAM) -o root -g root pam_ldap.so $(DESTDIR)$(libdir)/security/pam_ldap.so.1
 	-rm -f $(DESTDIR)$(libdir)/security/pam_ldap.so
 	-ln -s $(DESTDIR)$(libdir)/security/pam_ldap.so.1 $(DESTDIR)$(libdir)/security/pam_ldap.so
+endif
 endif
 
 install-data-local:

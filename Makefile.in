@@ -70,6 +70,7 @@ CC = @CC@
 CPP = @CPP@
 MAKEINFO = @MAKEINFO@
 PACKAGE = @PACKAGE@
+SOSUFFIX = @SOSUFFIX@
 VERSION = @VERSION@
 install_sh = @install_sh@
 pam_ldap_so_LD = @pam_ldap_so_LD@
@@ -119,6 +120,7 @@ mkinstalldirs
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 
 GZIP_ENV = --best
+DEP_FILES =  .deps/md5.P .deps/pam_ldap.P
 SOURCES = $(pam_ldap_so_SOURCES)
 OBJECTS = $(am_pam_ldap_so_OBJECTS)
 
@@ -126,9 +128,9 @@ all: all-redirect
 .SUFFIXES:
 .SUFFIXES: .c .h .o
 $(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/$(altdir)configure.in $(ACLOCAL_M4) 
-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps Makefile
+	cd $(top_srcdir) && $(AUTOMAKE) --gnu Makefile
 
-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
+Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
 	cd $(top_builddir) \
 	  && CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
@@ -273,6 +275,11 @@ dist-all: distdir
 distdir: $(DISTFILES)
 	-rm -rf $(distdir)
 	mkdir $(distdir)
+	here=`cd $(top_builddir) && pwd`; \
+	top_distdir=`cd $(distdir) && pwd`; \
+	distdir=`cd $(distdir) && pwd`; \
+	cd $(top_srcdir) \
+	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu Makefile
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
 	  if test -d $$d/$$file; then \
@@ -283,6 +290,38 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
+
+DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
+
+-include $(DEP_FILES)
+
+mostlyclean-depend:
+
+clean-depend:
+
+distclean-depend:
+	-rm -rf .deps
+
+maintainer-clean-depend:
+
+%.o: %.c
+	@echo '$(COMPILE) -c -o $@ $<'; \
+	$(COMPILE) -Wp,-MD,.deps/$(*D)/$(*F).pp -c -o $@ $<
+	@-cp .deps/$(*D)/$(*F).pp .deps/$(*D)/$(*F).P; \
+	tr ' ' '\012' < .deps/$(*D)/$(*F).pp \
+	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
+	    >> .deps/$(*D)/$(*F).P; \
+	rm .deps/$(*D)/$(*F).pp
+
+%.lo: %.c
+	@echo '$(LTCOMPILE) -c -o $@ $<'; \
+	$(LTCOMPILE) -Wp,-MD,.deps/$(*D)/$(*F).pp -c -o $@ $<
+	@-sed -e 's/^\([^:]*\)\.o[ 	]*:/\1.lo \1.o :/' \
+	  < .deps/$(*D)/$(*F).pp > .deps/$(*D)/$(*F).P; \
+	tr ' ' '\012' < .deps/$(*D)/$(*F).pp \
+	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
+	    >> .deps/$(*D)/$(*F).P; \
+	rm -f .deps/$(*D)/$(*F).pp
 info-am:
 info: info-am
 dvi-am:
@@ -322,18 +361,19 @@ distclean-generic:
 
 maintainer-clean-generic:
 mostlyclean-am:  mostlyclean-hdr mostlyclean-noinstPROGRAMS \
-		mostlyclean-compile mostlyclean-tags \
+		mostlyclean-compile mostlyclean-tags mostlyclean-depend \
 		mostlyclean-generic
 
 mostlyclean: mostlyclean-am
 
 clean-am:  clean-hdr clean-noinstPROGRAMS clean-compile clean-tags \
-		clean-generic mostlyclean-am
+		clean-depend clean-generic mostlyclean-am
 
 clean: clean-am
 
 distclean-am:  distclean-hdr distclean-noinstPROGRAMS distclean-compile \
-		distclean-tags distclean-generic clean-am
+		distclean-tags distclean-depend distclean-generic \
+		clean-am
 
 distclean: distclean-am
 	-rm -f config.status
@@ -341,7 +381,8 @@ distclean: distclean-am
 maintainer-clean-am:  maintainer-clean-hdr \
 		maintainer-clean-noinstPROGRAMS \
 		maintainer-clean-compile maintainer-clean-tags \
-		maintainer-clean-generic distclean-am
+		maintainer-clean-depend maintainer-clean-generic \
+		distclean-am
 	@echo "This command is intended for maintainers to use;"
 	@echo "it deletes files that may require special tools to rebuild."
 
@@ -353,8 +394,9 @@ mostlyclean-noinstPROGRAMS distclean-noinstPROGRAMS \
 clean-noinstPROGRAMS maintainer-clean-noinstPROGRAMS \
 mostlyclean-compile distclean-compile clean-compile \
 maintainer-clean-compile tags mostlyclean-tags distclean-tags \
-clean-tags maintainer-clean-tags distdir info-am info dvi-am dvi check \
-check-am installcheck-am installcheck all-recursive-am \
+clean-tags maintainer-clean-tags distdir mostlyclean-depend \
+distclean-depend clean-depend maintainer-clean-depend info-am info \
+dvi-am dvi check check-am installcheck-am installcheck all-recursive-am \
 install-exec-local install-exec-am install-exec install-data-local \
 install-data-am install-data install-am install uninstall-local \
 uninstall-am uninstall all-redirect all-am all install-strip \
@@ -366,9 +408,10 @@ install-exec-local: pam_ldap.so
 	@$(NORMAL_INSTALL)
 	$(mkinstalldirs) $(DESTDIR)$(libdir)/security
 @EXTENSION_SO_TRUE@	$(INSTALL_PROGRAM) -o root -g root pam_ldap.so $(DESTDIR)$(libdir)/security/pam_ldap.so
-@EXTENSION_SO_FALSE@	$(INSTALL_PROGRAM) -o root -g root pam_ldap.so $(DESTDIR)$(libdir)/security/pam_ldap.so.1
-@EXTENSION_SO_FALSE@	-rm -f $(DESTDIR)$(libdir)/security/pam_ldap.so
-@EXTENSION_SO_FALSE@	-ln -s $(DESTDIR)$(libdir)/security/pam_ldap.so.1 $(DESTDIR)$(libdir)/security/pam_ldap.so
+@EXTENSION_SO_FALSE@@EXTENSION_1_TRUE@	$(INSTALL_PROGRAM) -o root -g root pam_ldap.so $(DESTDIR)$(libdir)/security/pam_ldap.1
+@EXTENSION_SO_FALSE@@EXTENSION_1_FALSE@	$(INSTALL_PROGRAM) -o root -g root pam_ldap.so $(DESTDIR)$(libdir)/security/pam_ldap.so.1
+@EXTENSION_SO_FALSE@@EXTENSION_1_FALSE@	-rm -f $(DESTDIR)$(libdir)/security/pam_ldap.so
+@EXTENSION_SO_FALSE@@EXTENSION_1_FALSE@	-ln -s $(DESTDIR)$(libdir)/security/pam_ldap.so.1 $(DESTDIR)$(libdir)/security/pam_ldap.so
 
 install-data-local:
 	@$(NORMAL_INSTALL)
