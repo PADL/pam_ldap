@@ -1018,7 +1018,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 
   fclose (fp);
 
-  if (result->rootbinddn != NULL)
+  if ((result->rootbinddn != NULL) && (getuid() == 0))
     {
       fp = fopen ("/etc/ldap.secret", "r");
       if (fp != NULL)
