@@ -107,8 +107,12 @@
 #include <des.h>
 #endif
 
+#ifdef HAVE_LBER_H
 #include <lber.h>
+#endif
+#ifdef HAVE_LDAP_H
 #include <ldap.h>
+#endif
 #ifdef HAVE_LDAP_SSL_H
 #include <ldap_ssl.h>
 #endif
@@ -846,15 +850,17 @@ _open_session (pam_ldap_session_t * session)
     }
 
 #ifdef LDAP_OPT_X_TLS
-      if (session->conf->ssl_on == SSL_LDAPS)
+  if (session->conf->ssl_on == SSL_LDAPS)
+    {
+      int tls = LDAP_OPT_X_TLS_HARD;
+      int rc = ldap_set_option (session->ld, LDAP_OPT_X_TLS, &tls);
+      if (rc != LDAP_SUCCESS)
 	{
-	  int tls = LDAP_OPT_X_TLS_HARD;
-	  if (ldap_set_option (session->ld, LDAP_OPT_X_TLS, &tls) !=
-	      LDAP_SUCCESS)
-	    {
-	      ldap_perror (session->ld, "ldap_set_option(LDAP_OPT_X_TLS)");
-	    }
+	  syslog (LOG_ERR, "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS) %s",
+		  ldap_err2string (rc));
+	  return PAM_SYSTEM_ERR;
 	}
+    }
 #endif /* LDAP_OPT_X_TLS */
 
 #ifdef LDAP_OPT_PROTOCOL_VERSION
@@ -884,17 +890,23 @@ _open_session (pam_ldap_session_t * session)
 #ifdef HAVE_LDAP_START_TLS_S
   if (session->conf->ssl_on == SSL_START_TLS)
     {
-      int version;
+      int version, rc;
 
       if (ldap_get_option (session->ld, LDAP_OPT_PROTOCOL_VERSION, &version)
-	  == LDAP_OPT_SUCCESS)
+	  == LDAP_SUCCESS)
 	{
 	  if (version < LDAP_VERSION3)
 	    {
 	      version = LDAP_VERSION3;
 	      (void) ldap_set_option (session->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
-	      if (ldap_start_tls_s (session->ld, NULL, NULL) != LDAP_SUCCESS)
-		ldap_perror (session->ld, "ldap_start_tls");
+	    }
+
+	  rc = ldap_start_tls_s (session->ld, NULL, NULL);
+	  if (rc != LDAP_SUCCESS)
+	    {
+	      syslog (LOG_ERR, "pam_ldap: ldap_start_tls_s %s",
+		      ldap_err2string (rc));
+	      return PAM_SYSTEM_ERR;
 	    }
 	}
     }
@@ -937,7 +949,7 @@ _connect_anonymously (pam_ldap_session_t * session)
       return PAM_SERVICE_ERR;
     }
 
-  timeout.tv_sec = session->conf->bind_timelimit; /* default 10 */
+  timeout.tv_sec = session->conf->bind_timelimit;	/* default 10 */
   timeout.tv_usec = 0;
   rc = ldap_result (session->ld, msgid, FALSE, &timeout, &result);
   if (rc == -1 || rc == 0)
@@ -2629,8 +2641,6 @@ struct pam_module _modstruct = {
   pam_sm_authenticate,
   pam_sm_setcred,
   pam_sm_acct_mgmt,
-  pam_sm_open_session,
-  pam_sm_close_session,
-  pam_sm_chauthtok
+  pam_sm_open_session, pam_sm_close_session, pam_sm_chauthtok
 };
 #endif /* PAM_STATIC */

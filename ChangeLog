@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+88	Luke Howard <lukeh@padl.com>
+
+	* don't use ldap_perror() for logging TLS errors
+
 87	Luke Howard <lukeh@padl.com>
 
 	* support for "timelimit" and "bind_timelimit" in 
