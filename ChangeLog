@@ -1,7 +1,7 @@
 $Id$
 ===============================================================
 
-57	Tom Lear <tom@trap.mtview.ca.us>
+58	Tom Lear <tom@trap.mtview.ca.us>
 
     * Debian bug #64217: remove redunant code in pam_ldap.c
     * Debian bug #64220: add minuid and maxuid parameters

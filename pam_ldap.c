@@ -102,15 +102,15 @@
 #include <errno.h>
 
 #if defined(HAVE_CRYPT_H)
- #include <crypt.h>
+#include <crypt.h>
 #elif defined(HAVE_DES_H)
- #include <des.h>
+#include <des.h>
 #endif
 
 #include <lber.h>
 #include <ldap.h>
 #ifdef HAVE_LDAP_SSL_H
- #include <ldap_ssl.h>
+#include <ldap_ssl.h>
 #endif
 
 #ifdef YPLDAPD
@@ -123,22 +123,23 @@
 
 #ifdef HAVE_SECURITY_PAM_MISC_H
  /* FIXME: is there something better to check? */
- #define CONST_ARG const
+#define CONST_ARG const
 #else
- #define CONST_ARG
+#define CONST_ARG
 #endif
 
 #ifndef HAVE_LDAP_MEMFREE
- #define ldap_memfree(x)	free(x)
+#define ldap_memfree(x)	free(x)
 #endif
 
 #ifdef __GNUC__
- #define __UNUSED__ __attribute__ ((unused))
+#define __UNUSED__ __attribute__ ((unused))
 #else
- #define __UNUSED__
+#define __UNUSED__
 #endif
 
-static char rcsid[] __UNUSED__ = "$Id$";
+static char rcsid[] __UNUSED__ =
+  "$Id$";
 #if HAVE_LDAP_SET_REBIND_PROC_ARGS < 3
 static pam_ldap_session_t *global_session = 0;
 #endif
@@ -161,24 +162,27 @@ static int pam_debug_level __UNUSED__ = 0;
  * 
  * If there is a better way of doing this, LET ME KNOW! (me being Doug or Luke!)
  */
-void nasty_pthread_hack(void) __attribute__ ((constructor));
+void nasty_pthread_hack (void) __attribute__ ((constructor));
 
-void nasty_pthread_hack(void)
+void
+nasty_pthread_hack (void)
 {
-  (void) dlopen("libpthread.so", RTLD_LAZY);
+  (void) dlopen ("libpthread.so", RTLD_LAZY);
 }
 #endif /* HAVE_LIBPTHREAD */
 
 /* i64c - convert an integer to a redix 64 character */
-static int i64c(int i)
+static int
+i64c (int i)
 {
-  const char *base64 = "./01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  const char *base64 =
+    "./01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
   if (i < 0)
     i = 0;
   else if (i > 63)
     i = 63;
-  
-  return base64[i];  
+
+  return base64[i];
 }
 
 #ifndef HAVE_LDAP_GET_LDERRNO
@@ -196,31 +200,29 @@ ldap_get_lderrno (LDAP * ld, char **m, char **s)
 #else
   lderrno = ld->ld_errno;
 #endif
-  
+
   if (s != NULL)
-  {
+    {
 #ifdef LDAP_OPT_ERROR_STRING
-    rc = ldap_get_option (ld, LDAP_OPT_ERROR_STRING, &s);
-    if (rc != LDAP_SUCCESS)
-      return rc;
+      rc = ldap_get_option (ld, LDAP_OPT_ERROR_STRING, &s);
+      if (rc != LDAP_SUCCESS)
+	return rc;
 #else
-    *s = ld->ld_error;
+      *s = ld->ld_error;
 #endif
-  }
+    }
 
   if (m != NULL)
-  {
-    *m = NULL;
-  }
+    {
+      *m = NULL;
+    }
 
   return lderrno;
 }
 #endif
 
 static void
-_release_config (
-		  pam_ldap_config_t ** pconfig
-)
+_release_config (pam_ldap_config_t ** pconfig)
 {
   pam_ldap_config_t *c;
 
@@ -285,9 +287,7 @@ _release_config (
 }
 
 static void
-_release_user_info (
-		     pam_ldap_user_info_t ** info
-)
+_release_user_info (pam_ldap_user_info_t ** info)
 {
   if (*info == NULL)
     return;
@@ -316,11 +316,7 @@ _release_user_info (
 }
 
 static void
-_pam_ldap_cleanup_session (
-			    pam_handle_t * pamh,
-			    void *data,
-			    int error_status
-)
+_pam_ldap_cleanup_session (pam_handle_t * pamh, void *data, int error_status)
 {
   pam_ldap_session_t *session = (pam_ldap_session_t *) data;
 
@@ -345,11 +341,7 @@ _pam_ldap_cleanup_session (
 }
 
 static void
-_cleanup_authtok_data (
-			pam_handle_t * pamh,
-			void *data,
-			int error_status
-)
+_cleanup_authtok_data (pam_handle_t * pamh, void *data, int error_status)
 {
   if (data != NULL)
     free (data);
@@ -358,9 +350,7 @@ _cleanup_authtok_data (
 }
 
 static int
-_alloc_config (
-		pam_ldap_config_t ** presult
-)
+_alloc_config (pam_ldap_config_t ** presult)
 {
   pam_ldap_config_t *result;
 
@@ -404,9 +394,7 @@ _alloc_config (
  * out.
  */
 static int
-_ypldapd_read_config (
-		       pam_ldap_config_t ** presult
-)
+_ypldapd_read_config (pam_ldap_config_t ** presult)
 {
   pam_ldap_config_t *result;
   char *domain;
@@ -422,14 +410,9 @@ _ypldapd_read_config (
 
   yp_get_default_domain (&domain);
   yp_bind (domain);
-  if (yp_match (
-		 domain,
-		 "ypldapd.conf",
-		 "ldaphost",
-		 sizeof ("ldaphost") - 1,
-		 &tmp,
-		 &len
-      ))
+  if (yp_match (domain,
+		"ypldapd.conf",
+		"ldaphost", sizeof ("ldaphost") - 1, &tmp, &len))
     {
       return PAM_SYSTEM_ERR;
     }
@@ -442,14 +425,8 @@ _ypldapd_read_config (
   result->host[len] = '\0';
   free (tmp);
 
-  if (yp_match (
-		 domain,
-		 "ypldapd.conf",
-		 "basedn",
-		 sizeof ("basedn") - 1,
-		 &tmp,
-		 &len
-      ))
+  if (yp_match (domain,
+		"ypldapd.conf", "basedn", sizeof ("basedn") - 1, &tmp, &len))
     {
       result->base = NULL;
     }
@@ -463,14 +440,9 @@ _ypldapd_read_config (
       free (tmp);
     }
 
-  if (yp_match (
-		 domain,
-		 "ypldapd.conf",
-		 "ldapport",
-		 sizeof ("ldapport") - 1,
-		 &tmp,
-		 &len
-      ))
+  if (yp_match (domain,
+		"ypldapd.conf",
+		"ldapport", sizeof ("ldapport") - 1, &tmp, &len))
     {
       result->port = LDAP_PORT;
     }
@@ -510,9 +482,7 @@ _ypldapd_read_config (
 } while (0)
 
 static int
-_read_config (
-	       pam_ldap_config_t ** presult
-)
+_read_config (pam_ldap_config_t ** presult)
 {
   /* this is the same configuration file as nss_ldap */
   FILE *fp;
@@ -593,24 +563,24 @@ _read_config (
 	    }
 	}
       else if (!strcasecmp (k, "deref"))
-        {
-          if (!strcasecmp (v, "never"))
-            {
-              result->deref = LDAP_DEREF_NEVER;
-            } 
-          else if (!strcasecmp (v, "searching"))  
-            {
-              result->deref = LDAP_DEREF_SEARCHING;
-            } 
-          else if (!strcasecmp (v, "finding"))
-            {
-              result->deref = LDAP_DEREF_FINDING;
-            } 
-          else if (!strcasecmp (v, "always"))
-            {
-              result->deref = LDAP_DEREF_ALWAYS;
-            }
-        }
+	{
+	  if (!strcasecmp (v, "never"))
+	    {
+	      result->deref = LDAP_DEREF_NEVER;
+	    }
+	  else if (!strcasecmp (v, "searching"))
+	    {
+	      result->deref = LDAP_DEREF_SEARCHING;
+	    }
+	  else if (!strcasecmp (v, "finding"))
+	    {
+	      result->deref = LDAP_DEREF_FINDING;
+	    }
+	  else if (!strcasecmp (v, "always"))
+	    {
+	      result->deref = LDAP_DEREF_ALWAYS;
+	    }
+	}
       else if (!strcasecmp (k, "port"))
 	{
 	  result->port = atoi (v);
@@ -653,12 +623,12 @@ _read_config (
 	}
       else if (!strcasecmp (k, "pam_min_uid"))
 	{
-	  result->min_uid = (uid_t) atol (v); 
-        }
+	  result->min_uid = (uid_t) atol (v);
+	}
       else if (!strcasecmp (k, "pam_max_uid"))
 	{
-	  result->max_uid = (uid_t) atol (v); 
-        }
+	  result->max_uid = (uid_t) atol (v);
+	}
     }
 
   if (result->host == NULL)
@@ -696,77 +666,75 @@ _read_config (
   fclose (fp);
 
   if (result->rootbinddn != NULL)
-  {
-    fp = fopen("/etc/ldap.secret", "r");
-    if (fp)
     {
-      if (fgets(b, sizeof(b), fp) != NULL)
-      {
-	int len;
-	len = strlen(b);
-	if (len > 0 && b[len-1] == '\n')
-	  len--;
+      fp = fopen ("/etc/ldap.secret", "r");
+      if (fp)
+	{
+	  if (fgets (b, sizeof (b), fp) != NULL)
+	    {
+	      int len;
+	      len = strlen (b);
+	      if (len > 0 && b[len - 1] == '\n')
+		len--;
 
-	b[len] = '\0';
-	result->rootbindpw = strdup(b);
-      }
-      fclose(fp);
+	      b[len] = '\0';
+	      result->rootbindpw = strdup (b);
+	    }
+	  fclose (fp);
+	}
+      else
+	{
+	  _pam_drop (result->rootbinddn);
+	  syslog (LOG_WARNING,
+		  "pam_ldap: could not open secret file /etc/ldap.secret (%s)",
+		  strerror (errno));
+	}
     }
-    else
-    {
-      _pam_drop(result->rootbinddn);
-      syslog(LOG_WARNING, "pam_ldap: could not open secret file /etc/ldap.secret (%s)", strerror(errno));
-    }
-  }
-  
+
   /* can't use _pam_overwrite because it only goes to end of string, 
    * not the buffer
    */
-  memset(b, 0, BUFSIZ);
+  memset (b, 0, BUFSIZ);
   return PAM_SUCCESS;
 }
 
 static int
-_open_session (
-		pam_ldap_session_t * session
-)
+_open_session (pam_ldap_session_t * session)
 {
 #ifdef HAVE_LDAPSSL_INIT
   int rc;
 
   if (session->conf->ssl_on && session->ssl_initialized == 0)
-  {
-    rc = ldapssl_client_init (session->conf->sslpath, NULL);
-    if (rc != LDAP_SUCCESS)
     {
-      syslog (LOG_ERR, "pam_ldap: ldapssl_client_init %s", ldap_err2string (rc));
-      return PAM_SYSTEM_ERR;
+      rc = ldapssl_client_init (session->conf->sslpath, NULL);
+      if (rc != LDAP_SUCCESS)
+	{
+	  syslog (LOG_ERR, "pam_ldap: ldapssl_client_init %s",
+		  ldap_err2string (rc));
+	  return PAM_SYSTEM_ERR;
+	}
+      session->ssl_initialized = 1;
     }
-    session->ssl_initialized = 1;
-  }
 
   if (session->conf->ssl_on)
-  {
-    session->ld = ldapssl_init(session->conf->host,
-			       session->conf->port,
-			       TRUE);
-  }
+    {
+      session->ld = ldapssl_init (session->conf->host,
+				  session->conf->port, TRUE);
+    }
   else
 #endif /* HAVE_LDAPSSL_INIT */
-  {
+    {
 #ifdef HAVE_LDAP_INIT
-    session->ld = ldap_init (session->conf->host,
-			     session->conf->port);
+      session->ld = ldap_init (session->conf->host, session->conf->port);
 #else
-    session->ld = ldap_open (session->conf->host,
-			     session->conf->port);
+      session->ld = ldap_open (session->conf->host, session->conf->port);
 #endif /* HAVE_LDAP_INIT */
-  }
-  
+    }
+
   if (session->ld == NULL)
-  {
-    return PAM_SYSTEM_ERR;
-  }
+    {
+      return PAM_SYSTEM_ERR;
+    }
 
 #ifdef LDAP_OPT_PROTOCOL_VERSION
   (void) ldap_set_option (session->ld, LDAP_OPT_PROTOCOL_VERSION, &session->conf->version);
@@ -790,9 +758,7 @@ _open_session (
 }
 
 static int
-_connect_anonymously (
-		       pam_ldap_session_t * session
-)
+_connect_anonymously (pam_ldap_session_t * session)
 {
   int rc;
   int msgid;
@@ -806,66 +772,63 @@ _connect_anonymously (
 	return rc;
     }
 
-  if (session->conf->rootbinddn && geteuid() == 0)
-  {
-    msgid = ldap_simple_bind(session->ld,
-			  session->conf->rootbinddn,
-			  session->conf->rootbindpw);
-  }
+  if (session->conf->rootbinddn && geteuid () == 0)
+    {
+      msgid = ldap_simple_bind (session->ld,
+				session->conf->rootbinddn,
+				session->conf->rootbindpw);
+    }
   else
-  {
-    msgid = ldap_simple_bind(session->ld,
-			     session->conf->binddn,
-			     session->conf->bindpw);
-  }
+    {
+      msgid = ldap_simple_bind (session->ld,
+				session->conf->binddn, session->conf->bindpw);
+    }
 
   if (msgid == -1)
-  {
-    syslog (LOG_ERR, "pam_ldap: ldap_simple_bind (%s)", ldap_err2string(ldap_get_lderrno(session->ld, 0, 0)));
-    return PAM_SERVICE_ERR;
-  }
+    {
+      syslog (LOG_ERR, "pam_ldap: ldap_simple_bind (%s)",
+	      ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
+      return PAM_SERVICE_ERR;
+    }
 
   timeout.tv_sec = 10;
   timeout.tv_usec = 0;
-  rc = ldap_result(session->ld, msgid, FALSE, &timeout, &result);
+  rc = ldap_result (session->ld, msgid, FALSE, &timeout, &result);
   if (rc == -1 || rc == 0)
-  {
-    syslog (LOG_ERR, "pam_ldap: ldap_result (%s)", ldap_err2string(ldap_get_lderrno(session->ld, 0, 0)));
-    return PAM_SERVICE_ERR;
-  }
+    {
+      syslog (LOG_ERR, "pam_ldap: ldap_result (%s)",
+	      ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
+      return PAM_SERVICE_ERR;
+    }
 
 #ifdef HAVE_LDAP_PARSE_RESULT
-  ldap_parse_result(session->ld, result, &rc, 0, 0, 0, 0, TRUE);
+  ldap_parse_result (session->ld, result, &rc, 0, 0, 0, 0, TRUE);
 #else
-  rc = ldap_result2error(session->ld, result, TRUE);
+  rc = ldap_result2error (session->ld, result, TRUE);
 #endif
-  
+
   if (rc != LDAP_SUCCESS)
-  {
-    syslog (LOG_ERR, "pam_ldap: error trying to bind (%s)", ldap_err2string(rc));
-    return PAM_CRED_INSUFFICIENT;
-  }
+    {
+      syslog (LOG_ERR, "pam_ldap: error trying to bind (%s)",
+	      ldap_err2string (rc));
+      return PAM_CRED_INSUFFICIENT;
+    }
 
   if (session->info != NULL)
-  {
-    session->info->bound_as_user = 0;
-  }
+    {
+      session->info->bound_as_user = 0;
+    }
 
   return PAM_SUCCESS;
 }
 
 #if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
 static int
-_rebind_proc (
-	       LDAP * ld,
-	       char **whop,
-	       char **credp,
-	       int *methodp,
-	       int freeit,
-	       void *arg
-)
+_rebind_proc (LDAP * ld,
+	      char **whop, char **credp, int *methodp, int freeit, void *arg)
 #else
-static int _rebind_proc(LDAP *ld, char **whop, char **credp, int *methodp, int freeit)
+static int
+_rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp, int freeit)
 #endif
 {
 #if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
@@ -876,12 +839,12 @@ static int _rebind_proc(LDAP *ld, char **whop, char **credp, int *methodp, int f
 #endif
 
   if (freeit)
-  {
-    _pam_drop(*whop);
-    _pam_overwrite(*credp);
-    _pam_drop(*credp);
-    return LDAP_SUCCESS;
-  }
+    {
+      _pam_drop (*whop);
+      _pam_overwrite (*credp);
+      _pam_drop (*credp);
+      return LDAP_SUCCESS;
+    }
 
   if (session->info->bound_as_user == 1)
     {
@@ -892,18 +855,18 @@ static int _rebind_proc(LDAP *ld, char **whop, char **credp, int *methodp, int f
       *credp = strdup (session->info->userpw);
     }
   else
-  {
-    if (session->conf->rootbinddn && geteuid() == 0)
     {
-      *whop = strdup (session->conf->rootbinddn);
-      *credp = strdup (session->conf->rootbindpw);
+      if (session->conf->rootbinddn && geteuid () == 0)
+	{
+	  *whop = strdup (session->conf->rootbinddn);
+	  *credp = strdup (session->conf->rootbindpw);
+	}
+      else
+	{
+	  *whop = strdup (session->conf->binddn);
+	  *credp = strdup (session->conf->bindpw);
+	}
     }
-    else
-    {
-      *whop = strdup (session->conf->binddn);
-      *credp = strdup (session->conf->bindpw);
-    }
-  }
 
   *methodp = LDAP_AUTH_SIMPLE;
 
@@ -911,10 +874,7 @@ static int _rebind_proc(LDAP *ld, char **whop, char **credp, int *methodp, int f
 }
 
 static int
-_connect_as_user (
-		   pam_ldap_session_t * session,
-		   const char *password
-)
+_connect_as_user (pam_ldap_session_t * session, const char *password)
 {
   int rc;
   int msgid, parserc;
@@ -958,69 +918,76 @@ _connect_as_user (
   if (session->info->userpw == NULL)
     return PAM_BUF_ERR;
 
-  msgid = ldap_simple_bind(session->ld, session->info->userdn, session->info->userpw);
+  msgid =
+    ldap_simple_bind (session->ld, session->info->userdn,
+		      session->info->userpw);
   if (msgid == -1)
-  {
-    syslog (LOG_ERR, "pam_ldap: ldap_simple_bind %s", ldap_err2string(ldap_get_lderrno(session->ld, 0, 0)));
-    _pam_overwrite(session->info->userpw);
-    _pam_drop(session->info->userpw);
-    return PAM_AUTH_ERR;
-  }
+    {
+      syslog (LOG_ERR, "pam_ldap: ldap_simple_bind %s",
+	      ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
+      _pam_overwrite (session->info->userpw);
+      _pam_drop (session->info->userpw);
+      return PAM_AUTH_ERR;
+    }
 
   timeout.tv_sec = 10;
   timeout.tv_usec = 0;
-  rc = ldap_result(session->ld, msgid, FALSE, &timeout, &result);
+  rc = ldap_result (session->ld, msgid, FALSE, &timeout, &result);
   if (rc == -1 || rc == 0)
-  {
-    syslog (LOG_ERR, "pam_ldap: ldap_result (%s)", ldap_err2string(ldap_get_lderrno(session->ld, 0, 0)));
-    _pam_overwrite(session->info->userpw);
-    _pam_drop(session->info->userpw);
-    return PAM_SERVICE_ERR;
-  }
+    {
+      syslog (LOG_ERR, "pam_ldap: ldap_result (%s)",
+	      ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
+      _pam_overwrite (session->info->userpw);
+      _pam_drop (session->info->userpw);
+      return PAM_SERVICE_ERR;
+    }
 
 #if defined(HAVE_LDAP_PARSE_RESULT) && defined(HAVE_LDAP_CONTROLS_FREE)
   controls = 0;
-  parserc = ldap_parse_result(session->ld, result, &rc, 0, 0, 0, &controls, TRUE);
+  parserc =
+    ldap_parse_result (session->ld, result, &rc, 0, 0, 0, &controls, TRUE);
   if (parserc != LDAP_SUCCESS)
-  {
-    syslog (LOG_ERR, "pam_ldap: ldap_parse_result %s", ldap_err2string (parserc));
-    _pam_overwrite (session->info->userpw);
-    _pam_drop (session->info->userpw);
-    return PAM_SYSTEM_ERR;
-  }
+    {
+      syslog (LOG_ERR, "pam_ldap: ldap_parse_result %s",
+	      ldap_err2string (parserc));
+      _pam_overwrite (session->info->userpw);
+      _pam_drop (session->info->userpw);
+      return PAM_SYSTEM_ERR;
+    }
 #else
-  rc = ldap_result2error(session->ld, result, TRUE);
+  rc = ldap_result2error (session->ld, result, TRUE);
 #endif
-  
+
   if (rc != LDAP_SUCCESS)
-  {
-    syslog (LOG_ERR, "pam_ldap: error trying to bind as user \"%s\" (%s)", session->info->userpw, ldap_err2string(rc));
-    _pam_overwrite (session->info->userpw);
-    _pam_drop (session->info->userpw);
-    return PAM_AUTH_ERR;
-  }
+    {
+      syslog (LOG_ERR, "pam_ldap: error trying to bind as user \"%s\" (%s)",
+	      session->info->userpw, ldap_err2string (rc));
+      _pam_overwrite (session->info->userpw);
+      _pam_drop (session->info->userpw);
+      return PAM_AUTH_ERR;
+    }
 
 #if defined(HAVE_LDAP_CONTROLS_FREE)
   if (controls != NULL)
-  {
-    LDAPControl **ctlp;
-    for (ctlp = controls; *ctlp != NULL; ctlp++)
     {
-      if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PWEXPIRING))
-      {
-        char seconds[32];
-        snprintf (seconds, sizeof seconds, "%.*s",
-		  (int) (*ctlp)->ldctl_value.bv_len,
-		  (*ctlp)->ldctl_value.bv_val);
-		  session->info->password_expiration_time = atol (seconds);
-      }
-      else if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PWEXPIRED))
-      {
-        session->info->password_expired = 1;
-      }
+      LDAPControl **ctlp;
+      for (ctlp = controls; *ctlp != NULL; ctlp++)
+	{
+	  if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PWEXPIRING))
+	    {
+	      char seconds[32];
+	      snprintf (seconds, sizeof seconds, "%.*s",
+			(int) (*ctlp)->ldctl_value.bv_len,
+			(*ctlp)->ldctl_value.bv_val);
+	      session->info->password_expiration_time = atol (seconds);
+	    }
+	  else if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PWEXPIRED))
+	    {
+	      session->info->password_expired = 1;
+	    }
+	}
+      ldap_controls_free (controls);
     }
-    ldap_controls_free (controls);
-  }
 #endif
 
   session->info->bound_as_user = 1;
@@ -1030,12 +997,7 @@ _connect_as_user (
 }
 
 static int
-_get_integer_value (
-		     LDAP * ld,
-		     LDAPMessage * e,
-		     const char *attr,
-		     int *ptr
-)
+_get_integer_value (LDAP * ld, LDAPMessage * e, const char *attr, int *ptr)
 {
   char **vals;
 
@@ -1052,11 +1014,7 @@ _get_integer_value (
 
 #ifdef notdef
 static int
-_oc_check (
-	    LDAP * ld,
-	    LDAPMessage * e,
-	    const char *oc
-)
+_oc_check (LDAP * ld, LDAPMessage * e, const char *oc)
 {
   char **vals, **p;
   int rc = 0;
@@ -1082,12 +1040,7 @@ _oc_check (
 }
 
 static int
-_get_string_value (
-		    LDAP * ld,
-		    LDAPMessage * e,
-		    const char *attr,
-		    char **ptr
-)
+_get_string_value (LDAP * ld, LDAPMessage * e, const char *attr, char **ptr)
 {
   char **vals;
   int rc;
@@ -1114,12 +1067,7 @@ _get_string_value (
 #endif /* notdef */
 
 static int
-_get_string_values (
-		     LDAP * ld,
-		     LDAPMessage * e,
-		     const char *attr,
-		     char ***ptr
-)
+_get_string_values (LDAP * ld, LDAPMessage * e, const char *attr, char ***ptr)
 {
   char **vals;
 
@@ -1134,10 +1082,7 @@ _get_string_values (
 }
 
 static int
-_has_value (
-	     char **src,
-	     const char *tgt
-)
+_has_value (char **src, const char *tgt)
 {
   char **p;
 
@@ -1153,9 +1098,7 @@ _has_value (
 }
 
 static int
-_host_ok (
-	   pam_ldap_session_t * session
-)
+_host_ok (pam_ldap_session_t * session)
 {
   char hostname[MAXHOSTNAMELEN];
   struct hostent *h;
@@ -1178,18 +1121,18 @@ _host_ok (
     }
 
 #if defined(HAVE_GETHOSTBYNAME_R)
- #if GETHOSTBYNAME_R_ARGS == 6
+#if GETHOSTBYNAME_R_ARGS == 6
   if (gethostbyname_r (hostname, &hbuf, buf, sizeof buf, &h, &herr) != 0)
-  {
-    return PAM_SYSTEM_ERR;
-  }
- #else
+    {
+      return PAM_SYSTEM_ERR;
+    }
+#else
   h = gethostbyname_r (hostname, &hbuf, buf, sizeof buf, &herr);
   if (h == NULL)
-  {
-    return PAM_SYSTEM_ERR;
-  }
- #endif
+    {
+      return PAM_SYSTEM_ERR;
+    }
+#endif
 #else
   h = gethostbyname (hostname);
   if (h == NULL)
@@ -1218,9 +1161,7 @@ _host_ok (
 }
 
 static char *
-_get_salt (
-	    char salt[3]
-)
+_get_salt (char salt[3])
 {
   int i;
   int j;
@@ -1249,10 +1190,7 @@ _get_salt (
 }
 
 static int
-_get_user_info (
-		 pam_ldap_session_t * session,
-		 const char *user
-)
+_get_user_info (pam_ldap_session_t * session, const char *user)
 {
   char filter[LDAP_FILT_MAXSIZ];
   int rc;
@@ -1272,26 +1210,17 @@ _get_user_info (
   if (session->conf->filter != NULL)
     {
       snprintf (filter, sizeof filter, "(&(%s)(%s=%s))",
-		session->conf->filter,
-		session->conf->userattr,
-		user);
+		session->conf->filter, session->conf->userattr, user);
     }
   else
     {
       snprintf (filter, sizeof filter, "(%s=%s)",
-		session->conf->userattr,
-		user);
+		session->conf->userattr, user);
     }
 
-  rc = ldap_search_s (
-		       session->ld,
-		       session->conf->base,
-		       session->conf->scope,
-		       filter,
-		       NULL,
-		       0,
-		       &res
-    );
+  rc = ldap_search_s (session->ld,
+		      session->conf->base,
+		      session->conf->scope, filter, NULL, 0, &res);
 
   if (rc != LDAP_SUCCESS)
     {
@@ -1311,7 +1240,8 @@ _get_user_info (
       _release_user_info (&session->info);
     }
 
-  session->info = (pam_ldap_user_info_t *) calloc (1, sizeof (pam_ldap_user_info_t));
+  session->info =
+    (pam_ldap_user_info_t *) calloc (1, sizeof (pam_ldap_user_info_t));
   if (session->info == NULL)
     {
       ldap_msgfree (res);
@@ -1354,13 +1284,20 @@ _get_user_info (
   session->info->shadow.expire = 0;
   session->info->shadow.flag = 0;
 
-  _get_integer_value (session->ld, msg, "shadowLastChange", &session->info->shadow.lstchg);
-  _get_integer_value (session->ld, msg, "shadowMin", &session->info->shadow.min);
-  _get_integer_value (session->ld, msg, "shadowMax", &session->info->shadow.max);
-  _get_integer_value (session->ld, msg, "shadowWarning", &session->info->shadow.warn);
-  _get_integer_value (session->ld, msg, "shadowInactive", &session->info->shadow.inact);
-  _get_integer_value (session->ld, msg, "shadowExpire", &session->info->shadow.expire);
-  _get_integer_value (session->ld, msg, "shadowFlag", &session->info->shadow.flag);
+  _get_integer_value (session->ld, msg, "shadowLastChange",
+		      &session->info->shadow.lstchg);
+  _get_integer_value (session->ld, msg, "shadowMin",
+		      &session->info->shadow.min);
+  _get_integer_value (session->ld, msg, "shadowMax",
+		      &session->info->shadow.max);
+  _get_integer_value (session->ld, msg, "shadowWarning",
+		      &session->info->shadow.warn);
+  _get_integer_value (session->ld, msg, "shadowInactive",
+		      &session->info->shadow.inact);
+  _get_integer_value (session->ld, msg, "shadowExpire",
+		      &session->info->shadow.expire);
+  _get_integer_value (session->ld, msg, "shadowFlag",
+		      &session->info->shadow.flag);
 
   ldap_msgfree (res);
 
@@ -1368,22 +1305,21 @@ _get_user_info (
 }
 
 static int
-_pam_ldap_get_session (
-			pam_handle_t * pamh,
-			const char *username,
-			pam_ldap_session_t ** psession
-)
+_pam_ldap_get_session (pam_handle_t * pamh,
+		       const char *username, pam_ldap_session_t ** psession)
 {
   pam_ldap_session_t *session;
   int rc;
 
-  if (pam_get_data (pamh, PADL_LDAP_SESSION_DATA, (const void **) &session) == PAM_SUCCESS)
+  if (pam_get_data (pamh, PADL_LDAP_SESSION_DATA, (const void **) &session) ==
+      PAM_SUCCESS)
     {
       /*
        * we cache the information retrieved from the LDAP server, however
        * we need to flush this if the application has changed the user on us.
        */
-      if ((session->info != NULL) && (strcmp (username, session->info->username) != 0))
+      if ((session->info != NULL)
+	  && (strcmp (username, session->info->username) != 0))
 	{
 	  _release_user_info (&session->info);
 	}
@@ -1427,7 +1363,9 @@ _pam_ldap_get_session (
     }
 #endif /* YPLDAPD */
 
-  rc = pam_set_data (pamh, PADL_LDAP_SESSION_DATA, session, _pam_ldap_cleanup_session);
+  rc =
+    pam_set_data (pamh, PADL_LDAP_SESSION_DATA, session,
+		  _pam_ldap_cleanup_session);
   if (rc != PAM_SUCCESS)
     {
       _release_config (&session->conf);
@@ -1441,9 +1379,7 @@ _pam_ldap_get_session (
 }
 
 static int
-_reopen (
-	  pam_ldap_session_t * session
-)
+_reopen (pam_ldap_session_t * session)
 {
   /* FYI: V3 lets us avoid five unneeded binds in a password change */
   if (session->conf->version == LDAP_VERSION2)
@@ -1463,10 +1399,8 @@ _reopen (
 }
 
 static int
-_get_password_policy (
-		       pam_ldap_session_t * session,
-		       pam_ldap_password_policy_t * policy
-)
+_get_password_policy (pam_ldap_session_t * session,
+		      pam_ldap_password_policy_t * policy)
 {
   int rc = PAM_SUCCESS;
   LDAPMessage *res, *msg;
@@ -1494,23 +1428,20 @@ _get_password_policy (
   session->ld->ld_sizelimit = 1;
 #endif /* LDAP_VERSION3_API */
 
-  rc = ldap_search_s (
-		       session->ld,
-		       "",
-		       LDAP_SCOPE_BASE,
-		       "(objectclass=passwordPolicy)",
-		       NULL,
-		       0,
-		       &res
-    );
+  rc = ldap_search_s (session->ld,
+		      "",
+		      LDAP_SCOPE_BASE,
+		      "(objectclass=passwordPolicy)", NULL, 0, &res);
 
   if (rc == LDAP_SUCCESS)
     {
       msg = ldap_first_entry (session->ld, res);
       if (msg != NULL)
 	{
-	  _get_integer_value (session->ld, msg, "passwordMaxFailure", &policy->password_max_failure);
-	  _get_integer_value (session->ld, msg, "passwordMinLength", &policy->password_min_length);
+	  _get_integer_value (session->ld, msg, "passwordMaxFailure",
+			      &policy->password_max_failure);
+	  _get_integer_value (session->ld, msg, "passwordMinLength",
+			      &policy->password_min_length);
 	}
       ldap_msgfree (res);
     }
@@ -1519,11 +1450,8 @@ _get_password_policy (
 }
 
 static int
-_authenticate (
-		pam_ldap_session_t * session,
-		const char *user,
-		const char *password
-)
+_authenticate (pam_ldap_session_t * session,
+	       const char *user, const char *password)
 {
   int rc = PAM_SUCCESS;
 
@@ -1540,18 +1468,15 @@ _authenticate (
 
   rc = _connect_as_user (session, password);
   _reopen (session);
-  _connect_anonymously(session);
+  _connect_anonymously (session);
   return rc;
 }
 
 static int
-_update_authtok (
-		  pam_ldap_session_t * session,
-		  const char *user,
-		  const char *old_password,
-		  const char *new_password,
-		  int method
-)
+_update_authtok (pam_ldap_session_t * session,
+		 const char *user,
+		 const char *old_password,
+		 const char *new_password, int method)
 {
   char *strvals[2];
   LDAPMod *mods[2], mod;
@@ -1567,24 +1492,24 @@ _update_authtok (
 	}
     }
 
-  if (!session->conf->rootbinddn || geteuid() != 0)
-  {
-    /* We're not root or don't have a rootbinddn so
-     * let's try binding as the user.
-     * 
-     * FIXME:
-     * Do we really want to do this? It allows the
-     * system to be configured in such a way that the
-     * user can bypass local password policy
-     */
-    rc = _reopen (session);
-    if (rc != PAM_SUCCESS)
-      return rc;
+  if (!session->conf->rootbinddn || geteuid () != 0)
+    {
+      /* We're not root or don't have a rootbinddn so
+       * let's try binding as the user.
+       * 
+       * FIXME:
+       * Do we really want to do this? It allows the
+       * system to be configured in such a way that the
+       * user can bypass local password policy
+       */
+      rc = _reopen (session);
+      if (rc != PAM_SUCCESS)
+	return rc;
 
-    rc = _connect_as_user (session, old_password);
-    if (rc != PAM_SUCCESS)
-      return rc;
-  }
+      rc = _connect_as_user (session, old_password);
+      if (rc != PAM_SUCCESS)
+	return rc;
+    }
 
 #ifdef NDS
   /* NDS requires that the old password is first removed */
@@ -1598,11 +1523,7 @@ _update_authtok (
   mods[0] = &mod;
   mods[1] = NULL;
 
-  rc = ldap_modify_s (
-		       session->ld,
-		       session->info->userdn,
-		       mods
-    );
+  rc = ldap_modify_s (session->ld, session->info->userdn, mods);
   if (rc != LDAP_SUCCESS)
     {
       syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
@@ -1612,45 +1533,45 @@ _update_authtok (
 
   /* Netscape generates hashed automatically, but UMich doesn't. */
   if (session->conf->crypt_local)
-  {
-    switch (method)
     {
-     case PASSWORD_DES:
-      _get_salt (saltbuf);
-      break;
-     case PASSWORD_MD5:
-      {
-	md5_state_t state;
-	md5_byte_t digest[16];
-	struct timeval tv;
-	int i;
-	
-	md5_init(&state);
-	gettimeofday(&tv, NULL);
-	md5_append(&state, (unsigned char*)&tv, sizeof(tv));
-	i = getpid();
-	md5_append(&state, (unsigned char*)&i, sizeof(i));
-	i = clock();
-	md5_append(&state, (unsigned char*)&i, sizeof(i));
-	md5_append(&state, (unsigned char*)saltbuf, sizeof(saltbuf));
-	md5_finish(&state, digest);
-	
-	strcpy(saltbuf, "$1$");
-	for (i=0; i<8; i++)
-	  saltbuf[i+3] = i64c(digest[i] & 0x3f);
+      switch (method)
+	{
+	case PASSWORD_DES:
+	  _get_salt (saltbuf);
+	  break;
+	case PASSWORD_MD5:
+	  {
+	    md5_state_t state;
+	    md5_byte_t digest[16];
+	    struct timeval tv;
+	    int i;
 
-	saltbuf[i+3] = '\0';
-	break;
-      }
+	    md5_init (&state);
+	    gettimeofday (&tv, NULL);
+	    md5_append (&state, (unsigned char *) &tv, sizeof (tv));
+	    i = getpid ();
+	    md5_append (&state, (unsigned char *) &i, sizeof (i));
+	    i = clock ();
+	    md5_append (&state, (unsigned char *) &i, sizeof (i));
+	    md5_append (&state, (unsigned char *) saltbuf, sizeof (saltbuf));
+	    md5_finish (&state, digest);
+
+	    strcpy (saltbuf, "$1$");
+	    for (i = 0; i < 8; i++)
+	      saltbuf[i + 3] = i64c (digest[i] & 0x3f);
+
+	    saltbuf[i + 3] = '\0';
+	    break;
+	  }
+	}
+
+      snprintf (buf, sizeof buf, "{crypt}%s", crypt (new_password, saltbuf));
+      strvals[0] = buf;
     }
-      
-    snprintf (buf, sizeof buf, "{crypt}%s", crypt (new_password, saltbuf));
-    strvals[0] = buf;
-  }
   else
-  {
-    strvals[0] = (char *) new_password;
-  }
+    {
+      strvals[0] = (char *) new_password;
+    }
 
   strvals[1] = NULL;
 
@@ -1662,24 +1583,20 @@ _update_authtok (
 
   rc = ldap_modify_s (session->ld, session->info->userdn, mods);
   if (rc != LDAP_SUCCESS)
-  {
-    syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
-    rc = PAM_PERM_DENIED;
-  }
+    {
+      syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
+      rc = PAM_PERM_DENIED;
+    }
   else
-  {
-    rc = PAM_SUCCESS;
-  }
+    {
+      rc = PAM_SUCCESS;
+    }
 
   return rc;
 }
 
 static int
-_get_authtok (
-	       pam_handle_t * pamh,
-	       int flags,
-	       int first
-)
+_get_authtok (pam_handle_t * pamh, int flags, int first)
 {
   int rc;
   char *p;
@@ -1695,12 +1612,9 @@ _get_authtok (
   rc = pam_get_item (pamh, PAM_CONV, (CONST_ARG void **) &conv);
   if (rc == PAM_SUCCESS)
     {
-      rc = conv->conv (
-			1,
-			(CONST_ARG struct pam_message **) pmsg,
-			&resp,
-			conv->appdata_ptr
-	);
+      rc = conv->conv (1,
+		       (CONST_ARG struct pam_message **) pmsg,
+		       &resp, conv->appdata_ptr);
     }
   else
     {
@@ -1731,12 +1645,8 @@ _get_authtok (
 }
 
 static int
-_conv_sendmsg (
-		struct pam_conv *aconv,
-		const char *message,
-		int style,
-		int no_warn
-)
+_conv_sendmsg (struct pam_conv *aconv,
+	       const char *message, int style, int no_warn)
 {
   struct pam_message msg, *pmsg;
   struct pam_response *resp;
@@ -1750,21 +1660,14 @@ _conv_sendmsg (
   msg.msg = (char *) message;
   resp = NULL;
 
-  return aconv->conv (
-		       1,
-		       (CONST_ARG struct pam_message **) &pmsg,
-		       &resp,
-		       aconv->appdata_ptr
-    );
+  return aconv->conv (1,
+		      (CONST_ARG struct pam_message **) &pmsg,
+		      &resp, aconv->appdata_ptr);
 }
 
 PAM_EXTERN int
-pam_sm_authenticate (
-		      pam_handle_t * pamh,
-		      int flags,
-		      int argc,
-		      const char **argv
-)
+pam_sm_authenticate (pam_handle_t * pamh,
+		     int flags, int argc, const char **argv)
 {
   int rc;
   const char *username;
@@ -1820,45 +1723,27 @@ pam_sm_authenticate (
 }
 
 PAM_EXTERN int
-pam_sm_setcred (
-		 pam_handle_t * pamh,
-		 int flags,
-		 int argc,
-		 const char **argv
-)
+pam_sm_setcred (pam_handle_t * pamh, int flags, int argc, const char **argv)
 {
   return PAM_SUCCESS;
 }
 
 PAM_EXTERN int
-pam_sm_open_session (
-		      pam_handle_t * pamh,
-		      int flags,
-		      int argc,
-		      const char **argv
-)
+pam_sm_open_session (pam_handle_t * pamh,
+		     int flags, int argc, const char **argv)
 {
   return PAM_SUCCESS;
 }
 
 PAM_EXTERN int
-pam_sm_close_session (
-		       pam_handle_t * pamh,
-		       int flags,
-		       int argc,
-		       const char **argv
-)
+pam_sm_close_session (pam_handle_t * pamh,
+		      int flags, int argc, const char **argv)
 {
   return PAM_SUCCESS;
 }
 
 PAM_EXTERN int
-pam_sm_chauthtok (
-		   pam_handle_t * pamh,
-		   int flags,
-		   int argc,
-		   const char **argv
-)
+pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 {
   int rc = PAM_SUCCESS;
   char *username, *curpass = NULL, *newpass = NULL, *expuser = NULL;
@@ -1917,168 +1802,131 @@ pam_sm_chauthtok (
     return rc;
 
   if (flags & PAM_PRELIM_CHECK)
-  {
-    /* see whether the user exists */
-    rc = _get_user_info (session, username);
-    if (rc != PAM_SUCCESS)
-      return rc;
-
-    if (!(session->conf->rootbinddn && getuid() == 0))
     {
-      /* we are not root, authenticate old password */
-      if (try_first_pass || use_first_pass)
-      {
-        if (pam_get_item (pamh, PAM_OLDAUTHTOK, (CONST_ARG void **) &curpass) == PAM_SUCCESS)
-        {
-	  rc = _authenticate (session, username, curpass);
-	  if (use_first_pass && rc != PAM_SUCCESS)
-	  {
-	    _conv_sendmsg (appconv, "LDAP Password incorrect", PAM_ERROR_MSG, no_warn);
-	    return rc;
-	  }
-	  else
-	  {
-	    _conv_sendmsg (appconv, "LDAP Password incorrect: try again", PAM_ERROR_MSG, no_warn);
-	  }
-        }
-        else
-        {
-	  curpass = NULL;
-        }
-      }
-
-      tries = 0;
-
-      /* support Netscape Directory Server's password policy */
-      rc = _get_password_policy (session, &policy);
+      /* see whether the user exists */
+      rc = _get_user_info (session, username);
       if (rc != PAM_SUCCESS)
-        return rc;
+	return rc;
 
-      while ((curpass == NULL) && (tries++ < policy.password_max_failure))
-      {
-        pmsg = &msg;
-        msg.msg_style = PAM_PROMPT_ECHO_OFF;
-        msg.msg = OLD_PASSWORD_PROMPT;
-        resp = NULL;
-
-        rc = appconv->conv (1, (CONST_ARG struct pam_message **) &pmsg,
-			   &resp, appconv->appdata_ptr);
-
-        if (rc != PAM_SUCCESS)
-	  return rc;
-
-        curpass = resp->resp;
-        free (resp);
-
-        /* authenticate the old password */
-        rc = _authenticate (session, username, curpass);
-        if (rc != PAM_SUCCESS)
+      if (!(session->conf->rootbinddn && getuid () == 0))
 	{
-	  int abortme = 0;
+	  /* we are not root, authenticate old password */
+	  if (try_first_pass || use_first_pass)
+	    {
+	      if (pam_get_item
+		  (pamh, PAM_OLDAUTHTOK,
+		   (CONST_ARG void **) &curpass) == PAM_SUCCESS)
+		{
+		  rc = _authenticate (session, username, curpass);
+		  if (use_first_pass && rc != PAM_SUCCESS)
+		    {
+		      _conv_sendmsg (appconv, "LDAP Password incorrect",
+				     PAM_ERROR_MSG, no_warn);
+		      return rc;
+		    }
+		  else
+		    {
+		      _conv_sendmsg (appconv,
+				     "LDAP Password incorrect: try again",
+				     PAM_ERROR_MSG, no_warn);
+		    }
+		}
+	      else
+		{
+		  curpass = NULL;
+		}
+	    }
 
-	  if (curpass != NULL && curpass[0] == '\0')
-	    abortme = 1;
+	  tries = 0;
 
-	  _pam_overwrite(curpass);
-	  _pam_drop(curpass);
+	  /* support Netscape Directory Server's password policy */
+	  rc = _get_password_policy (session, &policy);
+	  if (rc != PAM_SUCCESS)
+	    return rc;
 
-	  if (canabort && abortme)
-	  {
-	    _conv_sendmsg (appconv, "Password change aborted", PAM_ERROR_MSG, no_warn);
+	  while ((curpass == NULL) && (tries++ < policy.password_max_failure))
+	    {
+	      pmsg = &msg;
+	      msg.msg_style = PAM_PROMPT_ECHO_OFF;
+	      msg.msg = OLD_PASSWORD_PROMPT;
+	      resp = NULL;
+
+	      rc = appconv->conv (1, (CONST_ARG struct pam_message **) &pmsg,
+				  &resp, appconv->appdata_ptr);
+
+	      if (rc != PAM_SUCCESS)
+		return rc;
+
+	      curpass = resp->resp;
+	      free (resp);
+
+	      /* authenticate the old password */
+	      rc = _authenticate (session, username, curpass);
+	      if (rc != PAM_SUCCESS)
+		{
+		  int abortme = 0;
+
+		  if (curpass != NULL && curpass[0] == '\0')
+		    abortme = 1;
+
+		  _pam_overwrite (curpass);
+		  _pam_drop (curpass);
+
+		  if (canabort && abortme)
+		    {
+		      _conv_sendmsg (appconv, "Password change aborted",
+				     PAM_ERROR_MSG, no_warn);
+		      return PAM_AUTHTOK_ERR;
+		    }
+		  else
+		    {
+		      _conv_sendmsg (appconv,
+				     "LDAP Password incorrect: try again",
+				     PAM_ERROR_MSG, no_warn);
+		    }
+		}
+	    }			/* while */
+
+	  if (curpass == NULL)
 	    return PAM_AUTHTOK_ERR;
-	  }
-	  else
-	  {
-	    _conv_sendmsg (appconv, "LDAP Password incorrect: try again", PAM_ERROR_MSG, no_warn);
-	  }
 	}
-      } /* while */
+      else
+	{
+	  /* we are root */
+	  curpass = NULL;
+	}
 
-      if (curpass == NULL)
-        return PAM_AUTHTOK_ERR;
-    }
-    else
-    {
-      /* we are root */
-      curpass = NULL;
-    }
-
-    pam_set_item (pamh, PAM_OLDAUTHTOK, (void *) curpass);
-    return rc;
-  } /* prelim */
+      pam_set_item (pamh, PAM_OLDAUTHTOK, (void *) curpass);
+      return rc;
+    }				/* prelim */
 
   if (use_authtok)
     use_first_pass = 1;
-  
+
   rc = pam_get_item (pamh, PAM_OLDAUTHTOK, (CONST_ARG void **) &curpass);
   if (rc != PAM_SUCCESS)
-  {
-    syslog(LOG_ERR, "pam_ldap: errer getting PAM_OLDAUTHTOK (%i)", rc);
-    return PAM_AUTHTOK_ERR;
-  }
-  
-  if (try_first_pass || use_first_pass)
-  {
-    if (pam_get_item (pamh, PAM_AUTHTOK, (CONST_ARG void **) &newpass) != PAM_SUCCESS)
-      newpass = NULL;
-
-    if (use_first_pass && newpass == NULL)
+    {
+      syslog (LOG_ERR, "pam_ldap: errer getting PAM_OLDAUTHTOK (%i)", rc);
       return PAM_AUTHTOK_ERR;
-  }
+    }
+
+  if (try_first_pass || use_first_pass)
+    {
+      if (pam_get_item (pamh, PAM_AUTHTOK, (CONST_ARG void **) &newpass) !=
+	  PAM_SUCCESS)
+	newpass = NULL;
+
+      if (use_first_pass && newpass == NULL)
+	return PAM_AUTHTOK_ERR;
+    }
 
   tries = 0;
 
   while ((newpass == NULL) && (tries++ < policy.password_max_failure))
-  {
-    pmsg = &msg;
-    msg.msg_style = PAM_PROMPT_ECHO_OFF;
-    msg.msg = NEW_PASSWORD_PROMPT;
-    resp = NULL;
-
-    rc = appconv->conv (1, (CONST_ARG struct pam_message **) &pmsg,
-			&resp, appconv->appdata_ptr);
-
-    if (rc != PAM_SUCCESS)
-      return rc;
-
-    newpass = resp->resp;
-    free (resp);
-
-    if (newpass[0] == '\0')
     {
-      free (newpass);
-      newpass = NULL;
-    }
-
-    if (newpass != NULL)
-    {
-      if (getuid() != 0)
-      {
-        if (curpass != NULL && !strcmp (curpass, newpass))
-        {
-	  cmiscptr = "Passwords must differ";
-	  newpass = NULL;
-        }
-	else if (strlen (newpass) < policy.password_min_length)
-	{
-	  cmiscptr = "Password too short";
-	  newpass = NULL;
-	}
-      }
-    }
-    else
-    {
-      return PAM_AUTHTOK_ERR;
-    }
-
-    if (cmiscptr == NULL)
-    {
-      /* get password again */
-      char *miscptr;
-
       pmsg = &msg;
       msg.msg_style = PAM_PROMPT_ECHO_OFF;
-      msg.msg = AGAIN_PASSWORD_PROMPT;
+      msg.msg = NEW_PASSWORD_PROMPT;
       resp = NULL;
 
       rc = appconv->conv (1, (CONST_ARG struct pam_message **) &pmsg,
@@ -2087,38 +1935,86 @@ pam_sm_chauthtok (
       if (rc != PAM_SUCCESS)
 	return rc;
 
-      miscptr = resp->resp;
+      newpass = resp->resp;
       free (resp);
-      if (miscptr[0] == '\0')
-      {
-	free (miscptr);
-	miscptr = NULL;
-      }
-      if (miscptr == NULL)
-      {
-	if (canabort)
+
+      if (newpass[0] == '\0')
 	{
-	  _conv_sendmsg (appconv, "Password change aborted", PAM_ERROR_MSG, no_warn);
+	  free (newpass);
+	  newpass = NULL;
+	}
+
+      if (newpass != NULL)
+	{
+	  if (getuid () != 0)
+	    {
+	      if (curpass != NULL && !strcmp (curpass, newpass))
+		{
+		  cmiscptr = "Passwords must differ";
+		  newpass = NULL;
+		}
+	      else if (strlen (newpass) < policy.password_min_length)
+		{
+		  cmiscptr = "Password too short";
+		  newpass = NULL;
+		}
+	    }
+	}
+      else
+	{
 	  return PAM_AUTHTOK_ERR;
 	}
-      }
-      else if (!strcmp (newpass, miscptr))
-      {
-	miscptr = NULL;
-	break;
-      }
 
-      _conv_sendmsg (appconv, "You must enter the same password", PAM_ERROR_MSG, no_warn);
-      miscptr = NULL;
-      newpass = NULL;
-    }
-    else
-    {
-      _conv_sendmsg (appconv, cmiscptr, PAM_ERROR_MSG, no_warn);
-      cmiscptr = NULL;
-      newpass = NULL;
-    }
-  } /* while */
+      if (cmiscptr == NULL)
+	{
+	  /* get password again */
+	  char *miscptr;
+
+	  pmsg = &msg;
+	  msg.msg_style = PAM_PROMPT_ECHO_OFF;
+	  msg.msg = AGAIN_PASSWORD_PROMPT;
+	  resp = NULL;
+
+	  rc = appconv->conv (1, (CONST_ARG struct pam_message **) &pmsg,
+			      &resp, appconv->appdata_ptr);
+
+	  if (rc != PAM_SUCCESS)
+	    return rc;
+
+	  miscptr = resp->resp;
+	  free (resp);
+	  if (miscptr[0] == '\0')
+	    {
+	      free (miscptr);
+	      miscptr = NULL;
+	    }
+	  if (miscptr == NULL)
+	    {
+	      if (canabort)
+		{
+		  _conv_sendmsg (appconv, "Password change aborted",
+				 PAM_ERROR_MSG, no_warn);
+		  return PAM_AUTHTOK_ERR;
+		}
+	    }
+	  else if (!strcmp (newpass, miscptr))
+	    {
+	      miscptr = NULL;
+	      break;
+	    }
+
+	  _conv_sendmsg (appconv, "You must enter the same password",
+			 PAM_ERROR_MSG, no_warn);
+	  miscptr = NULL;
+	  newpass = NULL;
+	}
+      else
+	{
+	  _conv_sendmsg (appconv, cmiscptr, PAM_ERROR_MSG, no_warn);
+	  cmiscptr = NULL;
+	  newpass = NULL;
+	}
+    }				/* while */
 
   if (cmiscptr != NULL || newpass == NULL)
     return PAM_AUTHTOK_ERR;
@@ -2126,50 +2022,52 @@ pam_sm_chauthtok (
   pam_set_item (pamh, PAM_AUTHTOK, (void *) newpass);
   rc = _update_authtok (session, username, curpass, newpass, method);
   if (rc != PAM_SUCCESS)
-  {
-    int lderr;
-    char *reason;
+    {
+      int lderr;
+      char *reason;
 
-    lderr = ldap_get_lderrno (session->ld, NULL, &reason);
-    if (reason != NULL)
-      snprintf (errmsg, sizeof errmsg, "LDAP password information update failed: %s\n%s", ldap_err2string (lderr), reason);
-    else
-      snprintf (errmsg, sizeof errmsg, "LDAP password information update failed: %s", ldap_err2string (lderr));
+      lderr = ldap_get_lderrno (session->ld, NULL, &reason);
+      if (reason != NULL)
+	snprintf (errmsg, sizeof errmsg,
+		  "LDAP password information update failed: %s\n%s",
+		  ldap_err2string (lderr), reason);
+      else
+	snprintf (errmsg, sizeof errmsg,
+		  "LDAP password information update failed: %s",
+		  ldap_err2string (lderr));
 
-    _conv_sendmsg (appconv, errmsg, PAM_ERROR_MSG, no_warn);
-  }
+      _conv_sendmsg (appconv, errmsg, PAM_ERROR_MSG, no_warn);
+    }
   else
-  {
-    /* update shadowLastChange; may fail if not shadowAccount */
-    snprintf (buf, sizeof buf, "%ld", time (NULL) / (60 * 60 * 24));
-    strvals[0] = buf;
-    strvals[1] = NULL;
+    {
+      /* update shadowLastChange; may fail if not shadowAccount */
+      snprintf (buf, sizeof buf, "%ld", time (NULL) / (60 * 60 * 24));
+      strvals[0] = buf;
+      strvals[1] = NULL;
 
-    mod.mod_values = strvals;
-    mod.mod_type = (char *) "shadowLastChange";
-    mod.mod_op = LDAP_MOD_REPLACE;
+      mod.mod_values = strvals;
+      mod.mod_type = (char *) "shadowLastChange";
+      mod.mod_op = LDAP_MOD_REPLACE;
 
-    mods[0] = &mod;
-    mods[1] = NULL;
+      mods[0] = &mod;
+      mods[1] = NULL;
 
-    rc = ldap_modify_s(session->ld, session->info->userdn, mods);
-    if (rc != LDAP_SUCCESS)
-      syslog (LOG_WARNING, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
+      rc = ldap_modify_s (session->ld, session->info->userdn, mods);
+      if (rc != LDAP_SUCCESS)
+	syslog (LOG_WARNING, "pam_ldap: ldap_modify_s %s",
+		ldap_err2string (rc));
 
-    snprintf (errmsg, sizeof errmsg, "LDAP password information changed for %s", username);
-    _conv_sendmsg (appconv, errmsg, PAM_TEXT_INFO, (flags & PAM_SILENT) ? 1 : 0);
-  }
+      snprintf (errmsg, sizeof errmsg,
+		"LDAP password information changed for %s", username);
+      _conv_sendmsg (appconv, errmsg, PAM_TEXT_INFO,
+		     (flags & PAM_SILENT) ? 1 : 0);
+    }
 
   return rc;
 }
 
 PAM_EXTERN int
-pam_sm_acct_mgmt (
-		   pam_handle_t * pamh,
-		   int flags,
-		   int argc,
-		   const char **argv
-)
+pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 {
   /*
    * check whether the user can login.
@@ -2187,7 +2085,7 @@ pam_sm_acct_mgmt (
   pam_ldap_session_t *session = NULL;
   char buf[1024];
   time_t currenttime;
-  int expirein = 0;                /* seconds until password expires */
+  int expirein = 0;		/* seconds until password expires */
 
   for (i = 0; i < argc; i++)
     {
@@ -2232,7 +2130,7 @@ pam_sm_acct_mgmt (
 	  return rc;
 	}
     }
- 
+
   /* Grab the current time */
   time (&currenttime);
 
@@ -2241,51 +2139,46 @@ pam_sm_acct_mgmt (
   if (session->info->shadow.expire > 0)
     {
       if (currenttime >= (session->info->shadow.expire * SECSPERDAY))
-        {
-          return PAM_ACCT_EXPIRED;
-        }
+	{
+	  return PAM_ACCT_EXPIRED;
+	}
     }
 
   /*
    * Also check if user hasn't changed password for the inactive
    * amount of time.  This also counts as an expired account.
    */
-  if ((session->info->shadow.lstchg > 0) && 
-      (session->info->shadow.max > 0 ) &&
-      (session->info->shadow.inact > 0)) 
-    {
-      if (currenttime >= ((session->info->shadow.lstchg + 
-                          session->info->shadow.max +
-                          session->info->shadow.inact) * SECSPERDAY) )
-        {
-          return PAM_ACCT_EXPIRED;
-        }
-     }
-
-  /* Our shadow information should be populated, so do some calculations */
   if ((session->info->shadow.lstchg > 0) &&
-      (session->info->shadow.max > 0))
+      (session->info->shadow.max > 0) && (session->info->shadow.inact > 0))
     {
       if (currenttime >= ((session->info->shadow.lstchg +
-                          session->info->shadow.max) * SECSPERDAY))
-        {
-          session->info->password_expired = 1;
+			   session->info->shadow.max +
+			   session->info->shadow.inact) * SECSPERDAY))
+	{
+	  return PAM_ACCT_EXPIRED;
+	}
+    }
+
+  /* Our shadow information should be populated, so do some calculations */
+  if ((session->info->shadow.lstchg > 0) && (session->info->shadow.max > 0))
+    {
+      if (currenttime >= ((session->info->shadow.lstchg +
+			   session->info->shadow.max) * SECSPERDAY))
+	{
+	  session->info->password_expired = 1;
 	}
     }
 
   /* check whether the password has expired */
   if (session->info->password_expired)
     {
-      _conv_sendmsg (
-		      appconv,
-	       "You are required to change your LDAP password immediately.",
-		      PAM_ERROR_MSG,
-		      no_warn
-	);
-#ifdef LINUX      
-	success = PAM_AUTHTOKEN_REQD;
+      _conv_sendmsg (appconv,
+		     "You are required to change your LDAP password immediately.",
+		     PAM_ERROR_MSG, no_warn);
+#ifdef LINUX
+      success = PAM_AUTHTOKEN_REQD;
 #else
-	success = PAM_NEW_AUTHTOK_REQD;
+      success = PAM_NEW_AUTHTOK_REQD;
 #endif /* LINUX */
 /* ???? */
 /*
@@ -2293,7 +2186,7 @@ pam_sm_acct_mgmt (
       success = PAM_AUTHTOK_EXPIRED;
 #else
       success = PAM_AUTHTOKEN_REQD;
-#endif */ /* PAM_AUTHTOK_EXPIRED */
+#endif *//* PAM_AUTHTOK_EXPIRED */
     }
 
   /*
@@ -2308,60 +2201,59 @@ pam_sm_acct_mgmt (
 
   if (!session->info->password_expired)
     {
-      if (session->info->shadow.warn > 0) /* shadowAccount */
-        {
-          /*
-           * Are we within warning period?
-           */
+      if (session->info->shadow.warn > 0)	/* shadowAccount */
+	{
+	  /*
+	   * Are we within warning period?
+	   */
 
-          expirein = ((session->info->shadow.lstchg +
-                       session->info->shadow.max) * SECSPERDAY) - 
-       	               currenttime;
+	  expirein = ((session->info->shadow.lstchg +
+		       session->info->shadow.max) * SECSPERDAY) - currenttime;
 
-          if ((session->info->shadow.warn * SECSPERDAY) <= expirein)
-            {
-              expirein = 0; /* Not within warning period yet */
-            }
-        }
-      else 
-        {
-          expirein = session->info->password_expiration_time;
-        }
+	  if ((session->info->shadow.warn * SECSPERDAY) <= expirein)
+	    {
+	      expirein = 0;	/* Not within warning period yet */
+	    }
+	}
+      else
+	{
+	  expirein = session->info->password_expiration_time;
+	}
 
-      if (expirein > 0) 
-        {
-          if (expirein < SECSPERDAY)
-            {
-              snprintf (buf, sizeof buf,
-		        "Your LDAP password will expire within 24 hours.");
-            /* override no_warn */
-            _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, 0);
-            }
-          else
+      if (expirein > 0)
+	{
+	  if (expirein < SECSPERDAY)
+	    {
+	      snprintf (buf, sizeof buf,
+			"Your LDAP password will expire within 24 hours.");
+	      /* override no_warn */
+	      _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, 0);
+	    }
+	  else
 	    {
 	      int days = expirein / SECSPERDAY;
 	      snprintf (buf, sizeof buf,
-		    "Your LDAP password will expire in %d day%s.",
-		    days, (days == 1) ? "" : "s");
+			"Your LDAP password will expire in %d day%s.",
+			days, (days == 1) ? "" : "s");
 	      _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
-            }
+	    }
 	  /* we set this to make sure that user can't abort a password change */
-	  (void) pam_set_data (pamh, PADL_LDAP_AUTHTOK_DATA, strdup (username), _cleanup_authtok_data);
-        }
-  } /* password expired */
+	  
+	    (void) pam_set_data (pamh, PADL_LDAP_AUTHTOK_DATA,
+				 strdup (username), _cleanup_authtok_data);
+	}
+    }				/* password expired */
 
   /* group auth, per Chris's pam_ldap_auth module */
   if (session->conf->groupdn != NULL)
     {
-      rc = ldap_compare_s (
-			    session->ld,
-			    session->conf->groupdn,
-			    session->conf->groupattr,
-			    session->info->userdn
-	);
+      rc = ldap_compare_s (session->ld,
+			   session->conf->groupdn,
+			   session->conf->groupattr, session->info->userdn);
       if (rc != LDAP_COMPARE_TRUE)
 	{
-	  snprintf (buf, sizeof buf, "You must be a %s of %s to login.", session->conf->groupattr, session->conf->groupdn);
+	  snprintf (buf, sizeof buf, "You must be a %s of %s to login.",
+		    session->conf->groupattr, session->conf->groupdn);
 	  _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
 	  return PAM_AUTH_ERR;
 	}
@@ -2372,26 +2264,27 @@ pam_sm_acct_mgmt (
     rc = success;
 
   if (session->conf->min_uid && session->info->uid < session->conf->min_uid)
-	{
-		snprintf (buf, sizeof buf, "UID must be greater than %ld", (long) session->conf->min_uid);
-		_conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
-		return PAM_AUTH_ERR;
-	}
+    {
+      snprintf (buf, sizeof buf, "UID must be greater than %ld",
+		(long) session->conf->min_uid);
+      _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
+      return PAM_AUTH_ERR;
+    }
 
-  if (session->conf->min_uid && session->info->uid > session->conf->max_uid)
-	{
-		snprintf (buf, sizeof buf, "UID must be less than %ld", (long) session->conf->max_uid);
-		_conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
-		return PAM_AUTH_ERR;
-	}
+  if (session->conf->max_uid && session->info->uid > session->conf->max_uid)
+    {
+      snprintf (buf, sizeof buf, "UID must be less than %ld",
+		(long) session->conf->max_uid);
+      _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
+      return PAM_AUTH_ERR;
+    }
 
   return rc;
 }
 
 /* static module data */
 #ifdef PAM_STATIC
-struct pam_module _modstruct =
-{
+struct pam_module _modstruct = {
   "pam_ldap",
   pam_sm_authenticate,
   pam_sm_setcred,
@@ -2401,4 +2294,3 @@ struct pam_module _modstruct =
   pam_sm_chauthtok
 };
 #endif /* PAM_STATIC */
-
