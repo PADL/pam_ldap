@@ -470,6 +470,10 @@ static int _open_session(
                                   pam_ldap_session_t *session
                                   )
 {
+#ifdef SSL
+    int rc;
+#endif /* SSL */
+
 #ifndef LDAP_VERSION3
     session->ld = ldap_open(
                                 session->conf->host,
