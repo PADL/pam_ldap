@@ -1,6 +1,12 @@
 $Id$
 ===============================================================
 
+57	Tom Lear <tom@trap.mtview.ca.us>
+
+    * Debian bug #64217: remove redunant code in pam_ldap.c
+    * Debian bug #64220: add minuid and maxuid parameters
+    * Debian bug #65295: chsh/chfn implementation
+
 55	Doug Nazar <nazard@dragoninc.on.ca>
 
     * md5 crypt support

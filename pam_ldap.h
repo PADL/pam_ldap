@@ -65,6 +65,10 @@ typedef struct pam_ldap_config
     int version;
     /* generate hashes locally */
     int crypt_local;
+    /* min uid */
+    uid_t min_uid;
+    /* max uid */
+    uid_t max_uid;
   }
 pam_ldap_config_t;
 
@@ -132,6 +136,8 @@ typedef struct pam_ldap_user_info
     int password_expired;
     /* bound as user DN */
     int bound_as_user;
+    /* user ID */
+    uid_t uid;
     /* shadow stuff */
     pam_ldap_shadow_t shadow;
   }

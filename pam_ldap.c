@@ -391,6 +391,8 @@ _alloc_config (
   result->getpolicy = 0;
   result->version = LDAP_VERSION2;
   result->crypt_local = 0;
+  result->min_uid = 0;
+  result->max_uid = 0;
 
   return PAM_SUCCESS;
 }
@@ -649,6 +651,14 @@ _read_config (
 	{
 	  CHECKPOINTER (result->groupattr = strdup (v));
 	}
+      else if (!strcasecmp (k, "pam_min_uid"))
+	{
+	  result->min_uid = (uid_t) atol (v); 
+        }
+      else if (!strcasecmp (k, "pam_max_uid"))
+	{
+	  result->max_uid = (uid_t) atol (v); 
+        }
     }
 
   if (result->host == NULL)
@@ -1332,6 +1342,9 @@ _get_user_info (
    */
   _get_string_values (session->ld, msg, "host", &session->info->hosts_allow);
 
+  /* get UID */
+  _get_integer_value (session->ld, msg, "uidNumber", &session->info->uid);
+
   /* Assume shadow controls.  Allocate shadow structure and link to session. */
   session->info->shadow.lstchg = 0;
   session->info->shadow.min = 0;
@@ -1457,11 +1470,6 @@ _get_password_policy (
 {
   int rc = PAM_SUCCESS;
   LDAPMessage *res, *msg;
-
-  if (rc != PAM_SUCCESS)
-    {
-      return rc;
-    }
 
   /* set some reasonable defaults */
   memset (policy, 0, sizeof (*policy));
@@ -2362,6 +2370,20 @@ pam_sm_acct_mgmt (
   rc = _host_ok (session);
   if (rc == PAM_SUCCESS)
     rc = success;
+
+  if (session->conf->min_uid && session->info->uid < session->conf->min_uid)
+	{
+		snprintf (buf, sizeof buf, "UID must be greater than %ld", (long) session->conf->min_uid);
+		_conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
+		return PAM_AUTH_ERR;
+	}
+
+  if (session->conf->min_uid && session->info->uid > session->conf->max_uid)
+	{
+		snprintf (buf, sizeof buf, "UID must be less than %ld", (long) session->conf->max_uid);
+		_conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
+		return PAM_AUTH_ERR;
+	}
 
   return rc;
 }
