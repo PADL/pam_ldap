@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+24   Luke Howard <lukeh@padl.com>
+
+    * compile with -D_REENTRANT and link against -lpthread
+      to satisfy dependancies in libldapssl30. (BUG#7)
+
 23   Luke Howard <lukeh@padl.com>
 
     * no longer use LDAP_VERSION3 to select API

@@ -6,7 +6,7 @@ SECURITY_DIR = /usr/lib/security
 # The Mozilla LDAP libraries
 LDAP_LIB_DIR = /usr/local/ldapsdk/lib
 LDAP_INC_DIR = /usr/local/ldapsdk/include
-LDAPLIBS = -L$(LDAP_LIB_DIR) -lldapssl30 -lpam -lnsl
+LDAPLIBS = -L$(LDAP_LIB_DIR) -lldapssl30 -lpam -lnsl -lpthread
 
 #CDEFS = -O2
 WARNINGS = -ansi -D_POSIX_SOURCE -Wall -Wwrite-strings \
@@ -14,7 +14,7 @@ WARNINGS = -ansi -D_POSIX_SOURCE -Wall -Wwrite-strings \
 	-Wtraditional -Wstrict-prototypes -Wmissing-prototypes \
 	-Wnested-externs -Winline -Wshadow -pedantic
 
-CDEFS = -g $(WARNINGS) -DLDAP_VERSION3_API #-DYPLDAPD
+CDEFS = -g $(WARNINGS) -D_REENTRANT -DLDAP_VERSION3_API #-DYPLDAPD
 
 # Which Make is gnu make
 MAKE = make
