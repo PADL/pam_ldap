@@ -5,6 +5,7 @@ $Id$
 
 	* fix signed/unsigned comparison issues
 	* merge in LDAP debug patch from Howard Chu
+	* fix BUG#126 (updating shadowLastChange)
 
 165	Luke Howard <lukeh@padl.com>
 

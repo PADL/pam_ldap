@@ -2703,6 +2703,17 @@ _update_authtok (pam_ldap_session_t * session,
 	}
     }
 
+  if (rc == LDAP_SUCCESS)
+    {
+      _pam_overwrite (session->info->userpw);
+      _pam_drop (session->info->userpw);
+      session->info->userpw = strdup (new_password);
+      if (session->info->userpw == NULL)
+	{
+	  rc = PAM_BUF_ERR;
+	}
+    }
+
   return rc;
 }
 
