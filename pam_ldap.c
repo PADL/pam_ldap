@@ -144,7 +144,7 @@
 
 static char rcsid[] __UNUSED__ =
   "$Id$";
-#if HAVE_LDAP_SET_REBIND_PROC_ARGS < 3
+#if LDAP_SET_REBIND_PROC_ARGS < 3
 static pam_ldap_session_t *global_session = 0;
 #endif
 static int pam_debug_level __UNUSED__ = 0;
@@ -373,7 +373,7 @@ _pam_ldap_cleanup_session (pam_handle_t * pamh, void *data, int error_status)
   _release_user_info (&session->info);
 
   free (data);
-#if HAVE_LDAP_SET_REBIND_PROC_ARGS < 3
+#if LDAP_SET_REBIND_PROC_ARGS < 3
   global_session = 0;
 #endif
 
@@ -1139,7 +1139,7 @@ _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid)
   return ldap_simple_bind_s (ld, who, cred);
 }
 #else
-#if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
+#if LDAP_SET_REBIND_PROC_ARGS == 3
 static int
 _rebind_proc (LDAP * ld,
 	      char **whop, char **credp, int *methodp, int freeit, void *arg)
@@ -1148,7 +1148,7 @@ static int
 _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp, int freeit)
 #endif
 {
-#if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
+#if LDAP_SET_REBIND_PROC_ARGS == 3
   pam_ldap_session_t *session = (pam_ldap_session_t *) arg;
 #else
   /* ugly hack */
@@ -1719,7 +1719,7 @@ _pam_ldap_get_session (pam_handle_t * pamh, const char *username,
 	}
 
       *psession = session;
-#if HAVE_LDAP_SET_REBIND_PROC_ARGS < 3
+#if LDAP_SET_REBIND_PROC_ARGS < 3
       global_session = *psession;
 #endif
       return PAM_SUCCESS;
@@ -1728,7 +1728,7 @@ _pam_ldap_get_session (pam_handle_t * pamh, const char *username,
   *psession = NULL;
 
   session = (pam_ldap_session_t *) calloc (1, sizeof (*session));
-#if HAVE_LDAP_SET_REBIND_PROC_ARGS < 3
+#if LDAP_SET_REBIND_PROC_ARGS < 3
   global_session = session;
 #endif
   if (session == NULL)

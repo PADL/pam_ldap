@@ -27,6 +27,9 @@
 /* Define if you have the ldap_init function.  */
 #undef HAVE_LDAP_INIT
 
+/* Define if you have the ldap_initialize function.  */
+#undef HAVE_LDAP_INITIALIZE
+
 /* Define if you have the ldap_memfree function.  */
 #undef HAVE_LDAP_MEMFREE
 

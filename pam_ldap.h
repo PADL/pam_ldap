@@ -218,7 +218,7 @@ static int _connect_anonymously (pam_ldap_session_t *);
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
 static int _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid);
 #else
-#if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
+#if LDAP_SET_REBIND_PROC_ARGS == 3
 static int _rebind_proc (LDAP *, char **, char **, int *, int, void *);
 #else
 static int _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp, int freeit);
