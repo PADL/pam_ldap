@@ -1,7 +1,7 @@
 $Id$
 ===============================================================
 
-34	Luke Howard <lukeh@padl.com>
+35   Luke Howard <lukeh@padl.com>
 
     * put /usr/ucblib back in linker search path on Solaris
 
