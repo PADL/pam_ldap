@@ -4,7 +4,7 @@ $Id$
 23   Luke Howard <lukeh@padl.com>
 
     * no longer use LDAP_VERSION3 to select API
-      (Recall #135)
+      (BUG#6)
 
 21   Luke Howard <lukeh@padl.com>
 
