@@ -5,6 +5,7 @@ $Id$
 
 	* fix for BUG#188: better documentation for OpenLDAP
 	  SSL options
+	* add manual page
 
 176	Luke Howard <lukeh@padl.com>
 

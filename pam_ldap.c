@@ -884,7 +884,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	    result->password_type = PASSWORD_CRYPT;
 	  else if (!strcasecmp (v, "md5"))
 	    result->password_type = PASSWORD_MD5;
-	  else if (!strcasecmp (v, "nds") || (!strcasecmp (v, "racf")))
+	  else if (!strcasecmp (v, "clear_remove_old") || !strcasecmp (v, "nds") || (!strcasecmp (v, "racf")))
 	    result->password_type = PASSWORD_CLEAR_REMOVE_OLD;
 	  else if (!strcasecmp (v, "ad"))
 	    result->password_type = PASSWORD_AD;
@@ -1793,7 +1793,9 @@ _do_sasl_interaction (pam_handle_t *pamh, pam_ldap_session_t *session,
     dflt = NULL;
 
   if (dflt == NULL &&
+#ifdef LDAP_SASL_QUIET
       flags != LDAP_SASL_QUIET &&
+#endif
       (interact->id == SASL_CB_ECHOPROMPT || interact->id == SASL_CB_NOECHOPROMPT))
     {
       struct pam_message *pmsg[2];
@@ -1922,7 +1924,12 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
        */
       rc = ldap_sasl_interactive_bind_s (session->ld, session->info->userdn,
 					 session->conf->sasl_mechanism,
-					 srvctrls, NULL, LDAP_SASL_AUTOMATIC,
+					 srvctrls, NULL,
+#ifdef LDAP_SASL_AUTOMATIC
+					 LDAP_SASL_AUTOMATIC,
+#else
+					 0,
+#endif
 					 _do_sasl_interact, &args);
       if (rc != LDAP_SUCCESS)
 	{
