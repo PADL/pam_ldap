@@ -33,7 +33,7 @@ I've tested this with Netscape Directory Server 3.1 under NT and
 Solaris, the University of Michigan LDAP server, and Microsoft's
 Exchange Server.
 
-pam_ldap is only secure if used with a SASL mechanism (like
+pam_ldap is only secure if used with a secure SASL mechanism (like
 CRAM-MD5) or with transport security (like SSL/TLS). With simple
 authentication, it is less secure than using UNIX hashed passwords,
 because the LDAP bind request sends the password in the clear.
@@ -49,6 +49,12 @@ Here are some possible deployment scenarios:
    o pam_ldap with account information in NIS, using
      ypldapd
 
+Don't forget to ensure that pam_ldap's link dependencies are
+satisfied after installation (you can verify this by doing
+ldd /usr/lib/security/pam_ldap.so.1). You must ensure that
+any libraries that it depends on (such as the LDAP client
+library) can be located by the dynamic linker. Otherwise,
+libpam may fail to load the pam_ldap module.
 
 --
 [ PADL Software Pty Ltd ]
