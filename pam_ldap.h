@@ -78,6 +78,23 @@ typedef struct pam_ldap_password_policy
   }
 pam_ldap_password_policy_t;
 
+/* Standard Unix style shadow controls */
+typedef struct pam_ldap_shadow
+  {
+    int shadowacct;			/* is shadowAccount */
+    int lstchg;         /* Date of last change.  */
+    int min;            /* Minimum number of days between changes.  */
+    int max;            /* Maximum number of days between changes.  */
+    int warn;           /* Number of days to warn user to change
+    the password.  */
+    int inact;          /* Number of days the account may be
+                                   inactive.  */
+    int expire;         /* Number of days since 1970-01-01 until
+                                   account expires.  */
+    int flag;  /* Reserved.  */
+  }
+pam_ldap_shadow_t;
+
 /* Password controls sent to client */
 #ifndef LDAP_CONTROL_PWEXPIRED
 #define LDAP_CONTROL_PWEXPIRED      "2.16.840.1.113730.3.4.4"
@@ -103,6 +120,8 @@ typedef struct pam_ldap_user_info
     int password_expired;
     /* bound as user DN */
     int bound_as_user;
+    /* shadow stuff */
+    pam_ldap_shadow_t shadow;
   }
 pam_ldap_user_info_t;
 
