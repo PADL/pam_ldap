@@ -1393,7 +1393,7 @@ _pam_ldap_get_session (pam_handle_t * pamh,
 
   if (pam_get_data
       (pamh, PADL_LDAP_SESSION_DATA,
-       (CONST_ARG void **) &session) == PAM_SUCCESS)
+       (const void **) &session) == PAM_SUCCESS)
     {
       /*
        * we cache the information retrieved from the LDAP server, however
@@ -1446,7 +1446,7 @@ _pam_ldap_get_session (pam_handle_t * pamh,
 #endif /* YPLDAPD */
 
   rc =
-    pam_set_data (pamh, PADL_LDAP_SESSION_DATA, session,
+    pam_set_data (pamh, PADL_LDAP_SESSION_DATA, (void *) session,
 		  _pam_ldap_cleanup_session);
   if (rc != PAM_SUCCESS)
     {
@@ -1807,7 +1807,7 @@ pam_sm_authenticate (pam_handle_t * pamh,
   if (rc == PAM_SUCCESS && session->info->tmpluser != NULL)
     {
       /* keep original username for posterity */
-      (void) pam_set_data (pamh, PADL_LDAP_AUTH_DATA, strdup(session->info->username), _cleanup_data);
+      (void) pam_set_data (pamh, PADL_LDAP_AUTH_DATA, (void *) strdup(session->info->username), _cleanup_data);
       rc = pam_set_item (pamh, PAM_USER, (void *) session->info->tmpluser);
     }
 
@@ -1884,7 +1884,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
    * use that instead.
    */
   rc =
-    pam_get_data (pamh, PADL_LDAP_AUTH_DATA, (CONST_ARG void **) &username);
+    pam_get_data (pamh, PADL_LDAP_AUTH_DATA, (const void **) &username);
   if (rc != PAM_SUCCESS)
     {
       rc = pam_get_user (pamh, (CONST_ARG char **) &username, "login: ");
@@ -2239,7 +2239,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
    * use that instead.
    */
   rc =
-    pam_get_data (pamh, PADL_LDAP_AUTH_DATA, (CONST_ARG void **) &username);
+    pam_get_data (pamh, PADL_LDAP_AUTH_DATA, (const void **) &username);
   if (rc != PAM_SUCCESS)
     {
       rc = pam_get_user (pamh, (CONST_ARG char **) &username, "login: ");
@@ -2375,7 +2375,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	  /* we set this to make sure that user can't abort a password change */
 
 	  (void) pam_set_data (pamh, PADL_LDAP_AUTHTOK_DATA,
-			       strdup (username), _cleanup_data);
+			       (void *) strdup (username), _cleanup_data);
 	}
     }				/* password expired */
 
