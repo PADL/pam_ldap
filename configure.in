@@ -16,8 +16,6 @@ AC_ARG_WITH(ldap-dir, [  --with-ldap-dir=DIR     base directory of ldap SDK])
 AC_ARG_WITH(ldap-conf-file, [  --with-ldap-conf-file     path to LDAP configuration file], [AC_DEFINE_UNQUOTED(PAM_LDAP_PATH_CONF, "$with_ldap_conf_file")])
 AC_ARG_WITH(ldap-secret-file, [  --with-ldap-secret-file   path to LDAP root secret file], [AC_DEFINE_UNQUOTED(PAM_LDAP_PATH_ROOTPASSWD, "$with_ldap_secret_file")])
 
-AM_CONDITIONAL(EXTENSION_SO, test "$target_os" = "linux" -o "$target_os" = "linux-gnu")
-AM_CONDITIONAL(EXTENSION_1, test "$target_os" = "hpux")
 if test "$ac_cv_prog_gcc" = "yes"; then CFLAGS="$CFLAGS -Wall -fPIC"; fi
 
 dnl This is needed for the native Solaris LDAP SDK
@@ -31,10 +29,12 @@ esac
 
 case "$target_os" in
 aix*) pam_ldap_so_LD="ld"
-  pam_ldap_so_LDFLAGS="-bM:SRE -bnoentry -bE:\$(srcdir)/exports.aix" ;;
+  pam_ldap_so_LDFLAGS="-bM:SRE -bnoentry -bE:\$(srcdir)/exports.aix"
+  TARGET_OS="AIX" ;;
 darwin*) pam_ldap_so_LDFLAGS="-bundle" ;;
 hpux*) pam_ldap_so_LD="/bin/ld"
-  pam_ldap_so_LDFLAGS="-b -dynamic -G" ;;
+  pam_ldap_so_LDFLAGS="-b -dynamic -G"
+  TARGET_OS="HPUX" ;;
 solaris*) pam_ldap_so_LD="/usr/ccs/bin/ld"
   pam_ldap_so_LDFLAGS="-B dynamic -M mapfile -G" ;;
 *) pam_ldap_so_LDFLAGS="-shared" ;;
@@ -44,6 +44,8 @@ AC_SUBST(pam_ldap_so_LD)
 AC_SUBST(pam_ldap_so_LDFLAGS)
 
 AM_CONDITIONAL(USE_NATIVE_LINKER, test -n "$pam_ldap_so_LD")
+AM_CONDITIONAL(EXTENSION_SO, test "$target_os" = "linux" -o "$target_os" = "linux-gnu")
+AM_CONDITIONAL(EXTENSION_1, test "$TARGET_OS" = "HPUX")
 
 if test -n "$with_ldap_dir"; then
   CPPFLAGS="$CPPFLAGS -I$with_ldap_dir/include"
