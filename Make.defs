@@ -1,17 +1,17 @@
 #ident $Id$
 
 # The PAM library directory
-SECURITY_DIR = /usr/lib/security
+SECURITY_DIR = /lib/security
 
 # The Netscape LDAP libraries
 LDAP_LIB_DIR = /usr/local/ldapsdk/lib
 LDAP_INC_DIR = /usr/local/ldapsdk/include
-LDAPLIBS = -L$(LDAP_LIB_DIR) -lldapssl30 -lpam -lnsl -lpthread
+LDAPLIBS = -L$(LDAP_LIB_DIR) -lldapssl30 -lpam -lnsl -lpthread -lresolv
 
 # OpenLDAP/Umich LDAP libraries
 #LDAP_LIB_DIR = /usr/local/lib
 #LDAP_INC_DIR = /usr/local/include
-#LDAPLIBS = -L$(LDAP_LIB_DIR) -lldap -llber -lpam -lnsl -lpthread
+#LDAPLIBS = -L$(LDAP_LIB_DIR) -lldap -llber -lpam -lnsl -lpthread -lresolv
 
 #CDEFS = -O2
 WARNINGS = -ansi -D_POSIX_SOURCE -Wall -Wwrite-strings \
@@ -55,9 +55,9 @@ dummy: all
 
 install: all
 	chmod 755 pam_ldap.so.1
-	cp pam_ldap.so.1 $(SECURITY_DIR)
-	chown root $(SECURITY_DIR)/pam_ldap.so.1
-	-ln -s $(SECURITY_DIR)/pam_ldap.so.1 $(SECURITY_DIR)/pam_ldap.so
+	cp pam_ldap.so.1 $(RPM_BUILD_ROOT)$(SECURITY_DIR)
+	chown root $(RPM_BUILD_ROOT)$(SECURITY_DIR)/pam_ldap.so.1
+	-ln -s $(SECURITY_DIR)/pam_ldap.so.1 $(RPM_BUILD_ROOT)$(SECURITY_DIR)/pam_ldap.so
 
 all: dirs $(LIBSHARED) 
 
