@@ -5,6 +5,7 @@ $Id$
 
 	* default to LDAP protocol version 3
 	* documented exop in README
+	* link on Solaris with -M mapfile
 
 93	Luke Howard <lukeh@padl.com>
 

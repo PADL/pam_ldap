@@ -21,7 +21,7 @@ CPPFLAGS="$CPPFLAGS -DLDAP_REFERRALS"
 CPPFLAGS="$CPPFLAGS -D_REENTRANT"
 
 case "$target_os" in
-solaris*) pam_ldap_so_LDFLAGS="-G" ;;
+solaris*) pam_ldap_so_LDFLAGS="-M mapfile -G" ;;
 *) pam_ldap_so_LDFLAGS="--shared" ;;
 dnl "--shared" is undocumented for gcc, shouldn't this be "-shared"?
 esac
