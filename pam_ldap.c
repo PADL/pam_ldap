@@ -143,7 +143,7 @@
 #endif
 
 static char rcsid[] __UNUSED__ =
-  "$Id$";
+"$Id$";
 #if HAVE_LDAP_SET_REBIND_PROC_ARGS < 3
 static pam_ldap_session_t *global_session = 0;
 #endif
@@ -171,10 +171,11 @@ static int ssl_initialized = 0;
  * 
  * If there is a better way of doing this, let us know.
  */
-void nasty_pthread_hack (void) __attribute__ ((constructor));
+void 
+nasty_pthread_hack (void) __attribute__ ((constructor));
 
-void
-nasty_pthread_hack (void)
+     void
+       nasty_pthread_hack (void)
 {
   (void) dlopen ("libpthread.so", RTLD_LAZY);
 }
@@ -185,10 +186,11 @@ nasty_pthread_hack (void)
  * We need to keep ourselves loaded so that ssl_initialized
  * is set across PAM sessions.
  */
-void nasty_ssl_hack (void) __attribute__ ((constructor));
+void 
+nasty_ssl_hack (void) __attribute__ ((constructor));
 
-void
-nasty_ssl_hack (void)
+     void
+       nasty_ssl_hack (void)
 {
   (void) dlopen ("/lib/security/pam_ldap.so", RTLD_LAZY);
 }
@@ -199,7 +201,7 @@ static int
 i64c (int i)
 {
   const char *base64 =
-    "./01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  "./01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
   if (i < 0)
     i = 0;
   else if (i > 63)
@@ -880,7 +882,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	{
 	  _pam_drop (result->rootbinddn);
 	  syslog (LOG_WARNING,
-		  "pam_ldap: could not open secret file /etc/ldap.secret (%s)",
+	       "pam_ldap: could not open secret file /etc/ldap.secret (%s)",
 		  strerror (errno));
 	}
     }
@@ -1046,7 +1048,7 @@ _connect_anonymously (pam_ldap_session_t * session)
   else
     {
       msgid = ldap_simple_bind (session->ld,
-				session->conf->binddn, session->conf->bindpw);
+			      session->conf->binddn, session->conf->bindpw);
     }
 
   if (msgid == -1)
@@ -1116,14 +1118,14 @@ _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid)
   return ldap_simple_bind_s (ld, who, cred);
 }
 #else
-# if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
+#if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
 static int
 _rebind_proc (LDAP * ld,
 	      char **whop, char **credp, int *methodp, int freeit, void *arg)
-# else
+#else
 static int
 _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp, int freeit)
-# endif
+#endif
 {
 #if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
   pam_ldap_session_t *session = (pam_ldap_session_t *) arg;
@@ -1305,11 +1307,28 @@ _get_integer_value (LDAP * ld, LDAPMessage * e, const char *attr, int *ptr)
     {
       return PAM_SYSTEM_ERR;
     }
+  *ptr = atoi (vals[0]);
+  ldap_value_free (vals);
+
+  return PAM_SUCCESS;
+}
+
+static int
+_get_long_integer_value (LDAP * ld, LDAPMessage * e, const char *attr, long int *ptr)
+{
+  char **vals;
+
+  vals = ldap_get_values (ld, e, (char *) attr);
+  if (vals == NULL)
+    {
+      return PAM_SYSTEM_ERR;
+    }
   *ptr = atol (vals[0]);
   ldap_value_free (vals);
 
   return PAM_SUCCESS;
 }
+
 
 #ifdef notdef
 static int
@@ -1634,20 +1653,20 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
   session->info->shadow.expire = 0;
   session->info->shadow.flag = 0;
 
-  _get_integer_value (session->ld, msg, "shadowLastChange",
-		      &session->info->shadow.lstchg);
-  _get_integer_value (session->ld, msg, "shadowMin",
-		      &session->info->shadow.min);
-  _get_integer_value (session->ld, msg, "shadowMax",
-		      &session->info->shadow.max);
-  _get_integer_value (session->ld, msg, "shadowWarning",
-		      &session->info->shadow.warn);
-  _get_integer_value (session->ld, msg, "shadowInactive",
-		      &session->info->shadow.inact);
-  _get_integer_value (session->ld, msg, "shadowExpire",
-		      &session->info->shadow.expire);
-  _get_integer_value (session->ld, msg, "shadowFlag",
-		      &session->info->shadow.flag);
+  _get_long_integer_value (session->ld, msg, "shadowLastChange",
+			   &session->info->shadow.lstchg);
+  _get_long_integer_value (session->ld, msg, "shadowMin",
+			   &session->info->shadow.min);
+  _get_long_integer_value (session->ld, msg, "shadowMax",
+			   &session->info->shadow.max);
+  _get_long_integer_value (session->ld, msg, "shadowWarning",
+			   &session->info->shadow.warn);
+  _get_long_integer_value (session->ld, msg, "shadowInactive",
+			   &session->info->shadow.inact);
+  _get_long_integer_value (session->ld, msg, "shadowExpire",
+			   &session->info->shadow.expire);
+  _get_long_integer_value (session->ld, msg, "shadowFlag",
+			   &session->info->shadow.flag);
 
   ldap_msgfree (res);
 
@@ -1656,13 +1675,13 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
 
 static int
 _pam_ldap_get_session (pam_handle_t * pamh, const char *username,
-		       const char *configFile, pam_ldap_session_t ** psession)
+		     const char *configFile, pam_ldap_session_t ** psession)
 {
   pam_ldap_session_t *session;
   int rc;
 
   if (pam_get_data
-      (pamh, PADL_LDAP_SESSION_DATA, (const void **) &session) == PAM_SUCCESS)
+    (pamh, PADL_LDAP_SESSION_DATA, (const void **) &session) == PAM_SUCCESS)
     {
       /*
        * we cache the information retrieved from the LDAP server, however
@@ -2334,7 +2353,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		      else
 			{
 			  _conv_sendmsg (appconv,
-					 "LDAP Password incorrect: try again",
+				       "LDAP Password incorrect: try again",
 					 PAM_ERROR_MSG, no_warn);
 			}
 		      return rc;
@@ -2447,7 +2466,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   /* support Netscape Directory Server's password policy */
   rc = _get_password_policy (session, &policy);
   if (rc != PAM_SUCCESS)
-      return rc;
+    return rc;
 
   while ((newpass == NULL) && (tries++ < policy.password_max_failure))
     {
@@ -2618,7 +2637,8 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
   pam_ldap_session_t *session = NULL;
   char buf[1024];
   time_t currenttime;
-  int expirein = 0;		/* seconds until password expires */
+  long int currentday;
+  long int expirein = 0;	/* seconds until password expires */
   const char *configFile = NULL;
 
   for (i = 0; i < argc; i++)
@@ -2678,12 +2698,13 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 
   /* Grab the current time */
   time (&currenttime);
+  currentday = (long int) (currenttime / SECSPERDAY);
 
   /* Check shadow expire conditions */
   /* Do we have an absolute expiry date? */
   if (session->info->shadow.expire > 0)
     {
-      if (currenttime >= (session->info->shadow.expire * SECSPERDAY))
+      if (currentday >= session->info->shadow.expire)
 	{
 	  return PAM_ACCT_EXPIRED;
 	}
@@ -2696,9 +2717,9 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if ((session->info->shadow.lstchg > 0) &&
       (session->info->shadow.max > 0) && (session->info->shadow.inact > 0))
     {
-      if (currenttime >= ((session->info->shadow.lstchg +
-			   session->info->shadow.max +
-			   session->info->shadow.inact) * SECSPERDAY))
+      if (currentday >= (session->info->shadow.lstchg +
+			 session->info->shadow.max +
+			 session->info->shadow.inact))
 	{
 	  return PAM_ACCT_EXPIRED;
 	}
@@ -2707,8 +2728,8 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
   /* Our shadow information should be populated, so do some calculations */
   if ((session->info->shadow.lstchg > 0) && (session->info->shadow.max > 0))
     {
-      if (currenttime >= ((session->info->shadow.lstchg +
-			   session->info->shadow.max) * SECSPERDAY))
+      if (currentday >= (session->info->shadow.lstchg +
+			 session->info->shadow.max))
 	{
 	  session->info->password_expired = 1;
 	}
@@ -2718,7 +2739,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if (session->info->password_expired)
     {
       _conv_sendmsg (appconv,
-		     "You are required to change your LDAP password immediately.",
+	       "You are required to change your LDAP password immediately.",
 		     PAM_ERROR_MSG, no_warn);
 #ifdef LINUX
       success = PAM_AUTHTOKEN_REQD;
@@ -2753,38 +2774,27 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	   * Are we within warning period?
 	   */
 
-	  expirein = ((session->info->shadow.lstchg +
-		       session->info->shadow.max) * SECSPERDAY) - currenttime;
+	  expirein = session->info->shadow.lstchg +
+	    session->info->shadow.max - currentday;
 
-	  if ((session->info->shadow.warn * SECSPERDAY) <= expirein)
+	  if (session->info->shadow.warn <= expirein)
 	    {
 	      expirein = 0;	/* Not within warning period yet */
 	    }
 	}
       else
 	{
-	  expirein = session->info->password_expiration_time;
+	  expirein = session->info->password_expiration_time / SECSPERDAY;
 	}
 
       if (expirein > 0)
 	{
-	  if (expirein < SECSPERDAY)
-	    {
-	      snprintf (buf, sizeof buf,
-			"Your LDAP password will expire within 24 hours.");
-	      /* override no_warn */
-	      _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, 0);
-	    }
-	  else
-	    {
-	      int days = expirein / SECSPERDAY;
-	      snprintf (buf, sizeof buf,
-			"Your LDAP password will expire in %d day%s.",
-			days, (days == 1) ? "" : "s");
-	      _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
-	    }
-	  /* we set this to make sure that user can't abort a password change */
+	  snprintf (buf, sizeof buf,
+		    "Your LDAP password will expire in %d day%s.",
+		    expirein, (expirein == 1) ? "" : "s");
+	  _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
 
+	  /* we set this to make sure that user can't abort a password change */
 	  (void) pam_set_data (pamh, PADL_LDAP_AUTHTOK_DATA,
 			       (void *) strdup (username), _cleanup_data);
 	}
@@ -2830,7 +2840,8 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 
 /* static module data */
 #ifdef PAM_STATIC
-struct pam_module _modstruct = {
+struct pam_module _modstruct =
+{
   "pam_ldap",
   pam_sm_authenticate,
   pam_sm_setcred,

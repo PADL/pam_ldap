@@ -49,9 +49,9 @@ typedef struct pam_ldap_config
     char *rootbinddn;
     char *rootbindpw;
     /* SSL config states */
-#   define SSL_OFF          0
-#   define SSL_LDAPS        1
-#   define SSL_START_TLS    2
+#define SSL_OFF          0
+#define SSL_LDAPS        1
+#define SSL_START_TLS    2
     int ssl_on;
     /* SSL path */
     char *sslpath;
@@ -80,12 +80,12 @@ typedef struct pam_ldap_config
     /* restart interrupted syscalls, OpenLDAP only */
     int restart;
     /* chauthtok config states */
-#   define PASSWORD_CLEAR   0
-#   define PASSWORD_CRYPT   1
-#   define PASSWORD_MD5     2
-#   define PASSWORD_NDS     3
-#   define PASSWORD_AD      4
-#   define PASSWORD_EXOP    5
+#define PASSWORD_CLEAR   0
+#define PASSWORD_CRYPT   1
+#define PASSWORD_MD5     2
+#define PASSWORD_NDS     3
+#define PASSWORD_AD      4
+#define PASSWORD_EXOP    5
     int password_type;
     /* min uid */
     uid_t min_uid;
@@ -116,17 +116,17 @@ pam_ldap_password_policy_t;
 /* Standard Unix style shadow controls */
 typedef struct pam_ldap_shadow
   {
-    int shadowacct;			/* is shadowAccount */
-    int lstchg;         /* Date of last change.  */
-    int min;            /* Minimum number of days between changes.  */
-    int max;            /* Maximum number of days between changes.  */
-    int warn;           /* Number of days to warn user to change
-    the password.  */
-    int inact;          /* Number of days the account may be
-                                   inactive.  */
-    int expire;         /* Number of days since 1970-01-01 until
-                                   account expires.  */
-    int flag;  /* Reserved.  */
+    int shadowacct;		/* is shadowAccount */
+    long int lstchg;		/* Date of last change.  */
+    long int min;		/* Minimum number of days between changes.  */
+    long int max;		/* Maximum number of days between changes.  */
+    long int warn;		/* Number of days to warn user to change
+				   the password.  */
+    long int inact;		/* Number of days the account may be
+				   inactive.  */
+    long int expire;		/* Number of days since 1970-01-01 until
+				   account expires.  */
+    unsigned long int flag;	/* Reserved.  */
   }
 pam_ldap_shadow_t;
 
@@ -142,11 +142,11 @@ pam_ldap_shadow_t;
 #define LDAP_OPT_ON ((void *) 1)
 #endif /* LDPA_OPT_ON */
 #ifndef LDAP_OPT_OFF
-#define LDAP_OPT_OFF ((void *) 0)   
+#define LDAP_OPT_OFF ((void *) 0)
 #endif /* LDAP_OPT_OFF */
 
 /* Seconds in a day */
-#define SECSPERDAY 86400LL
+#define SECSPERDAY 86400
 
 /* Netscape per-use password attributes. Unused except for DN. */
 typedef struct pam_ldap_user_info
@@ -214,19 +214,20 @@ static void _release_user_info (pam_ldap_user_info_t **);
 static int _open_session (pam_ldap_session_t *);
 static int _connect_anonymously (pam_ldap_session_t *);
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
-static int _rebind_proc (LDAP *ld, LDAP_CONST char *url, int request, ber_int_t msgid);
+static int _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid);
 #else
-# if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
+#if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
 static int _rebind_proc (LDAP *, char **, char **, int *, int, void *);
-# else
-static int _rebind_proc(LDAP *ld, char **whop, char **credp, int *methodp, int freeit);
-# endif
+#else
+static int _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp, int freeit);
+#endif
 #endif /* OpenLDAP */
 static int _connect_as_user (pam_ldap_session_t *, const char *);
 static int _reopen (pam_ldap_session_t *);
 
 /* LDAP entry helper routines */
 static int _get_integer_value (LDAP *, LDAPMessage *, const char *, int *);
+static int _get_long_integer_value (LDAP *, LDAPMessage *, const char *, long int *);
 static int _get_string_values (LDAP *, LDAPMessage *, const char *, char ***);
 static int _has_value (char **, const char *);
 static int _host_ok (pam_ldap_session_t * session);
@@ -271,11 +272,11 @@ if (X) { \
 #endif
 
 #ifndef FALSE
- #define FALSE 0
+#define FALSE 0
 #endif
 
 #ifndef TRUE
- #define TRUE !FALSE
+#define TRUE !FALSE
 #endif
 
 /* PAM authentication routine */

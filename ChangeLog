@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+103	Luke Howard <lukeh@padl.com>
+
+	* patch from Thomas Noel to handle shadow
+	  expiry properly
+
 102	Luke Howard <lukeh@padl.com>
 
 	* define macros LDAP_OPT_{OFF,ON} if
