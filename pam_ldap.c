@@ -1028,7 +1028,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 
   fclose (fp);
 
-  if ((result->rootbinddn != NULL) && (getuid () == 0))
+  if ((result->rootbinddn != NULL) && (geteuid () == 0))
     {
       fp = fopen ("/etc/ldap.secret", "r");
       if (fp != NULL)
@@ -2725,7 +2725,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
       if (rc != PAM_SUCCESS)
 	return rc;
 
-      if (!(session->conf->rootbinddn && getuid () == 0))
+      if (!(session->conf->rootbinddn && geteuid () == 0))
 	{
 	  /* we are not root, authenticate old password */
 	  if (try_first_pass || use_first_pass)
@@ -2890,7 +2890,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 
       if (newpass != NULL)
 	{
-	  if (getuid () != 0)
+	  if (geteuid () != 0)
 	    {
 	      if (curpass != NULL && !strcmp (curpass, newpass))
 		{

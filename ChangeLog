@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+134	Luke Howard <lukeh@padl.com>
+
+	* per suggest from Bill Welliver, check for
+	  effective UID being 0, not real UID
+
 133	Luke Howard <lukeh@padl.com>
 
 	* Patch from Ed Golden for group_dn: set error
