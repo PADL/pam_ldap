@@ -1,6 +1,12 @@
 $Id$
 ===============================================================
 
+116	Luke Howard <lukeh@padl.com>
+
+	* make sure old authentication token is zeroed
+	  out before freeing (now that we are storing the
+	  old authentication token privately)
+
 115	Luke Howard <lukeh@padl.com>
 
 	* fix for updating passwords (consistent for Linux/Solaris)

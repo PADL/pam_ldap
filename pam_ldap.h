@@ -250,6 +250,7 @@ static int _host_ok (pam_ldap_session_t * session);
 static char *_get_salt (char buf[16]);
 static char *_get_md5_salt (char buf[16]);
 static void _cleanup_data (pam_handle_t *, void *, int);
+static void _cleanup_authtok_data (pam_handle_t *, void *, int);
 
 /* LDAP cover routines */
 static int _get_user_info (pam_ldap_session_t *, const char *);
