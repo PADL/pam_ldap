@@ -105,6 +105,9 @@ pam_ldap_shadow_t;
 #define LDAP_CONTROL_PWEXPIRING     "2.16.840.1.113730.3.4.5"
 #endif /* LDAP_CONTROL_PWEXPIRING */
 
+/* Seconds in a day */
+#define SECSPERDAY 86400
+
 /* Netscape per-use password attributes. Unused except for DN. */
 typedef struct pam_ldap_user_info
   {

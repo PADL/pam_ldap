@@ -1,6 +1,13 @@
 $Id$
 ===============================================================
 
+50	Luke Howard <lukeh@padl.com>
+
+    * more patches from Scott Balneaves
+    * use PAM_NEW_AUTHTOK_REQD instead of PAM_AUTHTOK_REQD
+    * return PAM_SUCCESS for pam_sm_open_session()
+    * reorganization of shadow code
+
 49	Luke Howard <lukeh@padl.com>
 
     * more patches from Scott Balneaves; now just check

@@ -1227,7 +1227,6 @@ _get_user_info (
       return PAM_BUF_ERR;
     }
 
-  /* Assume shadow controls.  Allocate shadow structure and link to session. */
   session->info->username = strdup (user);
   if (session->info->username == NULL)
     {
@@ -1252,6 +1251,7 @@ _get_user_info (
    */
   _get_string_values (session->ld, msg, "host", &session->info->hosts_allow);
 
+  /* Assume shadow controls.  Allocate shadow structure and link to session. */
   session->info->shadow.lstchg = 0;
   session->info->shadow.min = 0;
   session->info->shadow.max = 0;
@@ -1725,7 +1725,7 @@ pam_sm_open_session (
 		      const char **argv
 )
 {
-  return PAM_IGNORE;
+  return PAM_SUCCESS;
 }
 
 PAM_EXTERN int
@@ -1736,7 +1736,7 @@ pam_sm_close_session (
 		       const char **argv
 )
 {
-  return PAM_IGNORE;
+  return PAM_SUCCESS;
 }
 
 PAM_EXTERN int
@@ -1760,6 +1760,7 @@ pam_sm_chauthtok (
   char errmsg[1024];
   pam_ldap_password_policy_t policy;
   LDAPMod *mods[2], mod;
+
 
   for (i = 0; i < argc; i++)
     {
@@ -2091,6 +2092,7 @@ pam_sm_acct_mgmt (
   pam_ldap_session_t *session = NULL;
   char buf[1024];
   time_t currenttime;
+  int expirein = 0;                /* seconds until password expires */
 
   for (i = 0; i < argc; i++)
     {
@@ -2139,48 +2141,42 @@ pam_sm_acct_mgmt (
   /* Grab the current time */
   time (&currenttime);
 
-  /* Is the account expired? */
-     /* Do we have an absolute expiry date? */
-     if (session->info->shadow.expire != 0) {
-       if (currenttime > (session->info->shadow.expire * 86400))
+  /* Check shadow expire conditions */
+  /* Do we have an absolute expiry date? */
+  if (session->info->shadow.expire != 0)
+    {
+      if (currenttime >= (session->info->shadow.expire * SECSPERDAY))
+        {
+          return PAM_ACCT_EXPIRED;
+        }
+    }
+
+  /*
+   * Also check if user hasn't changed password for the inactive
+   * amount of time.  This also counts as an expired account.
+   */
+  if ((session->info->shadow.lstchg != 0) && 
+      (session->info->shadow.max != 0 ) &&
+      (session->info->shadow.inact != 0)) 
+    {
+      if (currenttime >= ((session->info->shadow.lstchg + 
+                          session->info->shadow.max +
+                          session->info->shadow.inact) * SECSPERDAY) )
         {
           return PAM_ACCT_EXPIRED;
         }
      }
 
-     /*
-      * Also check if user hasn't changed password for the inactive
-      * amount of time.  This also counts as an expired account.
-      */
-
-     if ((session->info->shadow.lstchg != 0) && 
-         (session->info->shadow.max != 0 ) &&
-         (session->info->shadow.inact != 0)) 
-       {
-         if (currenttime > ((session->info->shadow.lstchg + 
-                             session->info->shadow.max +
-                             session->info->shadow.inact) * 86400) )
-           {
-             return PAM_ACCT_EXPIRED;
-           }
-       }
-
-      /* Our shadow information should be populated, so do some calculations */
-      if ((session->info->shadow.lstchg != 0) && (session->info->shadow.max != 0))
-	{
-	  if (currenttime > ((session->info->shadow.lstchg + session->info->shadow.max) * 86400))
-	    session->info->password_expired = 1;
+  /* Our shadow information should be populated, so do some calculations */
+  if ((session->info->shadow.lstchg != 0) &&
+      (session->info->shadow.max != 0))
+    {
+      if (currenttime >= ((session->info->shadow.lstchg +
+                          session->info->shadow.max) * SECSPERDAY))
+        {
+          session->info->password_expired = 1;
 	}
-      else
-	{
-	  /* 
-	   * Our password hasn't expired yet, so fill in the time into the info
-	   * structure.
-	   */
-
-	  session->info->password_expiration_time =
-	    ((session->info->shadow.lstchg + session->info->shadow.max) * 86400) - currenttime;
-	}
+    }
 
   /* check whether the password has expired */
   if (session->info->password_expired)
@@ -2191,32 +2187,69 @@ pam_sm_acct_mgmt (
 		      PAM_ERROR_MSG,
 		      no_warn
 	);
+	success = PAM_NEW_AUTHTOK_REQD;
+/* ???? */
+/*
 #ifdef PAM_AUTHTOK_EXPIRED
       success = PAM_AUTHTOK_EXPIRED;
 #else
       success = PAM_AUTHTOKEN_REQD;
-#endif /* PAM_AUTHTOK_EXPIRED */
+#endif */ /* PAM_AUTHTOK_EXPIRED */
     }
-  else if (session->info->password_expiration_time > 0)
+
+  /*
+   * Warnings.  First, check if we've got a non-zero warning time
+   * in the shadow struct.  If so, we're a shadow account, and set
+   * things accordingly.  Otherwise, check the Netscape controls.
+   */
+
+  /*
+   * If the password's expired, no sense warning
+   */
+
+  if (!session->info->password_expired)
     {
-      if (session->info->password_expiration_time < (60 * 60 * 24))
-	{
-	  snprintf (buf, sizeof buf,
-		    "Your LDAP password will expire within 24 hours.");
-	  /* override no_warn */
-	  _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, 1);
-	}
-      else
-	{
-	  int days = session->info->password_expiration_time / (60 * 60 * 24);
-	  snprintf (buf, sizeof buf,
+      if (session->info->shadow.warn > 0) /* shadowAccount */
+        {
+          /*
+           * Are we within warning period?
+           */
+
+          expirein = ((session->info->shadow.lstchg +
+                       session->info->shadow.max) * SECSPERDAY) - 
+       	               currenttime;
+
+          if ((session->info->shadow.warn * SECSPERDAY) <= expirein)
+            {
+              expirein = 0; /* Not within warning period yet */
+            }
+        }
+      else 
+        {
+          expirein = session->info->password_expiration_time;
+        }
+
+      if (expirein > 0) 
+        {
+          if (expirein < SECSPERDAY)
+            {
+              snprintf (buf, sizeof buf,
+		        "Your LDAP password will expire within 24 hours.");
+            /* override no_warn */
+            _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, 0);
+            }
+          else
+	    {
+	      int days = expirein / SECSPERDAY;
+	      snprintf (buf, sizeof buf,
 		    "Your LDAP password will expire in %d day%s.",
 		    days, (days == 1) ? "" : "s");
-	  _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
+	      _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
+            }
 	  /* we set this to make sure that user can't abort a password change */
 	  (void) pam_set_data (pamh, PADL_LDAP_AUTHTOK_DATA, strdup (username), _cleanup_authtok_data);
-	}
-    }
+        }
+  } /* password expired */
 
   /* group auth, per Chris's pam_ldap_auth module */
   if (session->conf->groupdn != NULL)
@@ -2255,3 +2288,4 @@ struct pam_module _modstruct =
   pam_sm_chauthtok
 };
 #endif /* PAM_STATIC */
+
