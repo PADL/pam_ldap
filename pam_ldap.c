@@ -107,7 +107,7 @@
 
 #include "pam_ldap.h"
 
-#ifndef LINUX
+#ifdef SOLARIS
 #include <security/pam_appl.h>
 #define PAM_EXTERN
 #define CONST_ARG
@@ -229,6 +229,7 @@ int _alloc_config(
     result->filter = NULL;
     result->attr = NULL;
     result->getpolicy = 0;
+    result->version = LDAP_VERSION2;
 
     return PAM_SUCCESS;
 }
@@ -389,6 +390,8 @@ int _read_config(
             }
         } else if (!strcmp(k, "port")) {
             result->port = atoi(v);
+        } else if (!strcmp(k, "ldap_version")) {
+            result->version = atoi(v);
         } else if (!strcmp(k, "sslpath")) {
             CHECKPOINTER(result->sslpath = strdup(v));
         } else if (!strcmp(k, "pam_filter")) {
@@ -419,8 +422,9 @@ static int _anonymous_bind(
 {
     int rc;
 
+#ifdef LDAP_VERSION3
     if (session->bound_as_user == 0 &&
-        session->ldap_version == LDAP_VERSION3 &&
+        session->conf->version == LDAP_VERSION3 &&
         session->conf->binddn == NULL) {
         /*
 	 * if we're using the V3 protocol with a NULL bind DN,
@@ -428,15 +432,18 @@ static int _anonymous_bind(
          * previously bound as the user, then we don't need to
          * issue a BindRequest.
          */
-        rc = LDAP_SUCCESS;
+        rc = LDAP_SUCCESS;        
     } else {
+#endif        
         rc = ldap_simple_bind_s(
                                 session->ld,
                                 session->conf->binddn,
                                 session->conf->bindpw
                                 );
+#ifdef LDAP_VERSION3        
     }
-
+#endif
+    
     if (rc != LDAP_SUCCESS) {
         syslog(LOG_ERR, "pam_ldap: ldap_simple_bind_s %s", ldap_err2string(rc));
         return PAM_CRED_INSUFFICIENT;
@@ -460,7 +467,7 @@ static int _user_bind(
     rc = ldap_simple_bind_s(
                             session->ld,
                             session->info->dn,
-                            password
+                            (char *)password
                             );
 
     if (rc != LDAP_SUCCESS) {
@@ -586,11 +593,11 @@ static int _open_session(
 #endif /* SSL */
 
 #ifdef LDAP_VERSION3
-    session->ldap_version = LDAP_VERSION3;
-    if (ldap_set_option(session->ld, LDAP_OPT_PROTOCOL_VERSION, &session->ldap_version) != LDAP_SUCCESS) {
-        session->ldap_version = LDAP_VERSION2;
-    }
+    (void) ldap_set_option(session->ld, LDAP_OPT_PROTOCOL_VERSION, &session->conf->version);
+#else
+    session->ld->ld_version = session->conf->version;
 #endif /* LDAP_VERSION3 */
+
 
     return PAM_SUCCESS;
 
@@ -699,7 +706,6 @@ static int _initialize(
 
     session->ld = NULL;
     session->conf = NULL;
-    session->ldap_version = LDAP_VERSION2;
     session->info = NULL;
     session->bound_as_user = 0;
     
@@ -719,7 +725,7 @@ static int _reopen(
                             )
 {
     /* V3 lets us avoid five unneeded binds in a password change */
-    if (session->ldap_version == LDAP_VERSION2) {
+    if (session->conf->version == LDAP_VERSION2) {
         if (session->ld != NULL) {
             ldap_unbind(session->ld);
         }
@@ -1395,18 +1401,18 @@ PAM_EXTERN int pam_sm_acct_mgmt(
         goto out;
     }
 
-#ifdef LINUX
-    if (gethostbyname_r(hostname, &hbuf, buf, sizeof buf, &h, &herr) != NSS_STATUS_SUCCESS) {
-        rc = PAM_SYSTEM_ERR;
-        goto out;
-    }
-#else
+#ifdef SOLARIS
     h = gethostbyname_r(hostname, &hbuf, buf, sizeof buf, &herr);
     if (h == NULL) {
         rc = PAM_SYSTEM_ERR;
         goto out;
     }
-#endif /* LINUX */
+#else
+    if (gethostbyname_r(hostname, &hbuf, buf, sizeof buf, &h, &herr) != NSS_STATUS_SUCCESS) {
+        rc = PAM_SYSTEM_ERR;
+        goto out;
+    }
+#endif /* SOLARIS */
     
     if (_hasvalue(session->info->hosts_allow, h->h_name)) {
         rc = PAM_SUCCESS;

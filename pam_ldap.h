@@ -41,6 +41,8 @@ typedef struct
         char *attr;
         /* search for Netscape password policy */
         int getpolicy;
+        /* LDAP protocol version */
+        int version;
 } pam_ldap_config;
 
 /* Netscape global password policy attributes */
@@ -82,7 +84,6 @@ typedef struct {
 typedef struct
 {
     LDAP *ld;
-    int ldap_version;
     int bound_as_user;
     pam_ldap_config *conf;
     pam_ldap_user_info *info;
@@ -94,3 +95,4 @@ typedef struct
 
 #define PAM_SM_AUTH
 #define PAM_SM_PASSWORD
+#define PAM_SM_ACCOUNT
