@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1998 Luke Howard, PADL Software.
+ * Copyright (C) 1998-1999 PADL Software Pty Ltd.
  * This file is part of the pam_ldap library.
  * Contributed by Luke Howard, <lukeh@padl.com>, 1998.
  *

@@ -6,7 +6,7 @@ SECURITY_DIR = /usr/lib/security
 # The Mozilla LDAP libraries
 LDAP_LIB_DIR = /usr/local/ldapsdk/lib
 LDAP_INC_DIR = /usr/local/ldapsdk/include
-LDAPLIBS = -L$(LDAP_LIB_DIR) -lldap -llber -lpam -lnsl
+LDAPLIBS = -L$(LDAP_LIB_DIR) -lldapssl30 -lpam -lnsl
 
 #CDEFS = -O2
 WARNINGS = -ansi -D_POSIX_SOURCE -Wall -Wwrite-strings \
