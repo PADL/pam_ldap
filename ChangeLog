@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+126	Luke Howard <lukeh@padl.com>
+
+	* fixed rebind prototype in pam_ldap.h for new
+	  OpenLDAP client library
+
 125	Luke Howard <lukeh@padl.com>
 
 	* added ldap.conf stanza for AIX

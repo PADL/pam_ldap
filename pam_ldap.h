@@ -232,7 +232,11 @@ static void _release_user_info (pam_ldap_user_info_t **);
 static int _open_session (pam_ldap_session_t *);
 static int _connect_anonymously (pam_ldap_session_t *);
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
+#if LDAP_SET_REBIND_PROC_ARGS == 3
+static int _rebind_proc (LDAP * ld, LDAP_CONST char *url, ber_tag_t request, ber_int_t msgid, void *arg);
+#else
 static int _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid);
+#endif
 #else
 #if LDAP_SET_REBIND_PROC_ARGS == 3
 static int _rebind_proc (LDAP *, char **, char **, int *, int, void *);
