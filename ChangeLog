@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+119	Luke Howard <lukeh@padl.com>
+
+	* added --disable-ssl option to configure for Debian
+
 118	Luke Howard <lukeh@padl.com>
 
 	* in _set_ssl_options(), apply the options actually to
