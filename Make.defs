@@ -2,6 +2,7 @@
 
 # The PAM library directory
 SECURITY_DIR = /lib/security
+#SECURITY_DIR = /usr/lib
 
 # The Netscape LDAP libraries. Downloadable from
 # developer.netscape.com (for pre-compiled libraries
