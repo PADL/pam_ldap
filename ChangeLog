@@ -4,6 +4,8 @@ $Id$
 125	Luke Howard <lukeh@padl.com>
 
 	* added ldap.conf stanza for AIX
+	* added configurable checking host host attribute
+	  (pam_check_host_attr in ldap.conf)
 
 124	Luke Howard <lukeh@padl.com>
 
