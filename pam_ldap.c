@@ -624,22 +624,22 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
       else if (!strcasecmp (k, "scope"))
 	{
 	  if (!strcasecmp (v, "sub"))
-	      result->scope = LDAP_SCOPE_SUBTREE;
+	    result->scope = LDAP_SCOPE_SUBTREE;
 	  else if (!strcasecmp (v, "one"))
-	      result->scope = LDAP_SCOPE_ONELEVEL;
+	    result->scope = LDAP_SCOPE_ONELEVEL;
 	  else if (!strcasecmp (v, "base"))
-	      result->scope = LDAP_SCOPE_BASE;
+	    result->scope = LDAP_SCOPE_BASE;
 	}
       else if (!strcasecmp (k, "deref"))
 	{
 	  if (!strcasecmp (v, "never"))
-	      result->deref = LDAP_DEREF_NEVER;
+	    result->deref = LDAP_DEREF_NEVER;
 	  else if (!strcasecmp (v, "searching"))
-	      result->deref = LDAP_DEREF_SEARCHING;
+	    result->deref = LDAP_DEREF_SEARCHING;
 	  else if (!strcasecmp (v, "finding"))
-	      result->deref = LDAP_DEREF_FINDING;
+	    result->deref = LDAP_DEREF_FINDING;
 	  else if (!strcasecmp (v, "always"))
-	      result->deref = LDAP_DEREF_ALWAYS;
+	    result->deref = LDAP_DEREF_ALWAYS;
 	}
       else if (!strcasecmp (k, "port"))
 	{
@@ -658,23 +658,25 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	  char *s;
 
 	  CHECKPOINTER (passwdBase = strdup (v));
-	  s = strchr(passwdBase, '?');
-	  if (s != NULL) {
-		*s = '\0';
-		s++;
-          if (!strcasecmp (s, "sub"))
-            passwdScope = LDAP_SCOPE_SUBTREE;
-          else if (!strcasecmp (s, "one"))
-            passwdScope = LDAP_SCOPE_ONELEVEL;
-          else if (!strcasecmp (s, "base"))
-            passwdScope = LDAP_SCOPE_BASE;
-	  }
-	  s = strchr(s, '?');
-	  if (s != NULL) {
-		*s = '\0';
-		s++;
-		CHECKPOINTER (passwdFilter = strdup(s));
-	  }
+	  s = strchr (passwdBase, '?');
+	  if (s != NULL)
+	    {
+	      *s = '\0';
+	      s++;
+	      if (!strcasecmp (s, "sub"))
+		passwdScope = LDAP_SCOPE_SUBTREE;
+	      else if (!strcasecmp (s, "one"))
+		passwdScope = LDAP_SCOPE_ONELEVEL;
+	      else if (!strcasecmp (s, "base"))
+		passwdScope = LDAP_SCOPE_BASE;
+	    }
+	  s = strchr (s, '?');
+	  if (s != NULL)
+	    {
+	      *s = '\0';
+	      s++;
+	      CHECKPOINTER (passwdFilter = strdup (s));
+	    }
 	}
       else if (!strcasecmp (k, "ldap_version"))
 	{
@@ -748,13 +750,14 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	}
       else if (!strcasecmp (k, "pam_nds_passwd"))
 	{
-	  result->nds_passwd = (!strcasecmp (v, "on") || !strcasecmp (v, "yes")
-			     || !strcasecmp (v, "true"));
+	  result->nds_passwd = (!strcasecmp (v, "on")
+				|| !strcasecmp (v, "yes")
+				|| !strcasecmp (v, "true"));
 	}
       else if (!strcasecmp (k, "pam_ad_passwd"))
 	{
 	  result->ad_passwd = (!strcasecmp (v, "on") || !strcasecmp (v, "yes")
-			     || !strcasecmp (v, "true"));
+			       || !strcasecmp (v, "true"));
 	}
     }
 
@@ -762,7 +765,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
     {
       result->base = passwdBase;
       if (defaultBase != NULL)
-	  free (defaultBase);
+	free (defaultBase);
     }
   else
     {
@@ -770,24 +773,24 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
     }
 
   if (passwdFilter != NULL)
-	{
-		result->filter = passwdFilter;
-		if (defaultFilter != NULL)
-			free(defaultFilter);
-	}
+    {
+      result->filter = passwdFilter;
+      if (defaultFilter != NULL)
+	free (defaultFilter);
+    }
   else
-	{
-		result->filter = defaultFilter;
-	}
+    {
+      result->filter = defaultFilter;
+    }
 
   if (passwdScope != -1)
-	{
-		result->scope = passwdScope;
-	}
+    {
+      result->scope = passwdScope;
+    }
   else
-	{
-		result->scope = defaultScope;
-	}
+    {
+      result->scope = defaultScope;
+    }
 
   if (result->host == NULL)
     {
@@ -933,17 +936,17 @@ _open_session (pam_ldap_session_t * session)
 #endif
 
 #ifdef LDAP_OPT_REFERRALS
-  
-    (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			    session->conf->
-			    referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+
+  (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
+			  session->
+			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef LDAP_OPT_RESTART
-  
-    (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			    session->conf->
-			    restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+
+  (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
+			  session->
+			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
