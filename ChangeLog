@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+63	Luke Howard <lukeh@padl.com>
+
+    * return PAM_MAXTRIES if number of tries exceeded
+
 62	Luke Howard <lukeh@padl.com>
 
     * new spec file from Dan Berry

@@ -1891,7 +1891,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	    }			/* while */
 
 	  if (curpass == NULL)
-	    return PAM_AUTHTOK_RECOVER_ERR;
+	    return PAM_MAXTRIES; /* maximum tries exceeded */
 	}
       else
 	{
@@ -2020,7 +2020,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
     }				/* while */
 
   if (cmiscptr != NULL || newpass == NULL)
-    return PAM_AUTHTOK_RECOVER_ERR;
+    return PAM_MAXTRIES;
 
   pam_set_item (pamh, PAM_AUTHTOK, (void *) newpass);
   rc = _update_authtok (session, username, curpass, newpass, method);
