@@ -1,6 +1,14 @@
 $Id$
 ===============================================================
 
+49	Luke Howard <lukeh@padl.com>
+
+    * more patches from Scott Balneaves; now just check
+      for shadow expiry date rather than shadowAccount
+      object class
+    * added deref parameter to ldap.conf for parity with
+      OpenLDAP
+
 48	Luke Howard <lukeh@padl.com>
 
     * added patch from Scott Balneaves <sbalneav@legalaid.mb.ca>

@@ -36,6 +36,8 @@ typedef struct pam_ldap_config
     char *base;
     /* scope for searches */
     int scope;
+    /* deref policy */
+    int deref;
     /* bind dn/pw for "anonymous" authentication */
     char *binddn;
     char *bindpw;

@@ -310,6 +310,7 @@ _alloc_config (
   result = *presult;
 
   result->scope = LDAP_SCOPE_SUBTREE;
+  result->deref = LDAP_DEREF_NEVER;
   result->host = NULL;
   result->base = NULL;
   result->port = 0;
@@ -519,6 +520,25 @@ _read_config (
 	      result->scope = LDAP_SCOPE_BASE;
 	    }
 	}
+      else if (!strcasecmp (k, "deref"))
+        {
+          if (!strcasecmp (v, "never"))
+            {
+              result->deref = LDAP_DEREF_NEVER;
+            } 
+          else if (!strcasecmp (v, "searching"))  
+            {
+              result->deref = LDAP_DEREF_SEARCHING;
+            } 
+          else if (!strcasecmp (v, "finding"))
+            {
+              result->deref = LDAP_DEREF_FINDING;
+            } 
+          else if (!strcasecmp (v, "always"))
+            {
+              result->deref = LDAP_DEREF_ALWAYS;
+            }
+        }
       else if (!strcasecmp (k, "port"))
 	{
 	  result->port = atoi (v);
@@ -660,6 +680,12 @@ _open_session (
 #endif /* NETSCAPE_API_EXTENSIONS */
 #else
   session->ld->ld_version = session->conf->version;
+#endif /* LDAP_VERSION3_API */
+
+#ifdef LDAP_VERSION3_API
+  (void) ldap_set_option (session->ld, LDAP_OPT_DEREF, &session->conf->deref);
+#else
+  session->ld->ld_deref = session->conf->deref;
 #endif /* LDAP_VERSION3_API */
 
   return PAM_SUCCESS;
@@ -933,6 +959,7 @@ _get_integer_value (
   return PAM_SUCCESS;
 }
 
+#ifdef notdef
 static int
 _oc_check (
 	    LDAP * ld,
@@ -963,7 +990,6 @@ _oc_check (
   return rc;
 }
 
-#ifdef notdef
 static int
 _get_string_value (
 		    LDAP * ld,
@@ -1202,15 +1228,6 @@ _get_user_info (
     }
 
   /* Assume shadow controls.  Allocate shadow structure and link to session. */
-  session->info->shadow.shadowacct = 0;
-  session->info->shadow.lstchg = 0;
-  session->info->shadow.min = 0;
-  session->info->shadow.max = 0;
-  session->info->shadow.warn = 0;
-  session->info->shadow.inact = 0;
-  session->info->shadow.expire = 0;
-  session->info->shadow.flag = 0;
-
   session->info->username = strdup (user);
   if (session->info->username == NULL)
     {
@@ -1235,20 +1252,21 @@ _get_user_info (
    */
   _get_string_values (session->ld, msg, "host", &session->info->hosts_allow);
 
-  if (_oc_check (session->ld, msg, "shadowAccount"))
-    {
-      /*
-       * Obtain the shadow information.
-       */
-      session->info->shadow.shadowacct = 1;
-      _get_integer_value (session->ld, msg, "shadowLastChange", &session->info->shadow.lstchg);
-      _get_integer_value (session->ld, msg, "shadowMin", &session->info->shadow.min);
-      _get_integer_value (session->ld, msg, "shadowMax", &session->info->shadow.max);
-      _get_integer_value (session->ld, msg, "shadowWarning", &session->info->shadow.warn);
-      _get_integer_value (session->ld, msg, "shadowInactive", &session->info->shadow.inact);
-      _get_integer_value (session->ld, msg, "shadowExpire", &session->info->shadow.expire);
-      _get_integer_value (session->ld, msg, "shadowFlag", &session->info->shadow.flag);
-    }
+  session->info->shadow.lstchg = 0;
+  session->info->shadow.min = 0;
+  session->info->shadow.max = 0;
+  session->info->shadow.warn = 0;
+  session->info->shadow.inact = 0;
+  session->info->shadow.expire = 0;
+  session->info->shadow.flag = 0;
+
+  _get_integer_value (session->ld, msg, "shadowLastChange", &session->info->shadow.lstchg);
+  _get_integer_value (session->ld, msg, "shadowMin", &session->info->shadow.min);
+  _get_integer_value (session->ld, msg, "shadowMax", &session->info->shadow.max);
+  _get_integer_value (session->ld, msg, "shadowWarning", &session->info->shadow.warn);
+  _get_integer_value (session->ld, msg, "shadowInactive", &session->info->shadow.inact);
+  _get_integer_value (session->ld, msg, "shadowExpire", &session->info->shadow.expire);
+  _get_integer_value (session->ld, msg, "shadowFlag", &session->info->shadow.flag);
 
   ldap_msgfree (res);
 
@@ -2016,9 +2034,7 @@ pam_sm_chauthtok (
     }
   else
     {
-      if (session->info->shadow.shadowacct)
-	{
-	  /* update shadowLastChange */
+	  /* update shadowLastChange; may fail if not shadowAccount */
 	  snprintf (buf, sizeof buf, "%ld", time (NULL) / (60 * 60 * 24));
 	  strvals[0] = buf;
 	  strvals[1] = NULL;
@@ -2041,9 +2057,8 @@ pam_sm_chauthtok (
 
 	  if (rc != LDAP_SUCCESS)
 	    {
-	      syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
+	      syslog (LOG_WARNING, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
 	    }
-	}
 
       snprintf (errmsg, sizeof errmsg, "LDAP password information changed for %s", username);
       _conv_sendmsg (appconv, errmsg, PAM_TEXT_INFO, (flags & PAM_SILENT) ? 1 : 0);
@@ -2125,12 +2140,30 @@ pam_sm_acct_mgmt (
   time (&currenttime);
 
   /* Is the account expired? */
-  if (session->info->shadow.shadowacct)
-    {
-      if (currenttime > (session->info->shadow.expire * 86400))
-	{
-	  return PAM_ACCT_EXPIRED;
-	}
+     /* Do we have an absolute expiry date? */
+     if (session->info->shadow.expire != 0) {
+       if (currenttime > (session->info->shadow.expire * 86400))
+        {
+          return PAM_ACCT_EXPIRED;
+        }
+     }
+
+     /*
+      * Also check if user hasn't changed password for the inactive
+      * amount of time.  This also counts as an expired account.
+      */
+
+     if ((session->info->shadow.lstchg != 0) && 
+         (session->info->shadow.max != 0 ) &&
+         (session->info->shadow.inact != 0)) 
+       {
+         if (currenttime > ((session->info->shadow.lstchg + 
+                             session->info->shadow.max +
+                             session->info->shadow.inact) * 86400) )
+           {
+             return PAM_ACCT_EXPIRED;
+           }
+       }
 
       /* Our shadow information should be populated, so do some calculations */
       if ((session->info->shadow.lstchg != 0) && (session->info->shadow.max != 0))
@@ -2148,7 +2181,6 @@ pam_sm_acct_mgmt (
 	  session->info->password_expiration_time =
 	    ((session->info->shadow.lstchg + session->info->shadow.max) * 86400) - currenttime;
 	}
-    }
 
   /* check whether the password has expired */
   if (session->info->password_expired)
@@ -2165,7 +2197,7 @@ pam_sm_acct_mgmt (
       success = PAM_AUTHTOKEN_REQD;
 #endif /* PAM_AUTHTOK_EXPIRED */
     }
-  else if (session->info->password_expiration_time)
+  else if (session->info->password_expiration_time > 0)
     {
       if (session->info->password_expiration_time < (60 * 60 * 24))
 	{
