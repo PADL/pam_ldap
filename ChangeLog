@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+171	Luke Howard <lukeh@padl.com>
+
+	* use correct AIX link flags even if --with-ldap-dir
+	  is not specified
+
 170	Luke Howard <lukeh@padl.com>
 
 	* sync ldap.conf with nss_ldap
