@@ -487,9 +487,7 @@ static int _open_session(
     session->ld->ld_version = session->conf->version;
 #endif /* LDAP_VERSION3 */
 
-
     return PAM_SUCCESS;
-
 }
 
 static int _connect_anonymously(
@@ -857,6 +855,10 @@ static int _get_user_info(
 
     session->info->bound_as_user = 0;
 
+    /*
+     * it might be better to do a compare later, that way we can
+     * avoid fetching any attributes at all
+     */
     _get_string_values(session->ld, msg, "host", &session->info->hosts_allow);
         
     ldap_msgfree(res);
@@ -873,7 +875,7 @@ static int _pam_ldap_get_session(
     pam_ldap_session_t *session;
     int rc;
     
-    if (pam_get_data(pamh, "PADL_LDAP_SESSION_DATA", (const void **)&session) == PAM_SUCCESS) {
+    if (pam_get_data(pamh, "PADL-LDAP-SESSION-DATA", (const void **)&session) == PAM_SUCCESS) {
         /*
          * we cache the information retrieved from the LDAP server, however
          * we need to flush this if the application has changed the user on us.
@@ -903,7 +905,7 @@ static int _pam_ldap_get_session(
         return rc;
     }
 
-    rc = pam_set_data(pamh, "PADL_LDAP_SESSION_DATA", session, _pam_ldap_cleanup_session);
+    rc = pam_set_data(pamh, "PADL-LDAP-SESSION-DATA", session, _pam_ldap_cleanup_session);
     if (rc != PAM_SUCCESS) {
         _release_config(&session->conf);
         free(session);
