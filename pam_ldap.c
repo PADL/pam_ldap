@@ -1076,7 +1076,7 @@ _connect_anonymously (pam_ldap_session_t * session)
   return PAM_SUCCESS;
 }
 
-#if LDAP_API_FEATURE_X_OPENLDAP >= 20000
+#if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
 static int
 _rebind_proc (LDAP *ld, LDAP_CONST char *url, int request, ber_int_t msgid)
 {

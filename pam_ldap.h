@@ -203,7 +203,7 @@ static void _release_user_info (pam_ldap_user_info_t **);
 /* Internal LDAP session management */
 static int _open_session (pam_ldap_session_t *);
 static int _connect_anonymously (pam_ldap_session_t *);
-#if LDAP_API_FEATURE_X_OPENLDAP >= 20000
+#if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
 static int _rebind_proc (LDAP *ld, LDAP_CONST char *url, int request, ber_int_t msgid);
 #else
 # if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
