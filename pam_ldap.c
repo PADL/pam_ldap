@@ -159,15 +159,15 @@ static FILE *debugfile = NULL;
 #endif
 
 static char *policy_error_table[] = {
-	"Password Expired",
-	"Account Locked",
-	"Change After Reset",
-	"Password Modification Not Allowed",
-	"Must Supply Old Password",
-	"Insufficient Password Quality",
-	"Password Too Short",
-	"Password Too Young",
-	"Password Insufficient"
+  "Password Expired",
+  "Account Locked",
+  "Change After Reset",
+  "Password Modification Not Allowed",
+  "Must Supply Old Password",
+  "Insufficient Password Quality",
+  "Password Too Short",
+  "Password Too Young",
+  "Password Insufficient"
 };
 
 #ifdef __GNUC__
@@ -288,7 +288,7 @@ void nasty_pthread_hack (void) __attribute__ ((constructor));
 #else
 # ifdef __SUNPRO_C
 #  pragma init(nasty_pthread_hack)
-# endif	/* __SUNPRO_C */
+# endif				/* __SUNPRO_C */
 #endif /* __GNUC__ */
 
 void
@@ -308,7 +308,7 @@ void nasty_ssl_hack (void) __attribute__ ((constructor));
 #else
 # ifdef __SUNPRO_C
 #  pragma init(nasty_ssl_hack)
-# endif	/* __SUNPRO_C */
+# endif				/* __SUNPRO_C */
 #endif /* __GNUC__ */
 
 void
@@ -1164,26 +1164,27 @@ _open_session (pam_ldap_session_t * session)
 #ifdef LBER_OPT_LOG_PRINT_FILE
       if (session->conf->logdir && !debugfile)
 	{
-	  char *name = malloc(strlen(session->conf->logdir)+18);
+	  char *name = malloc (strlen (session->conf->logdir) + 18);
 	  if (name)
 	    {
-	      sprintf(name, "%s/ldap.%d", session->conf->logdir, (int)getpid());
-	      debugfile = fopen(name, "a");
-	      free(name);
+	      sprintf (name, "%s/ldap.%d", session->conf->logdir,
+		       (int) getpid ());
+	      debugfile = fopen (name, "a");
+	      free (name);
 	    }
 	  if (debugfile)
 	    {
-	      ber_set_option( NULL, LBER_OPT_LOG_PRINT_FILE, debugfile );
+	      ber_set_option (NULL, LBER_OPT_LOG_PRINT_FILE, debugfile);
 	    }
 	}
 #endif
       if (session->conf->debug)
 	{
 #ifdef LBER_OPT_DEBUG_LEVEL
-	  ber_set_option( NULL, LBER_OPT_DEBUG_LEVEL, &session->conf->debug );
+	  ber_set_option (NULL, LBER_OPT_DEBUG_LEVEL, &session->conf->debug);
 #endif /* LBER_OPT_DEBUG_LEVEL */
 #ifdef LDAP_OPT_DEBUG_LEVEL
-	  ldap_set_option( NULL, LDAP_OPT_DEBUG_LEVEL, &session->conf->debug );
+	  ldap_set_option (NULL, LDAP_OPT_DEBUG_LEVEL, &session->conf->debug);
 #endif /* LDAP_OPT_DEBUG_LEVEL */
 	}
     }
@@ -1311,14 +1312,14 @@ _open_session (pam_ldap_session_t * session)
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_REFERRALS)
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->
-			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_RESTART)
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->
-			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
@@ -1637,10 +1638,10 @@ _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp, int freeit)
  * draft-behera-ldap-password-policy-07.txt
  */
 static int
-_get_password_policy_response_value(struct berval *response_value,
-				    pam_ldap_session_t *session)
+_get_password_policy_response_value (struct berval *response_value,
+				     pam_ldap_session_t * session)
 {
-  char *opaque; 
+  char *opaque;
   BerElement *ber;
   ber_tag_t tag;
   ber_len_t len;
@@ -1650,42 +1651,41 @@ _get_password_policy_response_value(struct berval *response_value,
     return PAM_BUF_ERR;
 
   /* create a BerElement from the berval returned in the control */
-  ber = ber_init(response_value);
+  ber = ber_init (response_value);
   if (!ber)
     return PAM_BUF_ERR;
 
   /* parse the PasswordPolicyResponseValue */
-  for (tag = ber_first_element(ber, &len, &opaque); 
-       tag != LBER_DEFAULT; 
-       tag = ber_next_element(ber, &len, opaque))
+  for (tag = ber_first_element (ber, &len, &opaque);
+       tag != LBER_DEFAULT; tag = ber_next_element (ber, &len, opaque))
     {
       ber_tag_t ttag;
       ber_int_t error;
       ber_int_t value;
 
-      if (tag == 160)	    /* warning [0] CHOICE { ... } */
+      if (tag == 160)		/* warning [0] CHOICE { ... } */
 	{
-	  if (ber_skip_tag(ber, &len) == 160)
+	  if (ber_skip_tag (ber, &len) == 160)
 	    {
-	      ttag = ber_peek_tag(ber, &len);
+	      ttag = ber_peek_tag (ber, &len);
 	      switch (ttag)
 		{
 		case POLICY_WARN_TIME_BEFORE_EXPIRATION:
 		case POLICY_WARN_GRACE_LOGINS_REMAINING:
-		  if (ber_scanf(ber, "i", &value) != LBER_ERROR)
-		  {
-		    if (ttag == POLICY_WARN_TIME_BEFORE_EXPIRATION)
-		      session->info->password_expiration_time = value;
-		    else
-		      session->info->grace_logins_remaining = value;
-		    continue;
-		  }
+		  if (ber_scanf (ber, "i", &value) != LBER_ERROR)
+		    {
+		      if (ttag == POLICY_WARN_TIME_BEFORE_EXPIRATION)
+			session->info->password_expiration_time = value;
+		      else
+			session->info->grace_logins_remaining = value;
+		      continue;
+		    }
 		}
 	    }
 	}
-      else if (tag == 129)  /* error [1] ENUMERATED { ... } */
+      else if (tag == 129)	/* error [1] ENUMERATED { ... } */
 	{
-	  ttag = ber_scanf(ber, "e", &error);
+	  ttag = ber_scanf (ber, "e", &error);
 	  if (ttag != LBER_ERROR)
 	    {
 	      if (session->info->policy_error != POLICY_ERROR_SUCCESS)
@@ -1696,7 +1696,7 @@ _get_password_policy_response_value(struct berval *response_value,
       break;
     }
 
-  ber_free(ber, 1);
+  ber_free (ber, 1);
   return rc;
 }
 
@@ -1752,22 +1752,23 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
   if (session->conf->version > LDAP_VERSION2)
     {
       userpw.bv_val = session->info->userpw;
-      userpw.bv_len = (userpw.bv_val != 0) ? strlen(userpw.bv_val) : 0;
+      userpw.bv_len = (userpw.bv_val != 0) ? strlen (userpw.bv_val) : 0;
       passwd_policy_req.ldctl_oid = LDAP_CONTROL_PWPOLICY;
-      passwd_policy_req.ldctl_value.bv_val = 0; /* none */
+      passwd_policy_req.ldctl_value.bv_val = 0;	/* none */
       passwd_policy_req.ldctl_value.bv_len = 0;
-      passwd_policy_req.ldctl_iscritical = 0;   /* not critical */
+      passwd_policy_req.ldctl_iscritical = 0;	/* not critical */
       srvctrls[0] = &passwd_policy_req;
       srvctrls[1] = 0;
 
-      rc = ldap_sasl_bind(session->ld, session->info->userdn, LDAP_SASL_SIMPLE,
-			  &userpw, srvctrls, 0, &msgid);
+      rc =
+	ldap_sasl_bind (session->ld, session->info->userdn, LDAP_SASL_SIMPLE,
+			&userpw, srvctrls, 0, &msgid);
       if (rc != LDAP_SUCCESS || msgid == -1)
 	{
 	  syslog (LOG_ERR, "pam_ldap: ldap_sasl_bind %s",
 		  ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
-		  _pam_overwrite (session->info->userpw);
-		  _pam_drop (session->info->userpw);
+	  _pam_overwrite (session->info->userpw);
+	  _pam_drop (session->info->userpw);
 	  return PAM_AUTHINFO_UNAVAIL;
 	}
     }
@@ -1847,7 +1848,7 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
 	    }
 	  else if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PWPOLICY))
 	    {
-	      rc = _get_password_policy_response_value(&(*ctlp)->ldctl_value,
+	      rc = _get_password_policy_response_value (&(*ctlp)->ldctl_value,
 							session);
 	    }
 	}
@@ -3313,7 +3314,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		  cmiscptr = "Passwords must differ";
 		  newpass = NULL;
 		}
-	      else if (strlen (newpass) < (size_t)policy.password_min_length)
+	      else if (strlen (newpass) < (size_t) policy.password_min_length)
 		{
 		  cmiscptr = "Password too short";
 		  newpass = NULL;
@@ -3570,38 +3571,38 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
   /* check whether the password has expired */
   switch (session->info->policy_error)
     {
-      case POLICY_ERROR_SUCCESS:
-	break;
-      case POLICY_ERROR_PASSWORD_EXPIRED:
-	_conv_sendmsg (appconv,
-		       "You are required to change your LDAP password immediately.",
-		       PAM_ERROR_MSG, no_warn);
+    case POLICY_ERROR_SUCCESS:
+      break;
+    case POLICY_ERROR_PASSWORD_EXPIRED:
+      _conv_sendmsg (appconv,
+		     "You are required to change your LDAP password immediately.",
+		     PAM_ERROR_MSG, no_warn);
 #ifdef LINUX
-	rc = success = PAM_AUTHTOKEN_REQD;
+      rc = success = PAM_AUTHTOKEN_REQD;
 #else
-	rc = success = PAM_NEW_AUTHTOK_REQD;
+      rc = success = PAM_NEW_AUTHTOK_REQD;
 #endif /* LINUX */
-	break;
-      case POLICY_ERROR_ACCOUNT_LOCKED:
-      case POLICY_ERROR_CHANGE_AFTER_RESET:
-      case POLICY_ERROR_PASSWORD_MOD_NOT_ALLOWED:
-      case POLICY_ERROR_MUST_SUPPLY_OLD_PASSWORD:
-      case POLICY_ERROR_INSUFFICIENT_PASSWORD_QUALITY:
-      case POLICY_ERROR_PASSWORD_TOO_SHORT:
-      case POLICY_ERROR_PASSWORD_TOO_YOUNG:
-      case POLICY_ERROR_PASSWORD_INSUFFICIENT:
-	_conv_sendmsg (appconv,
-		       policy_error_table[session->info->policy_error],
-		       PAM_ERROR_MSG, no_warn);
-	rc = success = PAM_PERM_DENIED;
-	break;
-      default:
-	snprintf (buf, sizeof buf,
-		  "Unknown password policy error %d received.",
-		  session->info->policy_error);
-	_conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
-	rc = success = PAM_PERM_DENIED;
-	break;
+      break;
+    case POLICY_ERROR_ACCOUNT_LOCKED:
+    case POLICY_ERROR_CHANGE_AFTER_RESET:
+    case POLICY_ERROR_PASSWORD_MOD_NOT_ALLOWED:
+    case POLICY_ERROR_MUST_SUPPLY_OLD_PASSWORD:
+    case POLICY_ERROR_INSUFFICIENT_PASSWORD_QUALITY:
+    case POLICY_ERROR_PASSWORD_TOO_SHORT:
+    case POLICY_ERROR_PASSWORD_TOO_YOUNG:
+    case POLICY_ERROR_PASSWORD_INSUFFICIENT:
+      _conv_sendmsg (appconv,
+		     policy_error_table[session->info->policy_error],
+		     PAM_ERROR_MSG, no_warn);
+      rc = success = PAM_PERM_DENIED;
+      break;
+    default:
+      snprintf (buf, sizeof buf,
+		"Unknown password policy error %d received.",
+		session->info->policy_error);
+      _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
+      rc = success = PAM_PERM_DENIED;
+      break;
     }
 
   /*
