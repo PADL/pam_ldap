@@ -24,6 +24,9 @@ The advantages of this particular version are:
      OpenLDAP and other University of Michigan derived LDAP 
      servers
 
+   o Bundled with Debian (Potato) and RedHat (Rawhide)
+     distributions.
+
 The module builds under both Linux 2.x and Solaris 2.6.
 
 Thanks to fellow Aussie Chris Albone who wrote the initial

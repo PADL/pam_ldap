@@ -1404,6 +1404,33 @@ _update_authtok (
   if (rc != PAM_SUCCESS)
     return rc;
 
+#ifdef NDS
+  /* NDS requires that the old password is first removed */
+  strvals[0] = (char *) old_password;
+  strvals[1] = NULL;
+
+  mod.mod_vals.modv_strvals = strvals;
+  mod.mod_type = (char *) "userPassword";
+  mod.mod_op = LDAP_MOD_DELETE;
+#ifndef LDAP_VERSION3_API
+  mod.mod_next = NULL;
+#endif /* LDAP_VERSION3_API */
+
+  mods[0] = &mod;
+  mods[1] = NULL;
+
+  rc = ldap_modify_s (
+		       session->ld,
+		       session->info->userdn,
+		       mods
+    );
+  if (rc != LDAP_SUCCESS)
+    {
+      syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
+      return PAM_PERM_DENIED;
+    }
+#endif /* NDS */
+
   /* Netscape generates hashed automatically, but UMich doesn't. */
   if (session->conf->crypt_local)
     {

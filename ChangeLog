@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+40	Luke Howard <lukeh@padl.com>
+
+    * added support for NDSv8 password changing
+      (this is experimental)
+
 39	Luke Howard <lukeh@padl.com>
 
     * added some comments in Make.defs about different

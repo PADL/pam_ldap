@@ -33,6 +33,9 @@ CDEFS = -g $(WARNINGS) -D_REENTRANT -DLDAP_VERSION3_API -DSSL -DNETSCAPE_API_EXT
 # V2 API defines, for OpenLDAP 1.x.
 #CDEFS = -g $(WARNINGS) 
 
+# Define NDS for NDSv8 password change support
+#CDEFS += -DNDS
+
 # Which Make is gnu make
 MAKE = make
 #MAKE = gnumake
