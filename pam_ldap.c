@@ -212,7 +212,9 @@ i64c (int i)
 static int
 ldap_get_lderrno (LDAP * ld, char **m, char **s)
 {
+#ifdef HAVE_LDAP_GET_OPTION
   int rc;
+#endif
   int lderrno;
 
 #if defined(HAVE_LDAP_GET_OPTION) && defined(LDAP_OPT_ERROR_NUMBER)
@@ -1196,8 +1198,10 @@ _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp, int freeit)
 static int
 _connect_as_user (pam_ldap_session_t * session, const char *password)
 {
-  int rc;
-  int msgid, parserc;
+  int rc, msgid;
+#if defined(HAVE_LDAP_PARSE_RESULT) && defined(HAVE_LDAP_CONTROLS_FREE)
+  int parserc;
+#endif
   struct timeval timeout;
   LDAPMessage *result;
 #ifdef HAVE_LDAP_CONTROLS_FREE
