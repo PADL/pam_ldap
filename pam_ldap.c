@@ -590,6 +590,7 @@ static int _open_session(
         }
         rc = ldap_set_option(session->ld, LDAP_OPT_SSL, LDAP_OPT_ON);
         if (rc != LDAP_SUCCESS) {
+            syslog(LOG_ERR, "pam_ldap: ldap_set_option %s", ldap_err2string(rc));
             return PAM_SYSTEM_ERR;
         }
     }
@@ -983,7 +984,7 @@ static int _get_authtok(
         p = resp[0].resp;
         /* leak if resp[0].resp is malloced. */
         resp[0].resp = NULL;
-            } else {
+    } else {
         return PAM_CONV_ERR;
     }
 

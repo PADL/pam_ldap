@@ -1,18 +1,13 @@
-#
-# This makefile contains the make stuff for pam_ldap
-#
-
-########################################################################
-# some options... uncomment to take effect
-########################################################################
+#ident $Id$
 
 # The PAM lib directory
 SECURITY_DIR = /lib/security
-# The config file path
+
 # The Mozilla LDAP libraries
 LDAP_LIB_DIR = /usr/local/ldapsdk/lib
 LDAP_INC_DIR = /usr/local/ldapsdk/include
 LDAPLIBS = -L$(LDAP_LIB_DIR) -lldap -llber -lpam -lnsl
+
 #OPT_FLAGS = -O2
 OPT_FLAGS = -g  #-DYPLDAPD
 
