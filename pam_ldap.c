@@ -508,6 +508,7 @@ static int _open_session(
 
 #ifdef LDAP_VERSION3
     (void) ldap_set_option(session->ld, LDAP_OPT_PROTOCOL_VERSION, &session->conf->version);
+    ldap_set_rebind_proc(session->ld, _rebind_proc, (void *)session);
 #else
     session->ld->ld_version = session->conf->version;
 #endif /* LDAP_VERSION3 */
@@ -561,6 +562,39 @@ static int _connect_anonymously(
     
     return PAM_SUCCESS;
 }
+
+#ifdef LDAP_VERSION3
+static int _rebind_proc(
+                        LDAP *ld,
+                        char **whop,
+                        char **credp,
+                        int *methodp,
+                        int freeit,
+                        void *arg
+                       )
+{
+    pam_ldap_session_t *session = (pam_ldap_session_t *)arg;
+
+    if (freeit) {
+        if (*whop != NULL) free(*whop);
+        if (*credp != NULL) free(*credp);
+    }
+
+    if (session->conf->binddn)
+        *whop = session->conf->binddn;
+    else
+        *whop = NULL;
+
+
+    if (session->conf->bindpw)
+        *credp = session->conf->bindpw;
+    else
+        *credp = NULL;
+
+    *methodp = LDAP_AUTH_SIMPLE;
+    return LDAP_SUCCESS;
+}
+#endif /* LDAP_VERSION3 */
 
 static int _connect_as_user(
                             pam_ldap_session_t *session,

@@ -134,6 +134,7 @@ static void _release_user_info(pam_ldap_user_info_t **);
 /* Internal LDAP session management */
 static int _open_session(pam_ldap_session_t *);
 static int _connect_anonymously(pam_ldap_session_t *);
+static int _rebind_proc(LDAP *, char **, char **, int *, int, void *);
 static int _connect_as_user(pam_ldap_session_t *, const char *);
 static int _reopen(pam_ldap_session_t *);
 
