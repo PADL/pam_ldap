@@ -1,6 +1,14 @@
 $Id$
 ===============================================================
 
+26   Luke Howard <lukeh@padl.com>
+
+    * added commented out flags for non-V3 SDKs
+
+25   Luke Howard <lukeh@padl.com>
+
+    * removed ucblib search path
+
 24   Luke Howard <lukeh@padl.com>
 
     * compile with -D_REENTRANT and link against -lpthread
