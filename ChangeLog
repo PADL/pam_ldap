@@ -1,6 +1,12 @@
 $Id$
 ===============================================================
 
+118	Luke Howard <lukeh@padl.com>
+
+	* in _set_ssl_options(), apply the options actually to
+	  the current session not a NULL pointer (which apparently
+	  worked with ldap_pvt_tls_set_option())
+
 117	Luke Howard <lukeh@padl.com>
 
 	* do not strdup a NULL pointer if we are root
