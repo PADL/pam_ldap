@@ -786,7 +786,7 @@ _connect_anonymously (pam_ldap_session_t * session)
 
   if (msgid == -1)
     {
-      syslog (LOG_ERR, "pam_ldap: ldap_simple_bind (%s)",
+      syslog (LOG_ERR, "pam_ldap: ldap_simple_bind %s",
 	      ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
       return PAM_SERVICE_ERR;
     }
@@ -796,7 +796,7 @@ _connect_anonymously (pam_ldap_session_t * session)
   rc = ldap_result (session->ld, msgid, FALSE, &timeout, &result);
   if (rc == -1 || rc == 0)
     {
-      syslog (LOG_ERR, "pam_ldap: ldap_result (%s)",
+      syslog (LOG_ERR, "pam_ldap: ldap_result %s",
 	      ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
       return PAM_SERVICE_ERR;
     }
@@ -935,7 +935,7 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
   rc = ldap_result (session->ld, msgid, FALSE, &timeout, &result);
   if (rc == -1 || rc == 0)
     {
-      syslog (LOG_ERR, "pam_ldap: ldap_result (%s)",
+      syslog (LOG_ERR, "pam_ldap: ldap_result %s",
 	      ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
       _pam_overwrite (session->info->userpw);
       _pam_drop (session->info->userpw);

@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+64	Luke Howard <lukeh@padl.com>
+
+    * more consistent log messages (removed brackets)
+
 63	Luke Howard <lukeh@padl.com>
 
     * return PAM_MAXTRIES if number of tries exceeded
