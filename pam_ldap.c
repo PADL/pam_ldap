@@ -657,6 +657,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	{
 	  char *s;
 
+	  /* this doesn't do any escaping. XXX. */
 	  CHECKPOINTER (passwdBase = strdup (v));
 	  s = strchr (passwdBase, '?');
 	  if (s != NULL)

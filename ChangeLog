@@ -8,6 +8,8 @@ $Id$
 	* don't use ldap_perror() for logging TLS errors
 	* optionally get scope/filter from 
 	  "nss_base_passwd" value
+	* accept on/yes/true for boolean configuration
+	  keys
 
 87	Luke Howard <lukeh@padl.com>
 
