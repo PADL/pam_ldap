@@ -158,7 +158,7 @@ static int ssl_initialized = 0;
 static FILE *debugfile = NULL;
 #endif
 
-static char *policy_error_table[] = {
+static const char *policy_error_table[] = {
   "Password Expired",
   "Account Locked",
   "Change After Reset",
