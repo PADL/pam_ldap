@@ -26,5 +26,4 @@ install-data-local:
 
 uninstall-local:
 	@$(NORMAL_UNINSTALL)
-	rm $(DESTDIR)$(libdir)/libnss_ldap2.so.2
-					
+

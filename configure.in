@@ -54,18 +54,18 @@ if test -z "$with_ldap_lib"; then
   with_ldap_lib=auto
 fi
 
-if test $with_ldap_lib = auto -o $with_ldap_lib = umich -o $with_ldap_lib = openldap; then
+if test -z "$found_ldap_lib" -a \( $with_ldap_lib = auto -o $with_ldap_lib = umich -o $with_ldap_lib = openldap \); then
   AC_CHECK_LIB(lber, main)
-  AC_CHECK_LIB(ldap, main, LIBS="-lldap $LIBS" with_ldap_lib=openldap, with_ldap_lib=unknown)
+  AC_CHECK_LIB(ldap, main, LIBS="-lldap $LIBS" found_ldap_lib=yes)
 fi
-if test $with_ldap_lib = auto -o $with_ldap_lib = netscape4; then
-  AC_CHECK_LIB(ldapssl40, main, LIBS="-lldapssl40 $LIBS" with_ldap_lib=netscape4 need_pthread=true, with_ldap_lib=unknown, -lpthread)
+if test -z "$found_ldap_lib" -a \( $with_ldap_lib = auto -o $with_ldap_lib = netscape4 \); then
+  AC_CHECK_LIB(ldapssl40, main, LIBS="-lldapssl40 $LIBS" found_ldap_lib=yes need_pthread=true,, -lpthread)
 fi
-if test $with_ldap_lib = auto -o $with_ldap_lib = netscape3; then
-  AC_CHECK_LIB(ldapssl30, main, LIBS="-lldapssl30 $LIBS" with_ldap_lib=netscape3 need_pthread=true, with_ldap_lib=unknown, -lpthread)
+if test -z "$found_ldap_lib" -a \( $with_ldap_lib = auto -o $with_ldap_lib = netscape3 \); then
+  AC_CHECK_LIB(ldapssl30, main, LIBS="-lldapssl30 $LIBS" found_ldap_lib=yes need_pthread=true,, -lpthread)
 fi
 
-if test $with_ldap_lib != openldap -a $with_ldap_lib != netscape4 -a $with_ldap_lib != netscape3 ; then
+if test -z "$found_ldap_lib"; then
   AC_MSG_ERROR(could not locate a valid LDAP library)
 fi
 
