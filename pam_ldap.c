@@ -1820,16 +1820,17 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		  rc = _authenticate (session, username, curpass);
 		  if (rc != PAM_SUCCESS)
 		    {
-			if (use_first_pass)
-				{
-		      _conv_sendmsg (appconv, "LDAP Password incorrect",
-				     PAM_ERROR_MSG, no_warn);
-				}
-			else
-				{
-		      _conv_sendmsg (appconv, "LDAP Password incorrect: try again",
-				     PAM_ERROR_MSG, no_warn);
-				}
+		      if (use_first_pass)
+			{
+			  _conv_sendmsg (appconv, "LDAP Password incorrect",
+					 PAM_ERROR_MSG, no_warn);
+			}
+		      else
+			{
+			  _conv_sendmsg (appconv,
+					 "LDAP Password incorrect: try again",
+					 PAM_ERROR_MSG, no_warn);
+			}
 		      return rc;
 		    }
 		}
@@ -2183,7 +2184,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
       success = PAM_NEW_AUTHTOK_REQD;
 #endif /* LINUX */
 
-#ifdef notdef /* ?????? */
+#ifdef notdef			/* ?????? */
 #ifdef PAM_AUTHTOK_EXPIRED
       success = PAM_AUTHTOK_EXPIRED;
 #else
@@ -2241,9 +2242,9 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	      _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
 	    }
 	  /* we set this to make sure that user can't abort a password change */
-	  
-	    (void) pam_set_data (pamh, PADL_LDAP_AUTHTOK_DATA,
-				 strdup (username), _cleanup_authtok_data);
+
+	  (void) pam_set_data (pamh, PADL_LDAP_AUTHTOK_DATA,
+			       strdup (username), _cleanup_authtok_data);
 	}
     }				/* password expired */
 
