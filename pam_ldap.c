@@ -303,7 +303,7 @@ _alloc_config (
   if (*presult == NULL)
     {
       *presult = (pam_ldap_config_t *) calloc (1, sizeof (*result));
-      if (presult == NULL)
+      if (*presult == NULL)
 	return PAM_BUF_ERR;
     }
 
@@ -460,6 +460,11 @@ _read_config (
   fp = fopen ("/etc/ldap.conf", "r");
   if (fp == NULL)
     {
+      /* 
+       * According to PAM Documentation, such an error in a config file
+       * SHOULD be logged at LOG_ALERT level
+       */
+      syslog (LOG_ALERT, "pam_ldap: missing file \"ldap.conf\"");
       return PAM_SYSTEM_ERR;
     }
 
@@ -558,6 +563,11 @@ _read_config (
 
   if (result->host == NULL)
     {
+      /* 
+       * According to PAM Documentation, such an error in a config file
+       * SHOULD be logged at LOG_ALERT level
+       */
+      syslog (LOG_ALERT, "pam_ldap: missing \"host\" in file \"ldap.conf\"");
       return PAM_SYSTEM_ERR;
     }
 
@@ -1582,7 +1592,7 @@ pam_sm_authenticate (
       else if (!strcmp (argv[i], "debug"))
 	;
       else
-	syslog (LOG_DEBUG, "illegal option %s", argv[i]);
+	syslog (LOG_ERR, "illegal option %s", argv[i]);
     }
 
   rc = pam_get_user (pamh, (CONST_ARG char **) &username, "login: ");
@@ -1687,7 +1697,7 @@ pam_sm_chauthtok (
       else if (!strcmp (argv[i], "debug"))
 	;
       else
-	syslog (LOG_DEBUG, "illegal option %s", argv[i]);
+	syslog (LOG_ERR, "illegal option %s", argv[i]);
     }
 
   if (flags & PAM_SILENT)
@@ -1991,7 +2001,7 @@ pam_sm_acct_mgmt (
       else if (!strcmp (argv[i], "debug"))
 	;
       else
-	syslog (LOG_DEBUG, "illegal option %s", argv[i]);
+	syslog (LOG_ERR, "illegal option %s", argv[i]);
     }
 
 
