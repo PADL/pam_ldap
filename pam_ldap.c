@@ -171,7 +171,7 @@ nasty_pthread_hack (void)
 }
 #endif /* HAVE_LIBPTHREAD */
 
-/* i64c - convert an integer to a redix 64 character */
+/* i64c - convert an integer to a radix 64 character */
 static int
 i64c (int i)
 {
@@ -264,6 +264,16 @@ _release_config (pam_ldap_config_t ** pconfig)
       free (c->userattr);
     }
 
+  if (c->tmplattr != NULL)
+    {
+      free (c->tmplattr);
+    }
+
+  if (c->tmpluser != NULL)
+    {
+      free (c->tmpluser);
+    }
+
   if (c->groupattr != NULL)
     {
       free (c->groupattr);
@@ -308,6 +318,11 @@ _release_user_info (pam_ldap_user_info_t ** info)
       ldap_value_free ((*info)->hosts_allow);
     }
 
+  if ((*info)->tmpluser != NULL)
+    {
+      free ((void *) (*info)->tmpluser);
+    }
+
   free ((void *) (*info)->username);
   free (*info);
 
@@ -341,7 +356,7 @@ _pam_ldap_cleanup_session (pam_handle_t * pamh, void *data, int error_status)
 }
 
 static void
-_cleanup_authtok_data (pam_handle_t * pamh, void *data, int error_status)
+_cleanup_data (pam_handle_t * pamh, void *data, int error_status)
 {
   if (data != NULL)
     free (data);
@@ -604,6 +619,14 @@ _read_config (pam_ldap_config_t ** presult)
       else if (!strcasecmp (k, "pam_login_attribute"))
 	{
 	  CHECKPOINTER (result->userattr = strdup (v));
+	}
+      else if (!strcasecmp (k, "pam_template_login_attribute"))
+	{
+	  CHECKPOINTER (result->tmplattr = strdup (v));
+	}
+      else if (!strcasecmp (k, "pam_template_login"))
+	{
+	  CHECKPOINTER (result->tmpluser = strdup (v));
 	}
       else if (!strcasecmp (k, "pam_lookup_policy"))
 	{
@@ -1038,6 +1061,7 @@ _oc_check (LDAP * ld, LDAPMessage * e, const char *oc)
 
   return rc;
 }
+#endif /* notdef */
 
 static int
 _get_string_value (LDAP * ld, LDAPMessage * e, const char *attr, char **ptr)
@@ -1064,7 +1088,6 @@ _get_string_value (LDAP * ld, LDAPMessage * e, const char *attr, char **ptr)
 
   return rc;
 }
-#endif /* notdef */
 
 static int
 _get_string_values (LDAP * ld, LDAPMessage * e, const char *attr, char ***ptr)
@@ -1273,7 +1296,30 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
   _get_string_values (session->ld, msg, "host", &session->info->hosts_allow);
 
   /* get UID */
+#ifdef UID_NOBODY
+  session->info->uid = UID_NOBODY;
+#else
+  session->info->uid = (uid_t) - 2;
+#endif /* UID_NOBODY */
   _get_integer_value (session->ld, msg, "uidNumber", &session->info->uid);
+
+  /*
+   * get mapped user; some PAM host applications let PAM_USER be reset
+   * by the user (such as some of those provided with FreeBSD).
+   */
+  session->info->tmpluser = NULL;
+  if (session->conf->tmplattr != NULL)
+    {
+      if (_get_string_value (session->ld,
+			     msg,
+			     session->conf->tmplattr,
+			     &session->info->tmpluser) != PAM_SUCCESS)
+	{
+	  /* set to default template user */
+	  session->info->tmpluser =
+	    session->conf->tmpluser ? strdup (session->conf->tmpluser) : NULL;
+	}
+    }
 
   /* Assume shadow controls.  Allocate shadow structure and link to session. */
   session->info->shadow.lstchg = 0;
@@ -1311,18 +1357,21 @@ _pam_ldap_get_session (pam_handle_t * pamh,
   pam_ldap_session_t *session;
   int rc;
 
-  if (pam_get_data (pamh, PADL_LDAP_SESSION_DATA, (const void **) &session) ==
-      PAM_SUCCESS)
+  if (pam_get_data
+      (pamh, PADL_LDAP_SESSION_DATA,
+       (CONST_ARG void **) &session) == PAM_SUCCESS)
     {
       /*
        * we cache the information retrieved from the LDAP server, however
        * we need to flush this if the application has changed the user on us.
+       * For template users, note that pam_ldap may _RESET_ the username!
        */
-      if ((session->info != NULL)
-	  && (strcmp (username, session->info->username) != 0))
+      if (session->info != NULL &&
+	  (strcmp (username, session->info->username) != 0))
 	{
 	  _release_user_info (&session->info);
 	}
+
       *psession = session;
 #if HAVE_LDAP_SET_REBIND_PROC_ARGS < 3
       global_session = *psession;
@@ -1698,8 +1747,8 @@ pam_sm_authenticate (pam_handle_t * pamh,
   if (rc != PAM_SUCCESS)
     return rc;
 
-  pam_get_item (pamh, PAM_AUTHTOK, (void *) &p);
-  if (p != NULL && (use_first_pass || try_first_pass))
+  rc = pam_get_item (pamh, PAM_AUTHTOK, (CONST_ARG void **) &p);
+  if (rc == PAM_SUCCESS && (use_first_pass || try_first_pass))
     {
       rc = _authenticate (session, username, p);
       if (rc == PAM_SUCCESS || use_first_pass)
@@ -1713,11 +1762,21 @@ pam_sm_authenticate (pam_handle_t * pamh,
   if (rc != PAM_SUCCESS)
     return rc;
 
-  pam_get_item (pamh, PAM_AUTHTOK, (void *) &p);
-  if (p == NULL)
-    rc = PAM_AUTH_ERR;
-  else
+  rc = pam_get_item (pamh, PAM_AUTHTOK, (CONST_ARG void **) &p);
+  if (rc == PAM_SUCCESS)
     rc = _authenticate (session, username, p);
+
+  /*
+   * reset username to template user if necessary
+   * FreeBSD pam_radius does this in pam_sm_authenticate() but
+   * I think pam_sm_acct_mgmt() is the right place.
+   */
+  if (session->info->tmpluser != NULL)
+    {
+      /* keep original username for posterity */
+      (void) pam_set_data (pamh, PADL_LDAP_AUTH_DATA, session->info->username, _cleanup_data);
+      rc = pam_set_item (pamh, PAM_USER, (void *) session->info->tmpluser);
+    }
 
   return rc;
 }
@@ -1786,9 +1845,19 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if (rc != PAM_SUCCESS)
     return rc;
 
-  rc = pam_get_item (pamh, PAM_USER, (CONST_ARG void **) &username);
+  /*
+   * Call pam_get_data() to see whether the pre-mapped
+   * (non-template) user is available to us. If so,
+   * use that instead.
+   */
+  rc =
+    pam_get_data (pamh, PADL_LDAP_AUTH_DATA, (CONST_ARG void **) &username);
   if (rc != PAM_SUCCESS)
-    return rc;
+    {
+      rc = pam_get_user (pamh, (CONST_ARG char **) &username, "login: ");
+      if (rc != PAM_SUCCESS)
+	return rc;
+    }
 
   if (username == NULL)
     return PAM_USER_UNKNOWN;
@@ -1879,7 +1948,11 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		    {
 		      _conv_sendmsg (appconv, "Password change aborted",
 				     PAM_ERROR_MSG, no_warn);
+#ifdef PAM_AUTHTOK_RECOVERY_ERR
+		      return PAM_AUTHTOK_RECOVERY_ERR;
+#else
 		      return PAM_AUTHTOK_RECOVER_ERR;
+#endif /* PAM_AUTHTOK_RECOVERY_ERR */
 		    }
 		  else
 		    {
@@ -1891,7 +1964,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	    }			/* while */
 
 	  if (curpass == NULL)
-	    return PAM_MAXTRIES; /* maximum tries exceeded */
+	    return PAM_MAXTRIES;	/* maximum tries exceeded */
 	}
       else
 	{
@@ -1909,8 +1982,13 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   rc = pam_get_item (pamh, PAM_OLDAUTHTOK, (CONST_ARG void **) &curpass);
   if (rc != PAM_SUCCESS)
     {
-      syslog (LOG_ERR, "pam_ldap: error getting PAM_OLDAUTHTOK (%s)", pam_strerror(pamh, rc));
+      syslog (LOG_ERR, "pam_ldap: error getting PAM_OLDAUTHTOK (%s)",
+	      pam_strerror (pamh, rc));
+#ifdef PAM_AUTHTOK_RECOVERY_ERR
+      return PAM_AUTHTOK_RECOVERY_ERR;
+#else
       return PAM_AUTHTOK_RECOVER_ERR;
+#endif /* PAM_AUTHTOK_RECOVERY_ERR */
     }
 
   if (try_first_pass || use_first_pass)
@@ -1920,7 +1998,11 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	newpass = NULL;
 
       if (use_first_pass && newpass == NULL)
+#ifdef PAM_AUTHTOK_RECOVERY_ERR
+	return PAM_AUTHTOK_RECOVERY_ERR;
+#else
 	return PAM_AUTHTOK_RECOVER_ERR;
+#endif /* PAM_AUTHTOK_RECOVERY_ERR */
     }
 
   tries = 0;
@@ -1965,7 +2047,11 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	}
       else
 	{
+#ifdef PAM_AUTHTOK_RECOVERY_ERR
+	  return PAM_AUTHTOK_RECOVERY_ERR;
+#else
 	  return PAM_AUTHTOK_RECOVER_ERR;
+#endif /* PAM_AUTHTOK_RECOVERY_ERR */
 	}
 
       if (cmiscptr == NULL)
@@ -1997,7 +2083,11 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		{
 		  _conv_sendmsg (appconv, "Password change aborted",
 				 PAM_ERROR_MSG, no_warn);
+#ifdef PAM_AUTHTOK_RECOVERY_ERR
+		  return PAM_AUTHTOK_RECOVERY_ERR;
+#else
 		  return PAM_AUTHTOK_RECOVER_ERR;
+#endif /* PAM_AUTHTOK_RECOVERY_ERR */
 		}
 	    }
 	  else if (!strcmp (newpass, miscptr))
@@ -2112,9 +2202,19 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if (rc != PAM_SUCCESS)
     return rc;
 
-  rc = pam_get_item (pamh, PAM_USER, (CONST_ARG void **) &username);
+  /*
+   * Call pam_get_data() to see whether the pre-mapped
+   * (non-template) user is available to us. If so,
+   * use that instead.
+   */
+  rc =
+    pam_get_data (pamh, PADL_LDAP_AUTH_DATA, (CONST_ARG void **) &username);
   if (rc != PAM_SUCCESS)
-    return rc;
+    {
+      rc = pam_get_user (pamh, (CONST_ARG char **) &username, "login: ");
+      if (rc != PAM_SUCCESS)
+	return rc;
+    }
 
   if (username == NULL)
     return PAM_USER_UNKNOWN;
@@ -2244,7 +2344,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	  /* we set this to make sure that user can't abort a password change */
 
 	  (void) pam_set_data (pamh, PADL_LDAP_AUTHTOK_DATA,
-			       strdup (username), _cleanup_authtok_data);
+			       strdup (username), _cleanup_data);
 	}
     }				/* password expired */
 

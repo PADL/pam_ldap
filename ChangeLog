@@ -4,6 +4,11 @@ $Id$
 64	Luke Howard <lukeh@padl.com>
 
     * more consistent log messages (removed brackets)
+    * set uid to nobody if unreadable from directory
+    * support template users so users can login with
+      a name without a local POSIX account.
+    * PAM_AUTHTOK_RECOVERY_ERR (not ...RECOVER_ERR) 
+      on Soalris
 
 63	Luke Howard <lukeh@padl.com>
 

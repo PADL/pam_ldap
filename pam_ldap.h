@@ -55,6 +55,10 @@ typedef struct pam_ldap_config
     char *filter;
     /* attribute to search on; defaults to uid. Use CN with ADS? */
     char *userattr;
+    /* attribute to set PAM_USER based on */
+    char *tmplattr;
+    /* default template user */
+    char *tmpluser;
     /* search for Netscape password policy */
     int getpolicy;
     /* group name; optional, for access authorization */
@@ -138,6 +142,8 @@ typedef struct pam_ldap_user_info
     int bound_as_user;
     /* user ID */
     uid_t uid;
+    /* mapped user */
+    char *tmpluser;
     /* shadow stuff */
     pam_ldap_shadow_t shadow;
   }
@@ -162,8 +168,11 @@ pam_ldap_session_t;
 #define NEW_PASSWORD_PROMPT "New password: "
 #define AGAIN_PASSWORD_PROMPT "Re-enter new password: "
 
+/* pam_ldap session */
 #define PADL_LDAP_SESSION_DATA "PADL-LDAP-SESSION-DATA"
+/* expired user */
 #define PADL_LDAP_AUTHTOK_DATA "PADL-LDAP-AUTHTOK-DATA"
+/* non-template user (pre-mapping) */
 #define PADL_LDAP_AUTH_DATA "PADL-LDAP-AUTH-DATA"
 
 #define PASSWORD_DES 0
@@ -197,7 +206,7 @@ static int _get_string_values (LDAP *, LDAPMessage *, const char *, char ***);
 static int _has_value (char **, const char *);
 static int _host_ok (pam_ldap_session_t * session);
 static char *_get_salt (char buf[3]);
-static void _cleanup_authtok_data (pam_handle_t *, void *, int);
+static void _cleanup_data (pam_handle_t *, void *, int);
 
 /* LDAP cover routines */
 static int _get_user_info (pam_ldap_session_t *, const char *);
