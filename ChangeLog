@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+140	Luke Howard <lukeh@padl.com>
+
+	* further fix for recall #8362: do not turn
+	  all users into template users
+
 139	Luke Howard <lukeh@padl.com>
 
 	* fix for recall #8362: support template users 

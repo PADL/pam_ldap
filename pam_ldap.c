@@ -1205,14 +1205,14 @@ _open_session (pam_ldap_session_t * session)
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_REFERRALS)
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->conf->
-			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->
+			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_RESTART)
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->conf->
-			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->
+			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
@@ -2628,7 +2628,8 @@ pam_sm_authenticate (pam_handle_t * pamh,
 	{
 	  if (rc == PAM_USER_UNKNOWN && ignore_unknown_user)
 	    rc = PAM_IGNORE;
-	  if (rc == PAM_SUCCESS && session->info->tmpluser != NULL)
+	  if (rc == PAM_SUCCESS && session->info->tmpluser != NULL &&
+	      strcmp (session->info->tmpluser, session->conf->tmpluser) == 0)
 	    {
 	      (void) pam_set_data (pamh, PADL_LDAP_AUTH_DATA,
 				   (void *) strdup (session->info->username),
@@ -2657,7 +2658,8 @@ pam_sm_authenticate (pam_handle_t * pamh,
    * FreeBSD pam_radius does this in pam_sm_authenticate() but
    * I think pam_sm_acct_mgmt() is the right place.
    */
-  if (rc == PAM_SUCCESS && session->info->tmpluser != NULL)
+  if (rc == PAM_SUCCESS && session->info->tmpluser != NULL &&
+      strcmp (session->info->tmpluser, session->conf->tmpluser) == 0)
     {
       /* keep original username for posterity */
 
