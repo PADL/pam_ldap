@@ -2,7 +2,7 @@ AC_INIT(pam_ldap.c)
 AC_CANONICAL_SYSTEM
 AC_PREFIX_DEFAULT()
 
-AM_INIT_AUTOMAKE(pam_ldap, 141)
+AM_INIT_AUTOMAKE(pam_ldap, 142)
 AM_CONFIG_HEADER(config.h)
 
 AC_PROG_CC
@@ -30,11 +30,15 @@ esac
 
 case "$target_os" in
 aix*) pam_ldap_so_LDFLAGS="-bM:SRE -bnoentry -bE:\$(srcdir)/exports.aix" ;;
-solaris*) pam_ldap_so_LDFLAGS="-Wl,-M -Wl,mapfile -Wl,-G" ;;
+solaris*) pam_ldap_so_LD="/usr/ccs/bin/ld"; pam_ldap_so_LDFLAGS="-B dynamic -M mapfile -G" ;;
 darwin*) pam_ldap_so_LDFLAGS="-bundle" ;;
 *) pam_ldap_so_LDFLAGS="-shared" ;;
 esac
+
+AC_SUBST(pam_ldap_so_LD)
 AC_SUBST(pam_ldap_so_LDFLAGS)
+
+AM_CONDITIONAL(USE_NATIVE_LINKER, test -n "$pam_ldap_so_LD")
 
 if test -n "$with_ldap_dir"; then
   CPPFLAGS="$CPPFLAGS -I$with_ldap_dir/include"

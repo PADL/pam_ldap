@@ -5,6 +5,11 @@ EXTRA_DIST = COPYING.LIB CVSVersionInfo.txt ChangeLog README \
 pam_ldap_so_SOURCES = pam_ldap.c pam_ldap.h md5.c md5.h
 pam_ldap_so_LDFLAGS = @pam_ldap_so_LDFLAGS@
 
+if USE_NATIVE_LINKER
+LINK = $(pam_ldap_so_LD) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+else
+LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+endif
 
 install-exec-local: pam_ldap.so
 	@$(NORMAL_INSTALL)

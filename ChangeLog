@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+142	Luke Howard <lukeh@padl.com>
+
+	* use native linker on Solaris
+
 141	Luke Howard <lukeh@padl.com>
 
 	* support for headers in /usr/include/pam (Darwin)
