@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+73	Luke Howard <lukeh@padl.com>
+
+	* added support for OpenLDAP start TLS, from
+	  Alex Schlessinger <alex@hq.workspot.com>
+
 72	Luke Howard <lukeh@padl.com>
 
 	* added nasty_ssl_hack() constructor; this

@@ -798,6 +798,16 @@ _open_session (pam_ldap_session_t * session)
   session->ld->ld_deref = session->conf->deref;
 #endif
 
+#ifdef HAVE_LDAP_START_TLS_S 
+
+   if (session->conf->ssl_on)
+   {
+      if (ldap_start_tls_s( session->ld, NULL, NULL ) != LDAP_SUCCESS)
+         ldap_perror(session->ld,"ldap_start_tls");
+   }
+
+#endif
+
   return PAM_SUCCESS;
 }
 
