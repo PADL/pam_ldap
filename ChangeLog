@@ -4,6 +4,10 @@ $Id$
 149	Luke Howard <lukeh@padl.com>
 
 	* OS X build fix
+	* alias for RACF password changing
+	* use LDAP_MOD_ADD when changing NDS passwords rather
+	  than LDAP_MOD_REPLACE; NDS documentation indicates
+	  that this should work, and this is required for RACF.
 
 148	Luke Howard <lukeh@padl.com>
 

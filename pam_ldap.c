@@ -2409,7 +2409,7 @@ _update_authtok (pam_ldap_session_t * session,
       break;
 
     case PASSWORD_CLEAR_REMOVE_OLD:
-      /* NDS/RACF requires that the old password is first removed */
+      /* NDSrequires that the old password is first removed */
       strvalsold[0] = (char *) old_password;
       strvalsold[1] = NULL;
       strvalsnew[0] = (char *) new_password;
@@ -2421,7 +2421,7 @@ _update_authtok (pam_ldap_session_t * session,
 
       mod2.mod_vals.modv_strvals = strvalsnew;
       mod2.mod_type = (char *) "userPassword";
-      mod2.mod_op = LDAP_MOD_REPLACE;
+      mod2.mod_op = LDAP_MOD_ADD;
 
       mods[0] = &mod;
       mods[1] = &mod2;
