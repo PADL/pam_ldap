@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+94 	Luke Howard <lukeh@padl.com>
+
+	* default to LDAP protocol version 3
+	* documented exop in README
+
 93	Luke Howard <lukeh@padl.com>
 
 	* made PAM_CLEAR the default for pam_password,

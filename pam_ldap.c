@@ -417,7 +417,11 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->groupattr = NULL;
   result->groupdn = NULL;
   result->getpolicy = 0;
+#ifdef LDAP_VERSION3
+  result->version = LDAP_VERSION3;
+#else
   result->version = LDAP_VERSION2;
+#endif /* LDAP_VERSION2 */
   result->timelimit = LDAP_NO_LIMIT;
   result->bind_timelimit = 10;
   result->referrals = 1;

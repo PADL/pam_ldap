@@ -126,7 +126,7 @@ pam_crypt options don't seem to work anymore. Why?
 These have been replaced with the pam_password
 attribute, which takes the values:
 
-pam_password [clear|crypt|md5|nds|ad]
+pam_password [clear|crypt|md5|nds|ad|exop]
 
 clear -- send the new password in cleartext to
          the server. Use with Netscape
@@ -143,6 +143,19 @@ nds   -- do the right thing for updating
 
 ad    -- do the right thing for updating
          Active Directory passwords
+
+exop  -- use the password change extended
+         operation, used by OpenLDAP
+
+Q: Connecting to my LDAPv2 server used to 
+work, but doesn't anymore. Why?
+LDAPv3 is now the default protocol. To
+use LDAPv2, if your client library doesn't
+fall back automatically, set
+
+ldap_version 2
+
+in /etc/ldap.conf.
 
 SUPPORT
 =======
