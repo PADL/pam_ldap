@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+122	Luke Howard <lukeh@padl.com>
+
+	* make buildable with Sun's C compiler
+
 121	Luke Howard <lukeh@padl.com>
 
 	* escape username only, not entire filter

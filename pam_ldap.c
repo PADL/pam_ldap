@@ -154,11 +154,19 @@ static int pam_debug_level __UNUSED__ = 0;
 static int ssl_initialized = 0;
 #endif
 
+#ifdef __GNUC__
 #define DEBUG_MSG(level, fmt, args...)		\
 	do {					\
 		if (level >= pam_debug_level)	\
 			syslog(LOG_DEBUG, "%s:%i " fmt , __FUNCTION__ , __LINE__ , ## args); \
 	} while (0)
+#else
+#define DEBUG_MSG(level, fmt, ...)            \
+      do {                                    \
+              if (level >= pam_debug_level)   \
+                      syslog(LOG_DEBUG, "%s:%i " fmt , __FUNCTION__ , __LINE__ , __VA_ARGS__); \
+      } while (0)
+#endif /* __GNUC__ */
 
 static int i64c (int i);
 
@@ -248,7 +256,13 @@ static int _conv_sendmsg (struct pam_conv *aconv,
  * 
  * If there is a better way of doing this, let us know.
  */
+#ifdef __GNUC__
 void nasty_pthread_hack (void) __attribute__ ((constructor));
+#else
+# ifdef __SUNPRO_C
+#  pragma init(nasty_pthread_hack)
+# endif				/* __SUNPRO_C */
+#endif /* __GNUC__ */
 
 void
 nasty_pthread_hack (void)
@@ -262,7 +276,13 @@ nasty_pthread_hack (void)
  * We need to keep ourselves loaded so that ssl_initialized
  * is set across PAM sessions.
  */
+#ifdef __GNUC__
 void nasty_ssl_hack (void) __attribute__ ((constructor));
+#else
+# ifdef __SUNPRO_C
+#  pragma init(nasty_ssl_hack)
+# endif				/* __SUNPRO_C */
+#endif /* __GNUC__ */
 
 void
 nasty_ssl_hack (void)
@@ -1140,14 +1160,14 @@ _open_session (pam_ldap_session_t * session)
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_REFERRALS)
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->conf->
-			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->
+			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_RESTART)
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->conf->
-			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->
+			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
