@@ -1771,7 +1771,7 @@ pam_sm_authenticate (pam_handle_t * pamh,
    * FreeBSD pam_radius does this in pam_sm_authenticate() but
    * I think pam_sm_acct_mgmt() is the right place.
    */
-  if (session->info->tmpluser != NULL)
+  if (rc == PAM_SUCCESS && session->info->tmpluser != NULL)
     {
       /* keep original username for posterity */
       (void) pam_set_data (pamh, PADL_LDAP_AUTH_DATA, session->info->username, _cleanup_data);

@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+67	Luke Howard <lukeh@padl.com>
+
+    * check _authenticate() return code before setting
+      template user
+
 66	Luke Howard <lukeh@padl.com>
 
     * ypldapd locator support is now a configure option
