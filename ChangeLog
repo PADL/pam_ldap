@@ -4,6 +4,7 @@ $Id$
 141	Luke Howard <lukeh@padl.com>
 
 	* support for headers in /usr/include/pam (Darwin)
+	* integrated fix for BUG#79
 
 140	Luke Howard <lukeh@padl.com>
 

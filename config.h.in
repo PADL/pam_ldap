@@ -42,6 +42,9 @@
 /* Define if you have the ldap_pvt_tls_set_option function.  */
 #undef HAVE_LDAP_PVT_TLS_SET_OPTION
 
+/* Define if you have the ldap_set_lderrno function.  */
+#undef HAVE_LDAP_SET_LDERRNO
+
 /* Define if you have the ldap_set_option function.  */
 #undef HAVE_LDAP_SET_OPTION
 

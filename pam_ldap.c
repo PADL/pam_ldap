@@ -173,6 +173,9 @@ static int i64c (int i);
 #ifndef HAVE_LDAP_GET_LDERRNO
 static int ldap_get_lderrno (LDAP * ld, char **m, char **s);
 #endif
+#ifndef HAVE_LDAP_SET_LDERRNO
+static int ldap_set_lderrno (LDAP * ld, int e, const char *m, const char *s);
+#endif
 
 static void _release_config (pam_ldap_config_t ** pconfig);
 static void _release_user_info (pam_ldap_user_info_t ** info);
@@ -332,7 +335,7 @@ ldap_get_lderrno (LDAP * ld, char **m, char **s)
   if (s != NULL)
     {
 #if defined(HAVE_LDAP_GET_OPTION) && defined(LDAP_OPT_ERROR_STRING)
-      rc = ldap_get_option (ld, LDAP_OPT_ERROR_STRING, &s);
+      rc = ldap_get_option (ld, LDAP_OPT_ERROR_STRING, s);
       if (rc != LDAP_SUCCESS)
 	return rc;
 #else
@@ -340,12 +343,61 @@ ldap_get_lderrno (LDAP * ld, char **m, char **s)
 #endif
     }
 
-  if (m != NULL)
+  if (s != NULL)
     {
-      *m = NULL;
+#if defined(HAVE_LDAP_GET_OPTION) && defined(LDAP_OPT_MATCHED_DN)
+      rc = ldap_get_option (ld, LDAP_OPT_MATCHED_DN, m);
+      if (rc != LDAP_SUCCESS)
+	return rc;
+#else
+      *m = ld->ld_matched;
+#endif
     }
 
   return lderrno;
+}
+#endif
+
+#ifndef HAVE_LDAP_SET_LDERRNO
+static int
+ldap_set_lderrno (LDAP * ld, int lderrno, const char *m, const char *s)
+{
+#ifdef HAVE_LDAP_SET_OPTION
+  int rc;
+#endif
+
+#if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_ERROR_NUMBER)
+  /* is this needed? */
+  rc = ldap_set_option (ld, LDAP_OPT_ERROR_NUMBER, &lderrno);
+  if (rc != LDAP_SUCCESS)
+    return rc;
+#else
+  ld->ld_errno = lderrno;
+#endif
+
+  if (s != NULL)
+    {
+#if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_ERROR_STRING)
+      rc = ldap_set_option (ld, LDAP_OPT_ERROR_STRING, s);
+      if (rc != LDAP_SUCCESS)
+	return rc;
+#else
+      (*ld)->ld_error = s;
+#endif
+    }
+
+  if (m != NULL)
+    {
+#if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_MATCHED_DN)
+      rc = ldap_set_option (ld, LDAP_OPT_MATCHED_DN, m);
+      if (rc != LDAP_SUCCESS)
+	return rc;
+#else
+      (*ld)->ld_matched = m;
+#endif
+    }
+
+  return LDAP_SUCCESS;
 }
 #endif
 
@@ -1205,14 +1257,14 @@ _open_session (pam_ldap_session_t * session)
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_REFERRALS)
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->
-			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_RESTART)
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->
-			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
@@ -2501,6 +2553,12 @@ _update_authtok (pam_ldap_session_t * session,
 	{
 	  syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s",
 		  ldap_err2string (rc));
+	  rc = ldap_set_lderrno (session->ld, rc, NULL, NULL);
+	  if (rc != LDAP_SUCCESS)
+	    {
+	      syslog (LOG_ERR, "pam_ldap: ldap_set_lderrno %s",
+		      ldap_err2string (rc));
+	    }
 	  rc = PAM_PERM_DENIED;
 	}
       else
