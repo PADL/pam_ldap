@@ -109,6 +109,7 @@ typedef struct pam_ldap_user_info {
 typedef struct pam_ldap_session
 {
     LDAP *ld;
+    int ssl_initialized;
     pam_ldap_config_t *conf;
     pam_ldap_user_info_t *info;
 } pam_ldap_session_t;

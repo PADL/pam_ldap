@@ -485,12 +485,13 @@ static int _open_session(
 #ifdef SSL
     int rc;
 
-    if (session->conf->ssl_on) {
+    if (session->conf->ssl_on && session->ssl_initialized == 0) {
         rc = ldapssl_client_init(session->conf->sslpath, NULL);
         if (rc != LDAP_SUCCESS) {
             syslog(LOG_ERR, "pam_ldap: ldapssl_client_init %s", ldap_err2string(rc));
             return PAM_SYSTEM_ERR;
         }
+        session->ssl_initialized = 1;
     }
 #endif /* SSL */
 
@@ -1003,6 +1004,7 @@ static int _pam_ldap_get_session(
     session->ld = NULL;
     session->conf = NULL;
     session->info = NULL;
+    session->ssl_initialized = 0;
    
 #ifdef YPLDAPD
     rc = _ypldapd_read_config(&session->conf);
