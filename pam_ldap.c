@@ -798,7 +798,7 @@ static int _get_password_policy(
     }
 
     if (psession == NULL) {
-        _release_session(psession);
+        _release_session(&session);
     }
 
     return PAM_SUCCESS;
@@ -855,7 +855,7 @@ out:
     return rc;
 }
 
-static int _change_password(
+static int _update_authtok(
                                      char *user,
                                      char *old_password,
                                      char *new_password,
@@ -927,7 +927,6 @@ static int _change_password(
     } else {
         rc = PAM_SUCCESS;
     }
-        
 
 out:
     if (psession == NULL) {
@@ -937,7 +936,7 @@ out:
     return rc;        
 }    
 
-static int _set_auth_tok(
+static int _get_authtok(
                          pam_handle_t *pamh,
                          int flags,
                          int first
@@ -985,7 +984,7 @@ static int _set_auth_tok(
     return PAM_SUCCESS;
 }
 
-static int conv_sendmsg(
+static int _conv_sendmsg(
                         struct pam_conv *aconv,
                         const char *message,
                         int style,
@@ -1051,7 +1050,7 @@ PAM_EXTERN int pam_sm_authenticate(
         }
     }
 
-    rc = _set_auth_tok(pamh, flags, (p == NULL) ? 1 : 0);
+    rc = _get_authtok(pamh, flags, (p == NULL) ? 1 : 0);
     if (rc != PAM_SUCCESS) {
         goto out;
     }
@@ -1131,10 +1130,10 @@ PAM_EXTERN int pam_sm_chauthtok(
         if (pam_get_item(pamh, PAM_OLDAUTHTOK, (CONST_ARG void **)&curpass) == PAM_SUCCESS) {
             rc = _authenticate(usrname, curpass, &session);
             if (use_first_pass && rc != PAM_SUCCESS) {
-                conv_sendmsg(appconv, "LDAP Password incorrect", PAM_ERROR_MSG, no_warn);
+                _conv_sendmsg(appconv, "LDAP Password incorrect", PAM_ERROR_MSG, no_warn);
                 goto out;
             } else {
-                conv_sendmsg(appconv, "LDAP Password incorrect: try again", PAM_ERROR_MSG, no_warn);
+                _conv_sendmsg(appconv, "LDAP Password incorrect: try again", PAM_ERROR_MSG, no_warn);
             }
         } else {
             curpass = NULL;
@@ -1179,11 +1178,11 @@ PAM_EXTERN int pam_sm_chauthtok(
             }
             curpass = NULL;
             if (abortme) {
-                conv_sendmsg(appconv, "Password change aborted", PAM_ERROR_MSG, no_warn);
+                _conv_sendmsg(appconv, "Password change aborted", PAM_ERROR_MSG, no_warn);
                 rc = PAM_AUTHTOK_ERR;
                 goto out;
             } else {
-                conv_sendmsg(appconv, "LDAP Password incorrect: try again", PAM_ERROR_MSG, no_warn);
+                _conv_sendmsg(appconv, "LDAP Password incorrect: try again", PAM_ERROR_MSG, no_warn);
             }
         }
     }
@@ -1270,7 +1269,7 @@ PAM_EXTERN int pam_sm_chauthtok(
                 miscptr = NULL;
             }
             if (miscptr == NULL) {
-                conv_sendmsg(appconv, "Password change aborted", PAM_ERROR_MSG, no_warn);
+                _conv_sendmsg(appconv, "Password change aborted", PAM_ERROR_MSG, no_warn);
                 rc = PAM_AUTHTOK_ERR;
                 goto out;
             }
@@ -1278,11 +1277,11 @@ PAM_EXTERN int pam_sm_chauthtok(
                 miscptr = NULL;
                 break;
             }
-            conv_sendmsg(appconv, "You must enter the same password", PAM_ERROR_MSG, no_warn);
+            _conv_sendmsg(appconv, "You must enter the same password", PAM_ERROR_MSG, no_warn);
             miscptr = NULL;
             newpass = NULL;
         } else {
-            conv_sendmsg(appconv, cmiscptr, PAM_ERROR_MSG, no_warn);
+            _conv_sendmsg(appconv, cmiscptr, PAM_ERROR_MSG, no_warn);
             cmiscptr = NULL;
             newpass = NULL;
         }
@@ -1294,7 +1293,7 @@ PAM_EXTERN int pam_sm_chauthtok(
     }
 
     pam_set_item(pamh, PAM_AUTHTOK, (void *)newpass);
-    rc = _change_password(usrname, curpass, newpass, &session);
+    rc = _update_authtok(usrname, curpass, newpass, &session);
     if (rc != PAM_SUCCESS) {
         int lderr;
         char *reason;
@@ -1310,10 +1309,10 @@ PAM_EXTERN int pam_sm_chauthtok(
         } else {
             snprintf(errmsg, sizeof errmsg, "LDAP password information update failed: %s", ldap_err2string(lderr));
         }        
-        conv_sendmsg(appconv, errmsg, PAM_ERROR_MSG, no_warn);
+        _conv_sendmsg(appconv, errmsg, PAM_ERROR_MSG, no_warn);
     } else {
         snprintf(errmsg, sizeof errmsg, "LDAP password information changed for %s", usrname);
-        conv_sendmsg(appconv, errmsg, PAM_TEXT_INFO, (flags & PAM_SILENT) ? 1 : 0);
+        _conv_sendmsg(appconv, errmsg, PAM_TEXT_INFO, (flags & PAM_SILENT) ? 1 : 0);
     }                    
 
 out:
