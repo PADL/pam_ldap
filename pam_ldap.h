@@ -2,53 +2,56 @@
 typedef struct
 {
         /* space delimited list of servers */
-        char *plc_host;
+        char *host;
         /* port, expected to be common to all servers */
-        int plc_port;
+        int port;
         /* base DN, eg. dc=gnu,dc=org */
-        char *plc_base;
+        char *base;
         /* scope for searches */
-        int plc_scope;
-        char *plc_binddn;
-        char *plc_bindpw;        
-        char *plc_sslpath;
-        char *plc_filter;
+        int scope;
+        char *binddn;
+        char *bindpw;        
+        char *sslpath;
+        char *filter;
         /* defaults to uid */
-        char *plc_attr;
+        char *attr;
         /* search for password policy */
-        int plc_getpolicy;
+        int getpolicy;
 } pam_ldap_config;
 
 typedef struct
 {
-    int passwordChange;
-    int passwordCheckSyntax;
-    int passwordMinLength;
-    int passwordExp;
-    int passwordMaxAge;
-    int passwordWarning;
-    int passwordKeepHistory;
-    int passwordInHistory;
-    int passwordLockout;
-    int passwordMaxFailure;
-    int passwordUnlock;
-    int passwordLockoutDuration;
-    int passwordResetDuration;
+    int password_change;
+    int password_check_syntax;
+    int password_min_length;
+    int password_exp;
+    int password_max_age;
+    int password_warning;
+    int password_keep_history;
+    int password_in_history;
+    int password_lockout;
+    int password_max_failure;
+    int password_unlock;
+    int password_lockout_duration;
+    int password_reset_duration;
 } pam_ldap_password_policy;
 
 typedef struct {
-    int passwordExpirationTime;
-    int passwordExpWarned;
-    int passwordRetryCount;
-    int retryCountResetTime;
-    int accountUnlockTime;
-} pam_ldap_password_info;
+    char *dn;
+    int password_expiration_time;
+    int password_exp_warned;
+    int password_retry_count;
+    int retry_count_reset_time;
+    int account_unlock_time;
+} pam_ldap_user_info;
 
 typedef struct
 {
-    LDAP *pls_ld;
-    int pls_ldapversion;
-    pam_ldap_config *pls_conf;
+    LDAP *ld;
+    int ldap_version;
+    int bound_as_user;
+    pam_ldap_config *conf;
+    pam_ldap_user_info *info;
 } pam_ldap_session;
 
 #define OLD_PASSWORD_PROMPT "Enter login(LDAP) password: "
