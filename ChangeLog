@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+89	Luke Howard <lukeh@padl.com>
+
+	* support for connection timeout in Netscape SDK
+
 88	Luke Howard <lukeh@padl.com>
 
 	* support for "referrals" and "restart" in
