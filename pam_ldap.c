@@ -906,11 +906,9 @@ _open_session (pam_ldap_session_t * session)
 #endif
 
 #ifdef HAVE_LDAPSSL_INIT
-  int rc;
-
   if (session->conf->ssl_on == SSL_LDAPS && ssl_initialized == 0)
     {
-      rc = ldapssl_client_init (session->conf->sslpath, NULL);
+      int rc = ldapssl_client_init (session->conf->sslpath, NULL);
       if (rc != LDAP_SUCCESS)
 	{
 	  syslog (LOG_ERR, "pam_ldap: ldapssl_client_init %s",
@@ -931,7 +929,7 @@ _open_session (pam_ldap_session_t * session)
 #ifdef HAVE_LDAP_INITIALIZE
       if (session->conf->uri != NULL)
 	{
-	  rc = ldap_initialize (&session->ld, session->conf->uri);
+	  int rc = ldap_initialize (&session->ld, session->conf->uri);
 	  if (rc != LDAP_SUCCESS)
 	    {
 	      syslog (LOG_ERR, "pam_ldap: ldap_initialize %s",
