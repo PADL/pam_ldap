@@ -39,7 +39,8 @@ typedef struct pam_ldap_config
         /* bind dn/pw for "anonymous" authentication */
         char *binddn;
         char *bindpw;
-        /* SSL path; haven't figured out SSL yet */
+        int ssl_on;
+        /* SSL path */
         char *sslpath;
         /* filter to AND with uid=%s */
         char *filter;

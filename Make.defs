@@ -20,7 +20,7 @@ WARNINGS = -ansi -D_POSIX_SOURCE -Wall -Wwrite-strings \
 	-Wnested-externs -Winline -Wshadow -pedantic
 
 # V3 API defines
-CDEFS = -g $(WARNINGS) -D_REENTRANT -DLDAP_VERSION3_API #-DYPLDAPD
+CDEFS = -g $(WARNINGS) -D_REENTRANT -DLDAP_VERSION3_API -DSSL #-DYPLDAPD
 # V2 API defines
 #CDEFS = -g $(WARNINGS) 
 

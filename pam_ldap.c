@@ -256,9 +256,10 @@ static int _alloc_config(
     result->scope = LDAP_SCOPE_SUBTREE;
     result->host = NULL;
     result->base = NULL;
-    result->port = LDAP_PORT;
+    result->port = 0;
     result->binddn = NULL;
     result->bindpw = NULL;
+    result->ssl_on = 0;
     result->sslpath = NULL;
     result->filter = NULL;
     result->userattr = NULL;
@@ -401,11 +402,11 @@ static int _read_config(
             continue;
 
         k = b;
-        v = strchr(k, ' ');
-        if (v == NULL)
-            v = strchr(k, '\t');
+        v = k;
+	while (*v != '\0' && *v != ' ' && *v != '\t')
+		v++;
 
-        if (v == NULL)
+	if (*v == '\0')
             continue;
 
         *(v++) = '\0';
@@ -434,6 +435,8 @@ static int _read_config(
             result->version = atoi(v);
         } else if (!strcasecmp(k, "sslpath")) {
             CHECKPOINTER(result->sslpath = strdup(v));
+        } else if (!strcasecmp(k, "ssl")) {
+            result->ssl_on = !strcasecmp(v, "yes");
         } else if (!strcasecmp(k, "pam_filter")) {
             CHECKPOINTER(result->filter = strdup(v));
         } else if (!strcasecmp(k, "pam_login_attribute")) {
@@ -460,7 +463,16 @@ static int _read_config(
     if (result->groupattr == NULL) {
         CHECKPOINTER(result->groupattr = strdup("uniquemember"));
     }
-    
+
+    if (result->port == 0) {
+#ifdef SSL
+        if (result->ssl_on) {
+            result->port = LDAPS_PORT;
+        } else 
+#endif /* SSL */ 
+            result->port = LDAP_PORT;
+    }
+
     fclose(fp);
         
     return PAM_SUCCESS;
@@ -472,6 +484,14 @@ static int _open_session(
 {
 #ifdef SSL
     int rc;
+
+    if (session->conf->ssl_on) {
+        rc = ldapssl_client_init(session->conf->sslpath, NULL);
+        if (rc != LDAP_SUCCESS) {
+            syslog(LOG_ERR, "pam_ldap: ldapssl_client_init %s", ldap_err2string(rc));
+            return PAM_SYSTEM_ERR;
+        }
+    }
 #endif /* SSL */
 
 #ifndef LDAP_VERSION3_API
@@ -491,12 +511,7 @@ static int _open_session(
 
 #ifdef SSL
     /* haven't tested this, I don't know how the SSL API works. */
-    if (session->conf->sslpath != NULL) {
-        rc = ldapssl_client_init(session->conf->sslpath, NULL);
-        if (rc != LDAP_SUCCESS) {
-            syslog(LOG_ERR, "pam_ldap: ldapssl_client_init %s", ldap_err2string(rc));
-            return PAM_SYSTEM_ERR;
-        }
+    if (session->conf->ssl_on) {
         rc = ldapssl_install_routines(session->ld);
         if (rc != LDAP_SUCCESS) {
             syslog(LOG_ERR, "pam_ldap: ldapssl_install_routines %s", ldap_err2string(rc));

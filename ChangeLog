@@ -1,6 +1,12 @@
 $Id$
 ===============================================================
 
+28   Luke Howard <lukeh@padl.com>
+
+    * added patch from gero@faveve.uni-stuttgart.de for
+      parsing of ldap.conf with tabs
+    * various patches hopefully to get SSL to work
+
 27   Luke Howard <lukeh@padl.com>
 
     * fix for recall 256: free() smasher 
