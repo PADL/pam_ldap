@@ -536,7 +536,9 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 {
   /* this is the same configuration file as nss_ldap */
   FILE *fp;
-  char b[BUFSIZ], *defaultBase, *passwdBase;
+  char b[BUFSIZ];
+  char *defaultBase, *passwdBase, *defaultFilter, *passwdFilter;
+  int defaultScope, passwdScope;
   pam_ldap_config_t *result;
   char errmsg[MAXPATHLEN + 25];
 
@@ -566,7 +568,12 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
     }
 
   defaultBase = NULL;
+  defaultFilter = NULL;
+  defaultScope = LDAP_SCOPE_SUBTREE;
+
   passwdBase = NULL;
+  passwdFilter = NULL;
+  passwdScope = -1;
 
   while (fgets (b, sizeof (b), fp) != NULL)
     {
@@ -617,36 +624,22 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
       else if (!strcasecmp (k, "scope"))
 	{
 	  if (!strcasecmp (v, "sub"))
-	    {
 	      result->scope = LDAP_SCOPE_SUBTREE;
-	    }
 	  else if (!strcasecmp (v, "one"))
-	    {
 	      result->scope = LDAP_SCOPE_ONELEVEL;
-	    }
 	  else if (!strcasecmp (v, "base"))
-	    {
 	      result->scope = LDAP_SCOPE_BASE;
-	    }
 	}
       else if (!strcasecmp (k, "deref"))
 	{
 	  if (!strcasecmp (v, "never"))
-	    {
 	      result->deref = LDAP_DEREF_NEVER;
-	    }
 	  else if (!strcasecmp (v, "searching"))
-	    {
 	      result->deref = LDAP_DEREF_SEARCHING;
-	    }
 	  else if (!strcasecmp (v, "finding"))
-	    {
 	      result->deref = LDAP_DEREF_FINDING;
-	    }
 	  else if (!strcasecmp (v, "always"))
-	    {
 	      result->deref = LDAP_DEREF_ALWAYS;
-	    }
 	}
       else if (!strcasecmp (k, "port"))
 	{
@@ -662,7 +655,26 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	}
       else if (!strcasecmp (k, "nss_base_passwd"))
 	{
+	  char *s;
+
 	  CHECKPOINTER (passwdBase = strdup (v));
+	  s = strchr(passwdBase, '?');
+	  if (s != NULL) {
+		*s = '\0';
+		s++;
+          if (!strcasecmp (s, "sub"))
+            passwdScope = LDAP_SCOPE_SUBTREE;
+          else if (!strcasecmp (s, "one"))
+            passwdScope = LDAP_SCOPE_ONELEVEL;
+          else if (!strcasecmp (s, "base"))
+            passwdScope = LDAP_SCOPE_BASE;
+	  }
+	  s = strchr(s, '?');
+	  if (s != NULL) {
+		*s = '\0';
+		s++;
+		CHECKPOINTER (passwdFilter = strdup(s));
+	  }
 	}
       else if (!strcasecmp (k, "ldap_version"))
 	{
@@ -696,7 +708,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	}
       else if (!strcasecmp (k, "pam_filter"))
 	{
-	  CHECKPOINTER (result->filter = strdup (v));
+	  CHECKPOINTER (defaultFilter = strdup (v));
 	}
       else if (!strcasecmp (k, "pam_login_attribute"))
 	{
@@ -736,11 +748,13 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	}
       else if (!strcasecmp (k, "pam_nds_passwd"))
 	{
-	  result->nds_passwd = !strcasecmp (v, "yes");
+	  result->nds_passwd = (!strcasecmp (v, "on") || !strcasecmp (v, "yes")
+			     || !strcasecmp (v, "true"));
 	}
       else if (!strcasecmp (k, "pam_ad_passwd"))
 	{
-	  result->ad_passwd = !strcasecmp (v, "yes");
+	  result->ad_passwd = (!strcasecmp (v, "on") || !strcasecmp (v, "yes")
+			     || !strcasecmp (v, "true"));
 	}
     }
 
@@ -748,14 +762,32 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
     {
       result->base = passwdBase;
       if (defaultBase != NULL)
-	{
 	  free (defaultBase);
-	}
     }
   else
     {
       result->base = defaultBase;
     }
+
+  if (passwdFilter != NULL)
+	{
+		result->filter = passwdFilter;
+		if (defaultFilter != NULL)
+			free(defaultFilter);
+	}
+  else
+	{
+		result->filter = defaultFilter;
+	}
+
+  if (passwdScope != -1)
+	{
+		result->scope = passwdScope;
+	}
+  else
+	{
+		result->scope = defaultScope;
+	}
 
   if (result->host == NULL)
     {
