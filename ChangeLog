@@ -1,6 +1,15 @@
 $Id$
 ===============================================================
 
+87	Luke Howard <lukeh@padl.com>
+
+	* support for "timelimit" and "bind_timelimit" in 
+	  ldap.conf
+	* use "nss_base_passwd" for search base preferentially
+	  to "base"
+	* fixed code order bug in setting TLS option;
+	  introduced by patch in pam_ldap-86
+
 86	Luke Howard <lukeh@padl.com>
 
 	* patches from Norbert Klasen:

@@ -114,7 +114,7 @@
 #endif
 
 #define SSL_OFF        0
-#define SSL_YES        1
+#define SSL_LDAPS        1
 #define SSL_START_TLS  2
 
 #ifdef YPLDAPD
@@ -418,6 +418,8 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->groupdn = NULL;
   result->getpolicy = 0;
   result->version = LDAP_VERSION2;
+  result->timelimit = LDAP_NO_LIMIT;
+  result->bind_timelimit = 10;
   result->crypt_local = 0;
   result->min_uid = 0;
   result->max_uid = 0;
@@ -528,7 +530,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 {
   /* this is the same configuration file as nss_ldap */
   FILE *fp;
-  char b[BUFSIZ];
+  char b[BUFSIZ], *defaultBase, *passwdBase;
   pam_ldap_config_t *result;
   char errmsg[MAXPATHLEN + 25];
 
@@ -589,7 +591,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	}
       else if (!strcasecmp (k, "base"))
 	{
-	  CHECKPOINTER (result->base = strdup (v));
+	  CHECKPOINTER (defaultBase = strdup (v));
 	}
       else if (!strcasecmp (k, "binddn"))
 	{
@@ -641,6 +643,18 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	{
 	  result->port = atoi (v);
 	}
+      else if (!strcasecmp (k, "timelimit"))
+	{
+	  result->timelimit = atoi (v);
+	}
+      else if (!strcasecmp (k, "bind_timelimit"))
+	{
+	  result->bind_timelimit = atoi (v);
+	}
+      else if (!strcasecmp (k, "nss_base_passwd"))
+	{
+	  CHECKPOINTER (passwdBase = strdup (v));
+	}
       else if (!strcasecmp (k, "ldap_version"))
 	{
 	  result->version = atoi (v);
@@ -653,7 +667,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	{
 	  if (!strcasecmp (v, "yes"))
 	    {
-	      result->ssl_on = SSL_YES;
+	      result->ssl_on = SSL_LDAPS;
 	    }
 	  else if (!strcasecmp (v, "start_tls"))
 	    {
@@ -710,6 +724,19 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	}
     }
 
+  if (passwdBase != NULL)
+    {
+      result->base = passwdBase;
+      if (defaultBase != NULL)
+	{
+	  free (defaultBase);
+	}
+    }
+  else
+    {
+      result->base = defaultBase;
+    }
+
   if (result->host == NULL)
     {
       /* 
@@ -732,8 +759,8 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 
   if (result->port == 0)
     {
-#if defined(HAVE_LDAPSSL_INIT) || defined(LDAP_OPT_X_TLS)
-      if (result->ssl_on == SSL_YES)
+#if defined(HAVE_LDAPSSL_INIT) || defined(HAVE_LDAP_START_TLS_S)
+      if (result->ssl_on == SSL_LDAPS)
 	{
 	  result->port = LDAPS_PORT;
 	}
@@ -783,7 +810,7 @@ _open_session (pam_ldap_session_t * session)
 #ifdef HAVE_LDAPSSL_INIT
   int rc;
 
-  if (session->conf->ssl_on == SSL_YES && ssl_initialized == 0)
+  if (session->conf->ssl_on == SSL_LDAPS && ssl_initialized == 0)
     {
       rc = ldapssl_client_init (session->conf->sslpath, NULL);
       if (rc != LDAP_SUCCESS)
@@ -805,17 +832,6 @@ _open_session (pam_ldap_session_t * session)
     {
 #ifdef HAVE_LDAP_INIT
       session->ld = ldap_init (session->conf->host, session->conf->port);
-#ifdef    LDAP_OPT_X_TLS
-      if (session->conf->ssl_on == SSL_YES)
-	{
-	  int tls = LDAP_OPT_X_TLS_HARD;
-	  if (ldap_set_option (session->ld, LDAP_OPT_X_TLS, &tls) !=
-	      LDAP_SUCCESS)
-	    {
-	      ldap_perror (session->ld, "ldap_set_option(LDAP_OPT_X_TLS)");
-	    }
-	}
-#endif /* LDAP_OPT_X_TLS */
 #else
       session->ld = ldap_open (session->conf->host, session->conf->port);
 #endif /* HAVE_LDAP_INIT */
@@ -825,6 +841,18 @@ _open_session (pam_ldap_session_t * session)
     {
       return PAM_SYSTEM_ERR;
     }
+
+#ifdef LDAP_OPT_X_TLS
+      if (session->conf->ssl_on == SSL_LDAPS)
+	{
+	  int tls = LDAP_OPT_X_TLS_HARD;
+	  if (ldap_set_option (session->ld, LDAP_OPT_X_TLS, &tls) !=
+	      LDAP_SUCCESS)
+	    {
+	      ldap_perror (session->ld, "ldap_set_option(LDAP_OPT_X_TLS)");
+	    }
+	}
+#endif /* LDAP_OPT_X_TLS */
 
 #ifdef LDAP_OPT_PROTOCOL_VERSION
   (void) ldap_set_option (session->ld, LDAP_OPT_PROTOCOL_VERSION, &session->conf->version);
@@ -842,6 +870,12 @@ _open_session (pam_ldap_session_t * session)
   (void) ldap_set_option (session->ld, LDAP_OPT_DEREF, &session->conf->deref);
 #else
   session->ld->ld_deref = session->conf->deref;
+#endif
+
+#ifdef LDAP_OPT_TIMELIMIT
+  (void) ldap_set_option (session->ld, LDAP_OPT_TIMELIMIT, &session->conf->timelimit);
+#else
+  session->ld->ld_timelimit = session->conf->timelimit;
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
@@ -900,7 +934,7 @@ _connect_anonymously (pam_ldap_session_t * session)
       return PAM_SERVICE_ERR;
     }
 
-  timeout.tv_sec = 10;
+  timeout.tv_sec = session->conf->bind_timelimit; /* default 10 */
   timeout.tv_usec = 0;
   rc = ldap_result (session->ld, msgid, FALSE, &timeout, &result);
   if (rc == -1 || rc == 0)

@@ -67,6 +67,10 @@ typedef struct pam_ldap_config
     char *groupattr;
     /* LDAP protocol version */
     int version;
+    /* search timelimit */
+    int timelimit;
+    /* bind timelimit */
+    int bind_timelimit;
     /* generate hashes locally */
     int crypt_local;
     /* min uid */
