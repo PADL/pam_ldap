@@ -55,6 +55,9 @@ Here are some possible deployment scenarios:
    o pam_ldap with account information in NIS, using
      ypldapd
 
+FAQS
+====
+
 Don't forget to ensure that pam_ldap's link dependencies are
 satisfied after installation (you can verify this by doing
 ldd /usr/lib/security/pam_ldap.so.1). You must ensure that
@@ -62,19 +65,22 @@ any libraries that it depends on (such as the LDAP client
 library) can be located by the dynamic linker. Otherwise,
 libpam may fail to load the pam_ldap module.
 
-FAQ: Where is ldap_ssl.h? It's in the Netscape LDAP
+Q: Where is ldap_ssl.h? It's in the Netscape LDAP
 C SDK. Download it from developer.netscape.com. If you
 don't want to use SSL, removed -DSSL from CFLAGS. I
 don't have any experience building with the SSL/TLS
 support in OpenLDAP.
 
-FAQ: I get an undefined symbol "re_comp" under
+Q: I get an undefined symbol "re_comp" under
 FreeBSD. Try linking against libgnuregex (set
 LDFLAGS=-lgnuregex before configuring).
 
-FAQ; I get undefined symbols "pam_sm_authenticate"
+Q: I get undefined symbols "pam_sm_authenticate"
 &c. Make sure that you compile with -DPIC, eg:
 CFLAGS=-DPIC LDFLAGS=-lgnuregex ./configure
+
+SUPPORT
+=======
 
 To discuss pam_ldap and related technologies, you may
 subscribe to the following mailing lists:    
