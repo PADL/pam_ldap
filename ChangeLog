@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+169	Luke Howard <lukeh@padl.com>
+
+	* include password policy schema file
+
 168	Luke Howard <lukeh@padl.com>
 
 	* define LDAP_DEPRECATED for compiling with
