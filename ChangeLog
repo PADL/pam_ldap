@@ -3,7 +3,8 @@ $Id$
 
 110	Luke Howard <lukeh@padl.com>
 
-	* build on Mac OS X FCS
+	* build on Mac OS X FCS; configure --libdir=/Library
+	  (this will only work properly on HFS+ volumes)
 
 109	Luke Howard <lukeh@padl.com>
 
