@@ -1,6 +1,12 @@
 $Id$
 ===============================================================
 
+93	Luke Howard <lukeh@padl.com>
+
+	* made PAM_CLEAR the default for pam_password,
+	  as was originally the case. Don't break
+	  existing configurations!
+
 92	Luke Howard <lukeh@padl.com>
 
 	* support for OpenLDAP password change extended

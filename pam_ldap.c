@@ -422,7 +422,7 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->bind_timelimit = 10;
   result->referrals = 1;
   result->restart = 1;
-  result->password_type = PASSWORD_CRYPT;
+  result->password_type = PASSWORD_CLEAR;
   result->min_uid = 0;
   result->max_uid = 0;
   result->tmplattr = NULL;
