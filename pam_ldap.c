@@ -2585,7 +2585,8 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	}
 
       pam_set_data (pamh, PADL_LDAP_OLDAUTHTOK_DATA,
-		    (void *) strdup(curpass), _cleanup_authtok_data);
+		    (curpass == NULL) ? NULL : (void *) strdup(curpass),
+		    _cleanup_authtok_data);
       return rc;
     }				/* prelim */
   else if (session->info == NULL)	/* this is no LDAP user */

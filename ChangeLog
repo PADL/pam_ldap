@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+117	Luke Howard <lukeh@padl.com>
+
+	* do not strdup a NULL pointer if we are root
+	  when changing passwords
+
 116	Luke Howard <lukeh@padl.com>
 
 	* make sure old authentication token is zeroed
