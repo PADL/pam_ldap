@@ -1,6 +1,15 @@
 $Id$
 ===============================================================
 
+38	Luke Howard <lukeh@padl.com>
+
+    * fixed typo in pam.d/ssh
+
+37	Luke Howard <lukeh@padl.com>
+
+    * merged in BUG#37 branch
+    * added Makefile.freebsd
+
 36.BZ37.6	Luke Howard <lukeh@padl.com>
 
     * updated ChangeLog (this file)
