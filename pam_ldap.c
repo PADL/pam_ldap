@@ -961,7 +961,7 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
   if (rc != LDAP_SUCCESS)
     {
       syslog (LOG_ERR, "pam_ldap: error trying to bind as user \"%s\" (%s)",
-	      session->info->userpw, ldap_err2string (rc));
+	      session->info->userdn, ldap_err2string (rc));
       _pam_overwrite (session->info->userpw);
       _pam_drop (session->info->userpw);
       return PAM_AUTH_ERR;
@@ -1909,7 +1909,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   rc = pam_get_item (pamh, PAM_OLDAUTHTOK, (CONST_ARG void **) &curpass);
   if (rc != PAM_SUCCESS)
     {
-      syslog (LOG_ERR, "pam_ldap: errer getting PAM_OLDAUTHTOK (%i)", rc);
+      syslog (LOG_ERR, "pam_ldap: error getting PAM_OLDAUTHTOK (%s)", pam_strerror(pamh, rc));
       return PAM_AUTHTOK_ERR;
     }
 

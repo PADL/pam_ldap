@@ -1,6 +1,12 @@
 $Id$
 ===============================================================
 
+61	Luke Howard <lukeh@padl.com>
+
+    * patch from norbert.klasen@zdv.uni-tuebingen.de (bug);
+      was logging plaintext password in pam_ldap.c
+    * log pam_strerror() not integer status code
+
 60	Luke Howard <lukeh@padl.com>
 
     * patch from Jungle Lin@judicial.gov.tw to fix
