@@ -1,5 +1,5 @@
 # Created and modified by checkpoint; do not edit
 # $Id$
 # $Name$
-ProjectName: cvs c
-ProjectVersion: 2
+ProjectName: pam_ldap
+ProjectVersion: 3
