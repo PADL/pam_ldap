@@ -2468,7 +2468,6 @@ _update_authtok (pam_ldap_session_t * session,
       bvalsnew[1] = NULL;
       mod.mod_vals.modv_bvals = bvalsnew;
       mod.mod_type = (char *) "unicodePwd";
-      mod.mod_op = LDAP_MOD_ADD | LDAP_MOD_BVALUES;
 
       if (!session->conf->rootbinddn || getuid () != 0)
 	{
@@ -2488,12 +2487,16 @@ _update_authtok (pam_ldap_session_t * session,
 	  mod2.mod_type = (char *) "unicodePwd";
 	  mod2.mod_op = LDAP_MOD_DELETE | LDAP_MOD_BVALUES;
 
-	  mods[0] = &mod;
-	  mods[1] = &mod2;
+	  mod.mod_op = LDAP_MOD_ADD | LDAP_MOD_BVALUES;
+
+	  mods[0] = &mod2;
+	  mods[1] = &mod;
 	  mods[2] = NULL;
 	}
       else
 	{
+	  mod.mod_op = LDAP_MOD_REPLACE | LDAP_MOD_BVALUES;
+
 	  mods[0] = &mod;
 	  mods[1] = NULL;
 	}
@@ -3020,7 +3023,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
       newpass = resp->resp;
       free (resp);
 
-      if (newpass[0] == '\0')
+      if (newpass != NULL && newpass[0] == '\0')
 	{
 	  free (newpass);
 	  newpass = NULL;

@@ -1,6 +1,12 @@
 $Id$
 ===============================================================
 
+160	Luke Howard <lukeh@padl.com>
+
+	* AD password change fix
+	* fix from Thorsten Kukuk (SuSE) to handle aborted
+	  password changes
+
 159	Luke Howard <lukeh@padl.com>
 
 	* updated version information
