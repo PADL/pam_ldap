@@ -68,6 +68,14 @@ don't want to use SSL, removed -DSSL from CFLAGS. I
 don't have any experience building with the SSL/TLS
 support in OpenLDAP.
 
+FAQ: I get an undefined symbol "re_comp" under
+FreeBSD. Try linking against libgnuregex (set
+LDFLAGS=-lgnuregex before configuring).
+
+FAQ; I get undefined symbols "pam_sm_authenticate"
+&c. Make sure that you compile with -DPIC, eg:
+CFLAGS=-DPIC LDFLAGS=-lgnuregex ./configure
+
 To discuss pam_ldap and related technologies, you may
 subscribe to the following mailing lists:    
 
