@@ -8,6 +8,7 @@ $Id$
 	* use LDAP_MOD_ADD when changing NDS passwords rather
 	  than LDAP_MOD_REPLACE; NDS documentation indicates
 	  that this should work, and this is required for RACF.
+	* BUG#101: should build with recent automake/autoconf
 
 148	Luke Howard <lukeh@padl.com>
 

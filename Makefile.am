@@ -6,10 +6,14 @@ pam_ldap_so_SOURCES = pam_ldap.c pam_ldap.h md5.c md5.h
 pam_ldap_so_LDFLAGS = @pam_ldap_so_LDFLAGS@
 
 if USE_NATIVE_LINKER
-LINK = $(pam_ldap_so_LD) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+NATIVE_LINK = $(pam_ldap_so_LD) $(AM_LDFLAGS) $(LDFLAGS) -o $@ 
 else
-LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+GNU_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 endif
+
+# This is horrible but appears to be the only way to work with
+# recent versions of automake. Any better ideas, let me know.
+LINK = $(NATIVE_LINK) $(GNU_LINK)
 
 install-exec-local: pam_ldap.so
 	@$(NORMAL_INSTALL)

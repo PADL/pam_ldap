@@ -83,8 +83,13 @@ EXTRA_DIST = COPYING.LIB CVSVersionInfo.txt ChangeLog README \
 
 pam_ldap_so_SOURCES = pam_ldap.c pam_ldap.h md5.c md5.h
 pam_ldap_so_LDFLAGS = @pam_ldap_so_LDFLAGS@
-@USE_NATIVE_LINKER_TRUE@LINK = @USE_NATIVE_LINKER_TRUE@$(pam_ldap_so_LD) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-@USE_NATIVE_LINKER_FALSE@LINK = @USE_NATIVE_LINKER_FALSE@$(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+
+@USE_NATIVE_LINKER_TRUE@NATIVE_LINK = @USE_NATIVE_LINKER_TRUE@$(pam_ldap_so_LD) $(AM_LDFLAGS) $(LDFLAGS) -o $@ 
+@USE_NATIVE_LINKER_FALSE@GNU_LINK = @USE_NATIVE_LINKER_FALSE@$(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+
+# This is horrible but appears to be the only way to work with
+# recent versions of automake. Any better ideas, let me know.
+LINK = $(NATIVE_LINK) $(GNU_LINK)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
