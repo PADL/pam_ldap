@@ -758,7 +758,7 @@ _connect_as_user (
 {
   int rc;
 #ifdef LDAP_VERSION3_API
-  PLDAPControl *controls;
+  LDAPControl **controls;
   int msgid, parserc, finished = 0;
   struct timeval zerotime;
   LDAPMessage *result;
@@ -874,7 +874,7 @@ _connect_as_user (
 
 	  if (controls != NULL)
 	    {
-	      PLDAPControl *ctlp;
+	      LDAPControl **ctlp;
 	      for (ctlp = controls; *ctlp != NULL; ctlp++)
 		{
 		  if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PWEXPIRING))
