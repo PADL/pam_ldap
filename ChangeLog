@@ -1,6 +1,12 @@
 $Id$
 ===============================================================
 
+102	Luke Howard <lukeh@padl.com>
+
+	* define macros LDAP_OPT_{OFF,ON} if
+	  not defined
+	* make SECSPERDAY 86400LL
+
 101	Luke Howard <lukeh@padl.com>
 
 	* fix uninitialized variable
