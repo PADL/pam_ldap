@@ -172,8 +172,8 @@ directive is not used.
 .B rootbinddn <binddn>
 This directive has the same syntax and effect as the
 .B binddn
-directive above, except it applies when the effective user ID is that
-of the root user. If not specified, then the identity specified in
+directive above, except it applies when the effective user ID is
+zero. If not specified, then the identity specified in
 .B binddn
 is used instead. Because the configuration file may be readable by
 many users, the root bind DN credentials are stored in the
@@ -207,6 +207,33 @@ are otherwise cached.) Only some
 LDAP
 client libraries have the underlying functionality necessary to
 support this directive. The default bind timelimit is 30 seconds.
+.TP
+.B referrals <yes|no>
+Specifies whether automatic referral chasing should be enabled. The
+default behaviour is specifed by the
+.I LDAP
+client library.
+.TP
+.B restart <yes|no>
+Specifies whether the
+.I LDAP
+client library should restart the
+.BR
+select(2)
+system call when interrupted. This feature is not supported by all
+client libraries.
+.TP
+.B logdir <directory>
+Specifies the directory used for logging by the
+.I LDAP
+client library. This feature is not supported by all client
+libraries.
+.TP
+.B debug <level>
+Specifies the debug level used for logging by the
+.I LDAP
+client library. This feature is not supported by all client
+libraries.
 .TP
 .B ssl <on|off|start_tls>
 Specifies whether to use SSL/TLS or not (the default is not to). If
@@ -285,7 +312,7 @@ login.
 .B pam_check_service_attr <yes|no>
 Specifies whether the "authorizedService" attribute should be checked
 for logon authorization ("account" in the PAM stack). The default is not
-to. If set to "yes" and a user has no valued for the "authorizedService"
+to. If set to "yes" and a user has no value for the "authorizedService"
 attribute, then the user will be unable to login.
 .TP
 .B pam_groupdn <groupdn>
