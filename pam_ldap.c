@@ -158,6 +158,18 @@ static int ssl_initialized = 0;
 static FILE *debugfile = NULL;
 #endif
 
+static char *policy_error_table[] = {
+	"Password Expired",
+	"Account Locked",
+	"Change After Reset",
+	"Password Modification Not Allowed",
+	"Must Supply Old Password",
+	"Insufficient Password Quality",
+	"Password Too Short",
+	"Password Too Young",
+	"Password Insufficient"
+};
+
 #ifdef __GNUC__
 #define DEBUG_MSG(level, fmt, args...)		\
 	do {					\
@@ -3570,8 +3582,25 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	rc = success = PAM_NEW_AUTHTOK_REQD;
 #endif /* LINUX */
 	break;
+      case POLICY_ERROR_ACCOUNT_LOCKED:
+      case POLICY_ERROR_CHANGE_AFTER_RESET:
+      case POLICY_ERROR_PASSWORD_MOD_NOT_ALLOWED:
+      case POLICY_ERROR_MUST_SUPPLY_OLD_PASSWORD:
+      case POLICY_ERROR_INSUFFICIENT_PASSWORD_QUALITY:
+      case POLICY_ERROR_PASSWORD_TOO_SHORT:
+      case POLICY_ERROR_PASSWORD_TOO_YOUNG:
+      case POLICY_ERROR_PASSWORD_INSUFFICIENT:
+	_conv_sendmsg (appconv,
+		       policy_error_table[session->info->policy_error],
+		       PAM_ERROR_MSG, no_warn);
+	rc = success = PAM_PERM_DENIED;
+	break;
       default:
-	/* XXX TODO: handle other password policy errors */
+	snprintf (buf, sizeof buf,
+		  "Unknown password policy error %d received.",
+		  session->info->policy_error);
+	_conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
+	rc = success = PAM_PERM_DENIED;
 	break;
     }
 
