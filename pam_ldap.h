@@ -99,6 +99,12 @@ typedef struct pam_ldap_config
     char *tls_cacertfile;
     /* tls ca certificate dir */
     char *tls_cacertdir;
+    /* tls ciphersuite */
+    char *tls_ciphers;
+    /* tls certificate */
+    char *tls_cert;
+    /* tls key */
+    char *tls_key;
   }
 pam_ldap_config_t;
 
@@ -304,3 +310,6 @@ PAM_EXTERN int pam_sm_chauthtok (pam_handle_t *, int, int, const char **);
 /* PAM authorization routine */
 #define PAM_SM_ACCOUNT
 PAM_EXTERN int pam_sm_acct_mgmt (pam_handle_t *, int, int, const char **);
+
+/* TLS routines */
+static int _set_ssl_options(pam_ldap_config_t **);
