@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+176	Luke Howard <lukeh@padl.com>
+
+	* fix for compilation with Netscape SDK
+
 175	Luke Howard <lukeh@padl.com>
 
 	* fix BUG#182: don't send old password in exop

@@ -1675,8 +1675,8 @@ _get_password_policy_response_value (struct berval *response_value,
 {
   char *opaque;
   BerElement *ber;
-  ber_tag_t tag;
-  ber_len_t len;
+  unsigned long tag;
+  unsigned long len;
   int rc = LDAP_SUCCESS;
 
   if (!response_value || !session)
@@ -1691,9 +1691,9 @@ _get_password_policy_response_value (struct berval *response_value,
   for (tag = ber_first_element (ber, &len, &opaque);
        tag != LBER_DEFAULT; tag = ber_next_element (ber, &len, opaque))
     {
-      ber_tag_t ttag;
-      ber_int_t error;
-      ber_int_t value;
+      unsigned long ttag;
+      int error;
+      int value;
 
       if (tag == 160)		/* warning [0] CHOICE { ... } */
 	{
