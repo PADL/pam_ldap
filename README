@@ -3,18 +3,20 @@ This is yet another pam_ldap module.
 
 The advantages of this particular version are:
 
-   o Support for changing passwords in LDAP
+   o Support for changing passwords in LDAP, optionally
+     with NDS or Active Directory servers
 
    o Support for the V3 client API and protocol (to minimize
      rebinds)
 
-   o Support for Netscape's SSL API (untested as of yet)
+   o Support for Netscape's SSL API and proprietary extensions
 
    o Compatibility with the nss_ldap configuration file format
+     and POSIX configuration profile semantics
 
    o Supports ypldapd LDAP locator for plug-and-play installation
 
-   o Supports Netscape Directory Server password policies and
+   o Supports Netscape Directory Server 3.x password policies and
      password expiration controls
 
    o Supports access authorization on the "host" attribute of the
