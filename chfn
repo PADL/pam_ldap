@@ -53,6 +53,8 @@ while(<CONF>) {
   $CONF{$1}=$2;
 }
 close(CONF);
+open(CONF,"/etc/ldap.secret") and chomp($CONF{'rootbindpw'}=<CONF>);
+close(CONF);
 
 %FIELDS=(
   'f' =>        'Full Name',
@@ -81,7 +83,7 @@ if($< or $CONF{'rootbinddn'} eq '') {
              'password'   => $CONF{'rootbindpw'},
   );
 }
-$bindargs{'version'}=2;
+$bindargs{'version'}=$CONF{'ldap_version'}?$CONF{'ldap_version'}:2;
 
 $ldap->bind(%bindargs) or die "unable to bind to ldap server: $@";
 

@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+111	Luke Howard <lukeh@padl.com>
+
+	* further patch from Tero to fix chfn/chsh
+
 110	Luke Howard <lukeh@padl.com>
 
 	* build on Mac OS X FCS; configure --libdir=/Library
