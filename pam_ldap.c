@@ -2554,7 +2554,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if (rc != PAM_SUCCESS)
     {
       int lderr;
-      char *reason;
+      char *reason = NULL;
 
       lderr = ldap_get_lderrno (session->ld, NULL, &reason);
       if (reason != NULL)
