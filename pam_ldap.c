@@ -2052,15 +2052,15 @@ _host_ok (pam_ldap_session_t * session)
 {
   char hostname[MAXHOSTNAMELEN];
   struct hostent *h;
-  struct hostent hbuf;
 #ifdef HAVE_GETHOSTBYNAME_R
+  struct hostent hbuf;
 #if GETHOSTBYNAME_R_ARGS == 3
   struct hostent_data buf;
 #else
   int herr;
   char buf[1024];
 #endif /* GETHOSTBYNAME_R_ARGS == 3 */
-#endif
+#endif /* HAVE_GETHOSTBYNAME_R */
   char **q;
 
   /* simple host based access authorization */

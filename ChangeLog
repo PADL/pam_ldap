@@ -4,6 +4,7 @@ $Id$
 170	Luke Howard <lukeh@padl.com>
 
 	* sync ldap.conf with nss_ldap
+	* AIX 5.2 port
 
 169	Luke Howard <lukeh@padl.com>
 
