@@ -1,6 +1,12 @@
 $Id$
 ===============================================================
 
+71	Luke Howard <lukeh@padl.com>
+
+	* call ldapssl_client_init() once only (this doesn't
+	  have the desired effect because PAM unloads the
+	  library after pam_end() is called)
+
 70	Luke Howard <lukeh@padl.com>
 
 	* in rebind proc, check session->info != NULL

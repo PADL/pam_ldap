@@ -145,6 +145,10 @@ static pam_ldap_session_t *global_session = 0;
 #endif
 static int pam_debug_level __UNUSED__ = 0;
 
+#ifdef HAVE_LDAPSSL_INIT
+static int ssl_initialized = 0;
+#endif
+
 #define DEBUG_MSG(level, fmt, args...)		\
 	do {					\
 		if (level >= pam_debug_level)	\
@@ -678,7 +682,7 @@ _read_config (pam_ldap_config_t ** presult)
 
   if (result->port == 0)
     {
-#ifdef HAVE_LDAP_SSL_INIT
+#ifdef HAVE_LDAPSSL_INIT
       if (result->ssl_on)
 	{
 	  result->port = LDAPS_PORT;
@@ -729,8 +733,9 @@ _open_session (pam_ldap_session_t * session)
 #ifdef HAVE_LDAPSSL_INIT
   int rc;
 
-  if (session->conf->ssl_on && session->ssl_initialized == 0)
+  if (session->conf->ssl_on && ssl_initialized == 0)
     {
+/*	fprintf(stderr, "calling ldapssl_client_init\n"); */
       rc = ldapssl_client_init (session->conf->sslpath, NULL);
       if (rc != LDAP_SUCCESS)
 	{
@@ -738,7 +743,7 @@ _open_session (pam_ldap_session_t * session)
 		  ldap_err2string (rc));
 	  return PAM_SYSTEM_ERR;
 	}
-      session->ssl_initialized = 1;
+      ssl_initialized = 1;
     }
 
   if (session->conf->ssl_on)
@@ -1398,7 +1403,6 @@ _pam_ldap_get_session (pam_handle_t * pamh,
   session->ld = NULL;
   session->conf = NULL;
   session->info = NULL;
-  session->ssl_initialized = 0;
 
 #ifdef YPLDAPD
   rc = _ypldapd_read_config (&session->conf);
