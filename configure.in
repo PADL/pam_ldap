@@ -24,8 +24,7 @@ dnl This depends on building on Solaris with gcc
 dnl because that accepts -Wl. Is this a good idea?
 case "$target_os" in
 solaris*) pam_ldap_so_LDFLAGS="-Wl,-M -Wl,mapfile -Wl,-G" ;;
-*) pam_ldap_so_LDFLAGS="--shared" ;;
-dnl "--shared" is undocumented for gcc, shouldn't this be "-shared"?
+*) pam_ldap_so_LDFLAGS="-shared" ;;
 esac
 AC_SUBST(pam_ldap_so_LDFLAGS)
 
