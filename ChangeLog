@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+46	Luke Howard <lukeh@padl.com>
+
+    * incorporated new spec file
+
 44	Luke Howard <lukeh@padl.com>
 
     * incorporated patch for shadowLastChange attribute
