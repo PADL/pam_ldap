@@ -358,6 +358,9 @@ _release_config (pam_ldap_config_t ** pconfig)
   if (c == NULL)
     return;
 
+  if (c->configFile != NULL)
+    free (c->configFile);
+
   if (c->host != NULL)
     free (c->host);
 
@@ -517,6 +520,7 @@ _alloc_config (pam_ldap_config_t ** presult)
 
   result->scope = LDAP_SCOPE_SUBTREE;
   result->deref = LDAP_DEREF_NEVER;
+  result->configFile = NULL;
   result->host = NULL;
   result->base = NULL;
   result->port = 0;
@@ -692,6 +696,8 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
   passwdBase = NULL;
   passwdFilter = NULL;
   passwdScope = -1;
+
+  CHECKPOINTER (result->configFile = strdup (configFile));
 
   while (fgets (b, sizeof (b), fp) != NULL)
     {
@@ -2068,11 +2074,14 @@ _pam_ldap_get_session (pam_handle_t * pamh, const char *username,
     {
       /*
        * we cache the information retrieved from the LDAP server, however
-       * we need to flush this if the application has changed the user on us.
+       * we need to flush this if the application has changed the user or
+       * configuration file.
+       *
        * For template users, note that pam_ldap may _RESET_ the username!
        */
       if (session->info != NULL &&
-	  (strcmp (username, session->info->username) != 0))
+	  ((strcmp (username, session->info->username) != 0) ||
+	   (strcmp (configFile, session->conf->configFile) != 0)))
 	{
 	  _release_user_info (&session->info);
 	}
