@@ -56,8 +56,19 @@ any libraries that it depends on (such as the LDAP client
 library) can be located by the dynamic linker. Otherwise,
 libpam may fail to load the pam_ldap module.
 
+To discuss pam_ldap and related technologies, you may
+subscribe to the following mailing list:    
+
+        <URL:mailto:ldap-nis-request@padl.com>
+
+Send an electronic mail message with "subscribe" in the
+message body to join the list.
+
+Note that PADL now offer commercial support on a
+per-incident basis.      
+
 --
 [ PADL Software Pty Ltd ]
-Email: dev@padl.com
+Email: support@padl.com
 Internet: http://www.padl.com
 
