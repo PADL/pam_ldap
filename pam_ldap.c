@@ -763,9 +763,30 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 
   if (passwdBase != NULL)
     {
-      result->base = passwdBase;
       if (defaultBase != NULL)
-	free (defaultBase);
+	{
+	  size_t len = strlen (passwdBase);
+
+	  if (passwdBase[len - 1] == ',')
+	    {
+	      char *p;
+
+	      p = (char *) malloc (len + strlen (defaultBase) + 1);
+	      if (p == NULL)
+		{
+		  fclose (fp);
+		  free (defaultBase);	/* leak the rest... */
+		  return PAM_BUF_ERR;
+		}
+
+	      strcpy (p, passwdBase);
+	      strcpy (&p[len], defaultBase);
+	      free (passwdBase);
+	      passwdBase = p;
+	    }
+	  free (defaultBase);
+	}
+      result->base = passwdBase;
     }
   else
     {
@@ -938,15 +959,15 @@ _open_session (pam_ldap_session_t * session)
 #ifdef LDAP_OPT_REFERRALS
 
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->
-			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef LDAP_OPT_RESTART
 
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->
-			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
