@@ -2148,7 +2148,7 @@ nxt:
    * avoid fetching any attributes at all
    */
   _get_string_values (session->ld, msg, "host", &session->info->hosts_allow);
-  _get_string_values (session->ld, msg, "authorizedService", &session->info->hosts_allow);
+  _get_string_values (session->ld, msg, "authorizedService", &session->info->services_allow);
 
   /* get UID */
 #ifdef UID_NOBODY
