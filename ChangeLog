@@ -1,6 +1,15 @@
 $Id$
 ===============================================================
 
+129	Luke Howard <lukeh@padl.com>
+
+	* don't return PAM_SYSTEM_ERR for LDAP-related errors
+	* return PAM_AUTHINFO_UNAVAIL for directory-related
+	  (but not configuration-related) errors so that
+	  stacking modules will work properly (thanks to
+	  Brian Nelson <bnelson@cis.ysu.edu> for pointing this
+	  out)
+
 127	Luke Howard <lukeh@padl.com>
 
 	* fixed segfault bug if nss_base_passwd contains

@@ -582,7 +582,7 @@ _ypldapd_read_config (pam_ldap_config_t ** presult)
 		"ypldapd.conf",
 		"ldaphost", sizeof ("ldaphost") - 1, &tmp, &len))
     {
-      return PAM_SYSTEM_ERR;
+      return PAM_SERVICE_ERR;
     }
 
   result->host = (char *) malloc (len + 1);
@@ -682,7 +682,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
       snprintf (errmsg, sizeof (errmsg), "pam_ldap: missing file \"%s\"",
 		configFile);
       syslog (LOG_ALERT, errmsg);
-      return PAM_SYSTEM_ERR;
+      return PAM_SERVICE_ERR;
     }
 
   defaultBase = NULL;
@@ -997,7 +997,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
        * SHOULD be logged at LOG_ALERT level
        */
       syslog (LOG_ALERT, "pam_ldap: missing \"host\" in file \"ldap.conf\"");
-      return PAM_SYSTEM_ERR;
+      return PAM_SERVICE_ERR;
     }
 
   if (result->userattr == NULL)
@@ -1075,7 +1075,7 @@ _open_session (pam_ldap_session_t * session)
 	{
 	  syslog (LOG_ERR, "pam_ldap: ldapssl_client_init %s",
 		  ldap_err2string (rc));
-	  return PAM_SYSTEM_ERR;
+	  return PAM_SERVICE_ERR;
 	}
       ssl_initialized = 1;
     }
@@ -1103,7 +1103,7 @@ _open_session (pam_ldap_session_t * session)
 	    {
 	      syslog (LOG_ERR, "pam_ldap: ldap_initialize %s",
 		      ldap_err2string (rc));
-	      return PAM_SYSTEM_ERR;
+	      return PAM_SERVICE_ERR;
 	    }
 	}
       else
@@ -1121,7 +1121,7 @@ _open_session (pam_ldap_session_t * session)
 
   if (session->ld == NULL)
     {
-      return PAM_SYSTEM_ERR;
+      return PAM_SERVICE_ERR;
     }
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_X_TLS)
@@ -1133,7 +1133,7 @@ _open_session (pam_ldap_session_t * session)
 	{
 	  syslog (LOG_ERR, "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS) %s",
 		  ldap_err2string (rc));
-	  return PAM_SYSTEM_ERR;
+	  return PAM_SERVICE_ERR;
 	}
 
       /* set up SSL per-context settings */
@@ -1222,7 +1222,7 @@ _open_session (pam_ldap_session_t * session)
 	    {
 	      syslog (LOG_ERR, "pam_ldap: ldap_starttls_s: %s",
 		      ldap_err2string (rc));
-	      return PAM_SYSTEM_ERR;
+	      return PAM_SERVICE_ERR;
 	    }
 	}
     }
@@ -1359,7 +1359,7 @@ _connect_anonymously (pam_ldap_session_t * session)
     {
       syslog (LOG_ERR, "pam_ldap: ldap_simple_bind %s",
 	      ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
-      return PAM_SERVICE_ERR;
+      return PAM_AUTHINFO_UNAVAIL;
     }
 
   timeout.tv_sec = session->conf->bind_timelimit;	/* default 10 */
@@ -1369,7 +1369,7 @@ _connect_anonymously (pam_ldap_session_t * session)
     {
       syslog (LOG_ERR, "pam_ldap: ldap_result %s",
 	      ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
-      return PAM_SERVICE_ERR;
+      return PAM_AUTHINFO_UNAVAIL;
     }
 
 #ifdef HAVE_LDAP_PARSE_RESULT
@@ -1545,7 +1545,7 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
 	      ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
       _pam_overwrite (session->info->userpw);
       _pam_drop (session->info->userpw);
-      return PAM_AUTH_ERR;
+      return PAM_AUTHINFO_UNAVAIL;
     }
 
   timeout.tv_sec = 10;
@@ -1557,7 +1557,7 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
 	      ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
       _pam_overwrite (session->info->userpw);
       _pam_drop (session->info->userpw);
-      return PAM_SERVICE_ERR;
+      return PAM_AUTHINFO_UNAVAIL;
     }
 
 #if defined(HAVE_LDAP_PARSE_RESULT) && defined(HAVE_LDAP_CONTROLS_FREE)
@@ -1570,7 +1570,7 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
 	      ldap_err2string (parserc));
       _pam_overwrite (session->info->userpw);
       _pam_drop (session->info->userpw);
-      return PAM_SYSTEM_ERR;
+      return PAM_SERVICE_ERR;
     }
 #else
   rc = ldap_result2error (session->ld, result, TRUE);
@@ -1622,7 +1622,7 @@ _get_integer_value (LDAP * ld, LDAPMessage * e, const char *attr, int *ptr)
   vals = ldap_get_values (ld, e, (char *) attr);
   if (vals == NULL)
     {
-      return PAM_SYSTEM_ERR;
+      return PAM_AUTHINFO_UNAVAIL;
     }
   *ptr = atoi (vals[0]);
   ldap_value_free (vals);
@@ -1639,7 +1639,7 @@ _get_long_integer_value (LDAP * ld, LDAPMessage * e, const char *attr,
   vals = ldap_get_values (ld, e, (char *) attr);
   if (vals == NULL)
     {
-      return PAM_SYSTEM_ERR;
+      return PAM_AUTHINFO_UNAVAIL;
     }
   *ptr = atol (vals[0]);
   ldap_value_free (vals);
@@ -1658,7 +1658,7 @@ _oc_check (LDAP * ld, LDAPMessage * e, const char *oc)
   vals = ldap_get_values (ld, e, "objectClass");
   if (vals == NULL)
     {
-      return PAM_SYSTEM_ERR;
+      return PAM_AUTHINFO_UNAVAIL;
     }
 
   for (p = vals; *p != NULL; p++)
@@ -1685,7 +1685,7 @@ _get_string_value (LDAP * ld, LDAPMessage * e, const char *attr, char **ptr)
   vals = ldap_get_values (ld, e, (char *) attr);
   if (vals == NULL)
     {
-      return PAM_SYSTEM_ERR;
+      return PAM_AUTHINFO_UNAVAIL;
     }
   *ptr = strdup (vals[0]);
   if (*ptr == NULL)
@@ -1710,7 +1710,7 @@ _get_string_values (LDAP * ld, LDAPMessage * e, const char *attr, char ***ptr)
   vals = ldap_get_values (ld, e, (char *) attr);
   if (vals == NULL)
     {
-      return PAM_SYSTEM_ERR;
+      return PAM_AUTHINFO_UNAVAIL;
     }
   *ptr = vals;
 
@@ -1977,7 +1977,7 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
     {
       ldap_msgfree (res);
       _release_user_info (&session->info);
-      return PAM_SYSTEM_ERR;
+      return PAM_SERVICE_ERR;
     }
 
   session->info->bound_as_user = 0;
@@ -2443,7 +2443,7 @@ _update_authtok (pam_ldap_session_t * session,
 	  rc = PAM_SUCCESS;
 	}
 #else
-      rc = PAM_SYSTEM_ERR;
+      rc = PAM_SERVICE_ERR;
 #endif /* LDAP_EXOP_X_MODIFY_PASSWD */
 
       break;
@@ -2565,7 +2565,7 @@ pam_sm_authenticate (pam_handle_t * pamh,
 	syslog (LOG_ERR, "illegal option %s", argv[i]);
     }
 
-  rc = pam_get_user (pamh, (CONST_ARG char **) &username, "login: ");
+  rc = pam_get_user (pamh, (CONST_ARG char **) &username, NULL);
   if (rc != PAM_SUCCESS)
     return rc;
 
@@ -2682,7 +2682,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   rc = pam_get_data (pamh, PADL_LDAP_AUTH_DATA, (const void **) &username);
   if (rc != PAM_SUCCESS)
     {
-      rc = pam_get_user (pamh, (CONST_ARG char **) &username, "login: ");
+      rc = pam_get_user (pamh, (CONST_ARG char **) &username, NULL);
       if (rc != PAM_SUCCESS)
 	return rc;
     }
@@ -3053,7 +3053,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
   rc = pam_get_data (pamh, PADL_LDAP_AUTH_DATA, (const void **) &username);
   if (rc != PAM_SUCCESS)
     {
-      rc = pam_get_user (pamh, (CONST_ARG char **) &username, "login: ");
+      rc = pam_get_user (pamh, (CONST_ARG char **) &username, NULL);
       if (rc != PAM_SUCCESS)
 	return rc;
     }
