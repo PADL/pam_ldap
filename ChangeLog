@@ -3,8 +3,8 @@ $Id$
 
 175	Luke Howard <lukeh@padl.com>
 
-	* don't send old password in exop password change
-	  unless pam_password is exop_send_old
+	* fix BUG#182: don't send old password in exop
+	  password change unless pam_password is exop_send_old
 
 174	Luke Howard <lukeh@padl.com>
 
