@@ -89,6 +89,8 @@ typedef struct pam_ldap_config
     int getpolicy;
     /* host attribute checking, for access authorization */
     int checkhostattr;
+    /* service attribute checking, for access authorization */
+    int checkserviceattr;
     /* group name; optional, for access authorization */
     char *groupdn;
     /* group membership attribute; defaults to uniquemember */
@@ -206,6 +208,7 @@ typedef struct pam_ldap_user_info
     char *userpw;
     /* host attribute from account objectclass */
     char **hosts_allow;
+    char **services_allow;
     /* seconds until password expires */
     long password_expiration_time;
     /* password expires now */

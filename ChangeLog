@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+162	Luke Howard <lukeh@padl.com>
+
+	* support for service-based authorization
+	  (based on patch from Manon Goo)
+
 161	Luke Howard <lukeh@padl.com>
 
 	* fix from Thorsten Kukuk (SuSE) to handle scope-less
@@ -21,6 +26,7 @@ $Id$
 	* support for multiple service search descriptors from
 	  Symas
 
+>>>>>>> 1.170
 157	Luke Howard <lukeh@padl.com>
 
 	* BUG#120 feature: pam_password_prohibit_message

@@ -229,10 +229,10 @@ static int _get_string_value (LDAP * ld, LDAPMessage * e, const char *attr,
 			      char **ptr);
 static int _get_string_values (LDAP * ld, LDAPMessage * e, const char *attr,
 			       char ***ptr);
+static int _has_deny_value (char **src, const char *tgt);
 static int _has_value (char **src, const char *tgt);
 static int _host_ok (pam_ldap_session_t * session);
-
-
+static int _service_ok (pam_handle_t * handle, pam_ldap_session_t * session);
 static char *_get_md5_salt (char saltbuf[16]);
 static char *_get_salt (char salt[16]);
 static int _escape_string (const char *str, char *buf, size_t buflen);
@@ -272,7 +272,7 @@ void nasty_pthread_hack (void) __attribute__ ((constructor));
 #else
 # ifdef __SUNPRO_C
 #  pragma init(nasty_pthread_hack)
-# endif				/* __SUNPRO_C */
+# endif	/* __SUNPRO_C */
 #endif /* __GNUC__ */
 
 void
@@ -292,7 +292,7 @@ void nasty_ssl_hack (void) __attribute__ ((constructor));
 #else
 # ifdef __SUNPRO_C
 #  pragma init(nasty_ssl_hack)
-# endif				/* __SUNPRO_C */
+# endif	/* __SUNPRO_C */
 #endif /* __GNUC__ */
 
 void
@@ -508,6 +508,11 @@ _release_user_info (pam_ldap_user_info_t ** info)
       ldap_value_free ((*info)->hosts_allow);
     }
 
+  if ((*info)->services_allow != NULL)
+    {
+      ldap_value_free ((*info)->services_allow);
+    }
+
   if ((*info)->tmpluser != NULL)
     {
       free ((void *) (*info)->tmpluser);
@@ -596,6 +601,7 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->groupdn = NULL;
   result->getpolicy = 0;
   result->checkhostattr = 0;
+  result->checkserviceattr = 0;
 #ifdef LDAP_VERSION3
   result->version = LDAP_VERSION3;
 #else
@@ -980,6 +986,10 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	{
 	  result->checkhostattr = !strcasecmp (v, "yes");
 	}
+      else if (!strcasecmp (k, "pam_check_service_attr"))
+	{
+	  result->checkserviceattr = !strcasecmp (v, "yes");
+	}
       else if (!strcasecmp (k, "pam_groupdn"))
 	{
 	  CHECKPOINTER (result->groupdn = strdup (v));
@@ -1195,7 +1205,8 @@ _open_session (pam_ldap_session_t * session)
 #endif /* LDAP_OPT_X_TLS */
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_PROTOCOL_VERSION)
-  (void) ldap_set_option (session->ld, LDAP_OPT_PROTOCOL_VERSION, &session->conf->version);
+  (void) ldap_set_option (session->ld, LDAP_OPT_PROTOCOL_VERSION,
+			  &session->conf->version);
 #else
   session->ld->ld_version = session->conf->version;
 #endif
@@ -1213,7 +1224,8 @@ _open_session (pam_ldap_session_t * session)
 #endif
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_TIMELIMIT)
-  (void) ldap_set_option (session->ld, LDAP_OPT_TIMELIMIT, &session->conf->timelimit);
+  (void) ldap_set_option (session->ld, LDAP_OPT_TIMELIMIT,
+			  &session->conf->timelimit);
 #else
   session->ld->ld_timelimit = session->conf->timelimit;
 #endif
@@ -1258,7 +1270,8 @@ _open_session (pam_ldap_session_t * session)
 	  if (version < LDAP_VERSION3)
 	    {
 	      version = LDAP_VERSION3;
-	      (void) ldap_set_option (session->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+	      (void) ldap_set_option (session->ld, LDAP_OPT_PROTOCOL_VERSION,
+				      &version);
 	    }
 
 	  /* set up SSL context */
@@ -1787,6 +1800,23 @@ _get_string_values (LDAP * ld, LDAPMessage * e, const char *attr, char ***ptr)
 }
 
 static int
+_has_deny_value (char **src, const char *tgt)
+{
+
+  char **p;
+
+  for (p = src; *p != NULL; p++)
+    {
+      if (**p == '!' && !strcasecmp (*p + 1, tgt))
+	{
+	  return 1;
+	}
+    }
+
+  return 0;
+}
+
+static int
 _has_value (char **src, const char *tgt)
 {
   char **p;
@@ -1800,6 +1830,37 @@ _has_value (char **src, const char *tgt)
     }
 
   return 0;
+}
+
+static int
+_service_ok (pam_handle_t * pamh, pam_ldap_session_t * session)
+{
+  int rc;
+  char *service = NULL;
+
+  /* simple host based access authorization */
+  if (session->info->services_allow == NULL)
+    {
+      return PAM_PERM_DENIED;
+    }
+
+  rc = pam_get_item (pamh, PAM_SERVICE, (CONST_ARG void **) &service);
+  if (rc != PAM_SUCCESS)
+    {
+      service = NULL;
+    }
+
+  if (service != NULL)
+    {
+      if (_has_deny_value (session->info->services_allow, service))
+	return PAM_PERM_DENIED;
+      else if (_has_value (session->info->services_allow, service))
+	return PAM_SUCCESS;
+    }
+
+  /* allow wild-card entries */
+  return (_has_value (session->info->services_allow, "*")) ? PAM_SUCCESS :
+    PAM_PERM_DENIED;
 }
 
 static int
@@ -1820,11 +1881,6 @@ _host_ok (pam_ldap_session_t * session)
       return PAM_PERM_DENIED;
     }
 
-  /* allow wild-card entries */
-  if (_has_value (session->info->hosts_allow, "*"))
-    {
-      return PAM_SUCCESS;
-    }
 
   if (gethostname (hostname, sizeof hostname) < 0)
     {
@@ -1852,20 +1908,26 @@ _host_ok (pam_ldap_session_t * session)
     }
 #endif
 
-  if (_has_value (session->info->hosts_allow, h->h_name))
-    {
-      return PAM_SUCCESS;
-    }
+  if (_has_deny_value (session->info->hosts_allow, h->h_name))
+    return PAM_PERM_DENIED;
+  else if (_has_value (session->info->hosts_allow, h->h_name))
+    return PAM_SUCCESS;
 
   if (h->h_aliases != NULL)
     {
       for (q = h->h_aliases; *q != NULL; q++)
 	{
 	  if (_has_value (session->info->hosts_allow, *q))
-	    {
-	      return PAM_SUCCESS;
-	    }
+	    return PAM_SUCCESS;
+	  if (_has_deny_value (session->info->hosts_allow, *q))
+	    return PAM_PERM_DENIED;
 	}
+    }
+
+  /* allow wild-card entries */
+  if (_has_value (session->info->hosts_allow, "*"))
+    {
+      return PAM_SUCCESS;
     }
 
   return PAM_PERM_DENIED;
@@ -2076,15 +2138,16 @@ nxt:
    * avoid fetching any attributes at all
    */
   _get_string_values (session->ld, msg, "host", &session->info->hosts_allow);
+  _get_string_values (session->ld, msg, "authorizedService", &session->info->hosts_allow);
 
   /* get UID */
 #ifdef UID_NOBODY
   session->info->uid = UID_NOBODY;
 #else
-  session->info->uid = (uid_t)-2;
+  session->info->uid = (uid_t) - 2;
 #endif /* UID_NOBODY */
   _get_integer_value (session->ld, msg, "uidNumber",
-		      (int *) & session->info->uid);
+		      (int *) &session->info->uid);
 
   /*
    * get mapped user; some PAM host applications let PAM_USER be reset
@@ -2765,7 +2828,7 @@ pam_sm_open_session (pam_handle_t * pamh,
 
   if (pam_get_data
       (pamh, PADL_LDAP_SESSION_DATA, (const void **) &session) == PAM_SUCCESS)
-    _pam_ldap_cleanup_session (pamh, (void *)session, PAM_SUCCESS);
+    _pam_ldap_cleanup_session (pamh, (void *) session, PAM_SUCCESS);
 
   return PAM_SUCCESS;
 }
@@ -2857,9 +2920,9 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
       if (rc != PAM_SUCCESS)
 	return rc;
       /* prohibit ldap users */
-	_conv_sendmsg (appconv, session->conf->password_prohibit_message,
-		       PAM_ERROR_MSG, no_warn);
-	return PAM_PERM_DENIED;
+      _conv_sendmsg (appconv, session->conf->password_prohibit_message,
+		     PAM_ERROR_MSG, no_warn);
+      return PAM_PERM_DENIED;
     }
 
   if (flags & PAM_PRELIM_CHECK)
@@ -3371,7 +3434,17 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	rc = success;
     }
 
-  if (session->conf->checkhostattr)
+  if (rc == success && session->conf->checkserviceattr)
+    {
+      rc = _service_ok (pamh, session);
+      if (rc != PAM_SUCCESS)
+	_conv_sendmsg (appconv, "Access denied for this service",
+		       PAM_ERROR_MSG, no_warn);
+      else
+	rc = success;
+    }
+
+  if (rc == success && session->conf->checkhostattr)
     {
       rc = _host_ok (session);
       if (rc != PAM_SUCCESS)
@@ -3381,7 +3454,8 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	rc = success;
     }
 
-  if (session->conf->min_uid && session->info->uid < session->conf->min_uid)
+  if (rc == success && session->conf->min_uid
+      && session->info->uid < session->conf->min_uid)
     {
       snprintf (buf, sizeof buf, "UID must be greater than %ld",
 		(long) session->conf->min_uid);
@@ -3389,7 +3463,8 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
       return PAM_PERM_DENIED;
     }
 
-  if (session->conf->max_uid && session->info->uid > session->conf->max_uid)
+  if (rc == success && session->conf->max_uid
+      && session->info->uid > session->conf->max_uid)
     {
       snprintf (buf, sizeof buf, "UID must be less than %ld",
 		(long) session->conf->max_uid);
@@ -3412,4 +3487,3 @@ struct pam_module _modstruct = {
   pam_sm_chauthtok
 };
 #endif /* PAM_STATIC */
-
