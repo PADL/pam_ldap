@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+82	Luke Howard <lukeh@padl.com>
+
+	* s/conffile/config; forgot to patch properly
+
 81	Luke Howard <lukeh@padl.com>
 
 	* use MAXPATHLEN instead of PATH_MAX; pam_ldap-80

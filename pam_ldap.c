@@ -1800,7 +1800,7 @@ pam_sm_authenticate (pam_handle_t * pamh,
 	use_first_pass = 1;
       else if (!strcmp (argv[i], "try_first_pass"))
 	try_first_pass = 1;
-      else if (!strncmp(argv[i], "conffile=", 7))
+      else if (!strncmp(argv[i], "config=", 7))
 	 configFile = argv[i] + 7;
       else if (!strcmp (argv[i], "no_warn"))
 	;
@@ -1897,7 +1897,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	use_first_pass = 1;
       else if (!strcmp (argv[i], "try_first_pass"))
 	try_first_pass = 1;
-      else if (!strncmp(argv[i], "conffile=", 7))
+      else if (!strncmp(argv[i], "config=", 7))
 	 configFile = argv[i] + 7;
       else if (!strcmp (argv[i], "no_warn"))
 	no_warn = 1;
@@ -2258,7 +2258,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	;
       else if (!strcmp (argv[i], "try_first_pass"))
 	;
-      else if (!strncmp(argv[i], "conffile=", 7))
+      else if (!strncmp(argv[i], "config=", 7))
 	 configFile = argv[i] + 7;
       else if (!strcmp (argv[i], "no_warn"))
 	no_warn = 1;
