@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+83	Luke Howard <lukeh@padl.com>
+
+	* patch from David Begley to check for netscape4.1 lib
+
 82	Luke Howard <lukeh@padl.com>
 
 	* s/conffile/config; forgot to patch properly
