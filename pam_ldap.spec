@@ -1,6 +1,6 @@
 Summary: LDAP Pluggable Authentication Module
 Name:      pam_ldap
-Version:   42
+Version:   43
 Release:   1
 Source:    ftp://ftp.padl.com/pub/%{name}-%{version}.tar.gz
 URL:       http://www.padl.com/
@@ -22,7 +22,7 @@ mkdir -p $RPM_BUILD_ROOT/lib
 mkdir -p $RPM_BUILD_ROOT/lib/security
 mkdir -p $RPM_BUILD_ROOT/etc
 
-%setup -n %{name}
+%setup
 
 %build
 make -f Makefile.linux
