@@ -2790,7 +2790,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
       if (expirein > 0)
 	{
 	  snprintf (buf, sizeof buf,
-		    "Your LDAP password will expire in %d day%s.",
+		    "Your LDAP password will expire in %ld day%s.",
 		    expirein, (expirein == 1) ? "" : "s");
 	  _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
 
