@@ -1907,7 +1907,7 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
     {
       void *args[]  = { pamh, session };
 
-      passwd_policy_req.ldctl_oid = LDAP_CONTROL_PASSWORDPOLICYREQUEST;
+      passwd_policy_req.ldctl_oid = LDAP_CONTROL_PWPOLICY;
       passwd_policy_req.ldctl_value.bv_val = 0;	/* none */
       passwd_policy_req.ldctl_value.bv_len = 0;
       passwd_policy_req.ldctl_iscritical = 0;	/* not critical */
