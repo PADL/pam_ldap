@@ -1,6 +1,14 @@
 $Id$
 ===============================================================
 
+20   Luke Howard <lukeh@padl.com>
+
+    * added rebind function
+    * various stuff for RC added
+    * broke out makefiles
+    * ldap.conf keys case-insensitive for compat with
+      OpenLDAP
+
 17   Luke Howard <lukeh@padl.com>
 
     * force users to change passwords if their account has
