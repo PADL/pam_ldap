@@ -1,6 +1,6 @@
 Summary: LDAP Pluggable Authentication Module
 Name:      pam_ldap
-Version:   36
+Version:   41
 Release:   1
 Source:    ftp://ftp.padl.com/pub/%{name}-${version}.tar.gz
 URL:       http://www.padl.com/
@@ -9,8 +9,9 @@ Group: Libraries
 BuildRoot: /tmp/rpm-%{name}-root
 
 %description 
-This is yet another pam_ldap module. Supports password changes, V2 clients,
-Netscapes SSL, ypldapd, Netscape Directory Server password policies, access authorization, crypted hashes, etc. 
+This is a pam_ldap module. Supports password changes, V2 clients,
+Netscapes SSL, ypldapd, Netscape Directory Server password
+policies, access authorization, crypted hashes, etc. 
 
 
 %prep
