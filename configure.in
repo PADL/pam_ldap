@@ -19,7 +19,7 @@ AC_ARG_WITH(ldap-secret-file, [  --with-ldap-secret-file   path to LDAP root sec
 if test "$ac_cv_prog_gcc" = "yes"; then CFLAGS="$CFLAGS -Wall -fPIC"; fi
 
 dnl This is needed for the native Solaris LDAP SDK
-CPPFLAGS="$CPPFLAGS -DLDAP_REFERRALS"
+CPPFLAGS="$CPPFLAGS -DLDAP_REFERRALS -DLDAP_DEPRECATED"
 
 case "$target_os" in
 freebsd*) CPPFLAGS="$CPPFLAGS -DPIC -D_REENTRANT" ;;
