@@ -3,12 +3,18 @@
 # The PAM library directory
 SECURITY_DIR = /lib/security
 
-# The Netscape LDAP libraries
+# The Netscape LDAP libraries. Downloadable from
+# developer.netscape.com (for pre-compiled libraries
+# with SSL support linked in) or www.mozilla.org
+# (for source code without SSL). If using Mozilla
+# LDAP libraries, replace -lldapssl30 with
+# -lldap -llber.
 LDAP_LIB_DIR = /usr/local/ldapsdk/lib
 LDAP_INC_DIR = /usr/local/ldapsdk/include
 LDAPLIBS = -L$(LDAP_LIB_DIR) -lldapssl30
 
-# OpenLDAP/Umich LDAP libraries
+# OpenLDAP/Umich LDAP libraries. Downloadable from
+# www.openldap.org.
 #LDAP_LIB_DIR = /usr/local/lib
 #LDAP_INC_DIR = /usr/local/include
 #LDAPLIBS = -L$(LDAP_LIB_DIR) -lldap -llber 
@@ -19,10 +25,12 @@ WARNINGS = -ansi -Wall -Wwrite-strings \
 	-Wtraditional -Wstrict-prototypes -Wmissing-prototypes \
 	-Wnested-externs -Winline -Wshadow -pedantic
 
-# V3 API defines
+# V3 API defines, for OpenLDAP 2.x.
 #CDEFS = -g $(WARNINGS) -D_REENTRANT -DLDAP_VERSION3_API 
+# V3 API defines, for Netscape SDK with SSL support.
+# Remove -DSSL if building with the Mozilla SDK.
 CDEFS = -g $(WARNINGS) -D_REENTRANT -DLDAP_VERSION3_API -DSSL -DNETSCAPE_API_EXTENSIONS
-# V2 API defines
+# V2 API defines, for OpenLDAP 1.x.
 #CDEFS = -g $(WARNINGS) 
 
 # Which Make is gnu make

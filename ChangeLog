@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+39	Luke Howard <lukeh@padl.com>
+
+    * added some comments in Make.defs about different
+      SDKs
+
 38	Luke Howard <lukeh@padl.com>
 
     * fixed typo in pam.d/ssh
