@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+113	Luke Howard <lukeh@padl.com>
+
+	* don't use ldap_pvt_tls_set_option(); it is private API
+
 112	Luke Howard <lukeh@padl.com>
 
 	* SSL fix
