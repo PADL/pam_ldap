@@ -531,6 +531,7 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->groupattr = NULL;
   result->groupdn = NULL;
   result->getpolicy = 0;
+  result->checkhostattr = 1;
 #ifdef LDAP_VERSION3
   result->version = LDAP_VERSION3;
 #else
@@ -877,6 +878,10 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
       else if (!strcasecmp (k, "pam_lookup_policy"))
 	{
 	  result->getpolicy = !strcasecmp (v, "yes");
+	}
+      else if (!strcasecmp (k, "pam_check_host_attr"))
+	{
+	  result->checkhostattr = !strcasecmp (v, "yes");
 	}
       else if (!strcasecmp (k, "pam_groupdn"))
 	{
@@ -3193,9 +3198,14 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	}
     }
 
-  rc = _host_ok (session);
-  if (rc == PAM_SUCCESS)
-    rc = success;
+  if (session->conf->checkhostattr)
+    {
+      rc = _host_ok (session);
+      if (rc != PAM_SUCCESS)
+	_conv_sendmsg (appconv, "Access denied for this host", PAM_ERROR_MSG, no_warn);
+      else
+        rc = success;
+    }
 
   if (session->conf->min_uid && session->info->uid < session->conf->min_uid)
     {

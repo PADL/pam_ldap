@@ -67,6 +67,8 @@ typedef struct pam_ldap_config
     char *tmpluser;
     /* search for Netscape password policy */
     int getpolicy;
+    /* host attribute checking, for access authorization */
+    int checkhostattr;
     /* group name; optional, for access authorization */
     char *groupdn;
     /* group membership attribute; defaults to uniquemember */
