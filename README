@@ -188,6 +188,14 @@ open/close instead of the STREAMS version fopen/fclose or
 to make it easy to link against SFIO
 (http://www.research.att.com/sw/tools/sfio/)
 
+Q: On Solaris, the following error was reported when OpenLDAP was
+compiled shared but OpenSSL not:
+
+fatal: relocation error: file /opt/lib/libldap.so.2: symbol
+SSL_load_error_strings: referenced symbol not found
+
+The workaround was to remove -M mapfile from the Makefile.
+
 SUPPORT
 =======
 
