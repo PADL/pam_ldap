@@ -1,6 +1,14 @@
 $Id$
 ===============================================================
 
+72	Luke Howard <lukeh@padl.com>
+
+	* added nasty_ssl_hack() constructor; this
+	  dlopens ourself so that we always remain
+	  loaded, and ssl_initialized is set across
+	  invocations of PAM. Probably the path should
+	  not be hardcoded but sourced from config.h.
+
 71	Luke Howard <lukeh@padl.com>
 
 	* call ldapssl_client_init() once only (this doesn't

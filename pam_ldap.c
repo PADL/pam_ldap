@@ -160,11 +160,12 @@ static int ssl_initialized = 0;
 #include <dlfcn.h>
 
 /*
- * on Linux at least, the pthread library registers an atexit handler in it's constructor.
- * Since we are in a library and linking with libpthread, if the client program is not linked
- * with libpthread, it segfaults on exit. So we open an extra reference to the library.
+ * on Linux at least, the pthread library registers an atexit
+ * handler in it's constructor.  Since we are in a library and linking with
+ * libpthread, if the client program is not linked with libpthread, it
+ * segfaults on exit. So we open an extra reference to the library.
  * 
- * If there is a better way of doing this, LET ME KNOW! (me being Doug or Luke!)
+ * If there is a better way of doing this, let us know.
  */
 void nasty_pthread_hack (void) __attribute__ ((constructor));
 
@@ -174,6 +175,20 @@ nasty_pthread_hack (void)
   (void) dlopen ("libpthread.so", RTLD_LAZY);
 }
 #endif /* HAVE_LIBPTHREAD */
+
+#ifdef HAVE_LDAPSSL_INIT
+/*
+ * We need to keep ourselves loaded so that ssl_initialized
+ * is set across PAM sessions.
+ */
+void nasty_ssl_hack (void) __attribute__ ((constructor));
+
+void
+nasty_ssl_hack (void)
+{
+  (void) dlopen ("/lib/security/pam_ldap.so", RTLD_LAZY);
+}
+#endif /* HAVE_LDAPSSL_INIT */
 
 /* i64c - convert an integer to a radix 64 character */
 static int
@@ -735,7 +750,6 @@ _open_session (pam_ldap_session_t * session)
 
   if (session->conf->ssl_on && ssl_initialized == 0)
     {
-/*	fprintf(stderr, "calling ldapssl_client_init\n"); */
       rc = ldapssl_client_init (session->conf->sslpath, NULL);
       if (rc != LDAP_SUCCESS)
 	{
