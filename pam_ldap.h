@@ -19,9 +19,13 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef LINUX_PAM
+#ifdef HAVE_SECURITY_PAM_APPL_H
 #include <security/pam_appl.h>
-#endif /* !LINUX_PAM */
+#endif
+
+#ifdef HAVE_SECURITY_PAM_MISC_H
+#include <security/pam_misc.h>
+#endif
 
 #include <security/pam_modules.h>
 
@@ -41,6 +45,9 @@ typedef struct pam_ldap_config
     /* bind dn/pw for "anonymous" authentication */
     char *binddn;
     char *bindpw;
+    /* bind dn/pw for "root" authentication */
+    char *rootbinddn;
+    char *rootbindpw;
     int ssl_on;
     /* SSL path */
     char *sslpath;
@@ -153,6 +160,9 @@ pam_ldap_session_t;
 #define PADL_LDAP_AUTHTOK_DATA "PADL-LDAP-AUTHTOK-DATA"
 #define PADL_LDAP_AUTH_DATA "PADL-LDAP-AUTH-DATA"
 
+#define PASSWORD_DES 0
+#define PASSWORD_MD5 1
+
 /* Configuration file routines */
 static int _alloc_config (pam_ldap_config_t **);
 static void _release_config (pam_ldap_config_t **);
@@ -167,9 +177,11 @@ static void _release_user_info (pam_ldap_user_info_t **);
 /* Internal LDAP session management */
 static int _open_session (pam_ldap_session_t *);
 static int _connect_anonymously (pam_ldap_session_t *);
-#ifdef NETSCAPE_API_EXTENSIONS
+#if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
 static int _rebind_proc (LDAP *, char **, char **, int *, int, void *);
-#endif /* NETSCAPE_API_EXTENSIONS */
+#else
+static int _rebind_proc(LDAP *ld, char **whop, char **credp, int *methodp, int freeit);
+#endif
 static int _connect_as_user (pam_ldap_session_t *, const char *);
 static int _reopen (pam_ldap_session_t *);
 
@@ -185,7 +197,7 @@ static void _cleanup_authtok_data (pam_handle_t *, void *, int);
 static int _get_user_info (pam_ldap_session_t *, const char *);
 static int _get_password_policy (pam_ldap_session_t *, pam_ldap_password_policy_t *);
 static int _authenticate (pam_ldap_session_t *, const char *, const char *);
-static int _update_authtok (pam_ldap_session_t *, const char *, const char *, const char *);
+static int _update_authtok (pam_ldap_session_t *, const char *, const char *, const char *, int);
 
 /* PAM API helpers, public session management */
 static void _pam_ldap_cleanup_session (pam_handle_t *, void *, int);
@@ -193,10 +205,11 @@ static int _pam_ldap_get_session (pam_handle_t *, const char *, pam_ldap_session
 static int _get_authtok (pam_handle_t *, int, int);
 static int _conv_sendmsg (struct pam_conv *, const char *, int, int);
 
-#ifdef LINUX_PAM
-#include <security/pam_misc.h>
-#else
+#ifndef PAM_EXTERN
 #define PAM_EXTERN
+#endif
+
+#ifndef _pam_overwrite
 #define _pam_overwrite(x) \
 { \
      register char *__xx__; \
@@ -204,13 +217,23 @@ static int _conv_sendmsg (struct pam_conv *, const char *, int, int);
           while (*__xx__) \
                *__xx__++ = '\0'; \
 }
+#endif
 
+#ifndef _pam_drop
 #define _pam_drop(X) \
 if (X) { \
     free(X); \
     X=NULL; \
 }
-#endif /* LINUX_PAM */
+#endif
+
+#ifndef FALSE
+ #define FALSE 0
+#endif
+
+#ifndef TRUE
+ #define TRUE !FALSE
+#endif
 
 /* PAM authentication routine */
 #define PAM_SM_AUTH

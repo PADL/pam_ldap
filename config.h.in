@@ -1,0 +1,86 @@
+/* config.h.in.  Generated automatically from configure.in by autoheader.  */
+
+/* Define to the number of arguments to ldap_set_rebindproc */
+#undef LDAP_SET_REBIND_PROC_ARGS
+
+/* define to the number of args to gethostbyname_r */
+#undef GETHOSTBYNAME_R_ARGS
+
+/* define to support novell specific features */
+#undef NDS
+
+/* Define if you have the gethostbyname function.  */
+#undef HAVE_GETHOSTBYNAME
+
+/* Define if you have the gethostbyname_r function.  */
+#undef HAVE_GETHOSTBYNAME_R
+
+/* Define if you have the ldap_controls_free function.  */
+#undef HAVE_LDAP_CONTROLS_FREE
+
+/* Define if you have the ldap_get_lderrno function.  */
+#undef HAVE_LDAP_GET_LDERRNO
+
+/* Define if you have the ldap_init function.  */
+#undef HAVE_LDAP_INIT
+
+/* Define if you have the ldap_memfree function.  */
+#undef HAVE_LDAP_MEMFREE
+
+/* Define if you have the ldap_parse_result function.  */
+#undef HAVE_LDAP_PARSE_RESULT
+
+/* Define if you have the ldap_set_rebind_proc function.  */
+#undef HAVE_LDAP_SET_REBIND_PROC
+
+/* Define if you have the ldapssl_init function.  */
+#undef HAVE_LDAPSSL_INIT
+
+/* Define if you have the <crypt.h> header file.  */
+#undef HAVE_CRYPT_H
+
+/* Define if you have the <des.h> header file.  */
+#undef HAVE_DES_H
+
+/* Define if you have the <lber.h> header file.  */
+#undef HAVE_LBER_H
+
+/* Define if you have the <ldap.h> header file.  */
+#undef HAVE_LDAP_H
+
+/* Define if you have the <ldap_ssl.h> header file.  */
+#undef HAVE_LDAP_SSL_H
+
+/* Define if you have the <security/pam_appl.h> header file.  */
+#undef HAVE_SECURITY_PAM_APPL_H
+
+/* Define if you have the <security/pam_misc.h> header file.  */
+#undef HAVE_SECURITY_PAM_MISC_H
+
+/* Define if you have the crypt library (-lcrypt).  */
+#undef HAVE_LIBCRYPT
+
+/* Define if you have the dl library (-ldl).  */
+#undef HAVE_LIBDL
+
+/* Define if you have the lber library (-llber).  */
+#undef HAVE_LIBLBER
+
+/* Define if you have the nsl library (-lnsl).  */
+#undef HAVE_LIBNSL
+
+/* Define if you have the pam library (-lpam).  */
+#undef HAVE_LIBPAM
+
+/* Define if you have the pthread library (-lpthread).  */
+#undef HAVE_LIBPTHREAD
+
+/* Define if you have the resolv library (-lresolv).  */
+#undef HAVE_LIBRESOLV
+
+/* Name of package */
+#undef PACKAGE
+
+/* Version number of package */
+#undef VERSION
+

@@ -1,6 +1,15 @@
 $Id$
 ===============================================================
 
+55	Doug Nazar <nazard@dragoninc.on.ca>
+
+    * md5 crypt support
+    * rootbinddn support
+    * rebind support for openldap
+    * async ldap calls for bind
+    * use_authtok support
+    * autoconf/automake support
+
 51	Luke Howard <lukeh@padl.com>
 
     * updated spec file

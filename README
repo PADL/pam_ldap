@@ -32,6 +32,9 @@ The module builds under both Linux 2.x and Solaris 2.6.
 Thanks to fellow Aussie Chris Albone who wrote the initial
 pam_ldap_auth module.
 
+I am indebted to Doug Nazar for his contributions to
+this software.
+
 I've tested this with Netscape Directory Server 3.1 under NT and
 Solaris, the University of Michigan LDAP server, and Microsoft's
 Exchange Server.
@@ -78,7 +81,9 @@ message body to join the list.
 Note that PADL now offer commercial support on a
 per-incident basis.      
 
-To request a support incident, send email to: pamldap-support@padl.com
+To request a support incident, send email to:
+
+	<URL:mailto:pamldap-support@padl.com>
 
 --
 PADL Software Pty Ltd
