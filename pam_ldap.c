@@ -2629,9 +2629,16 @@ pam_sm_authenticate (pam_handle_t * pamh,
 	{
 	  if (rc == PAM_USER_UNKNOWN && ignore_unknown_user)
 	    rc = PAM_IGNORE;
+	  if (rc == PAM_SUCCESS && session->info->tmpluser != NULL)
+	    {
+	      (void) pam_set_data (pamh, PADL_LDAP_AUTH_DATA,
+				   (void *) strdup (session->info->username),
+				   _cleanup_data);
+	      rc = pam_set_item (pamh, PAM_USER, (void *) session->info->tmpluser);
+	    }
 	  return rc;
-	}
     }
+  }
 
   /* can prompt for authentication token */
   rc = _get_authtok (pamh, flags, (p == NULL) ? 1 : 0);
