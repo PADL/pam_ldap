@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+98	Luke Howard <lukeh@padl.com>
+
+	* merged ldap.conf
+
 97	Luke Howard <lukeh@padl.com>
 
 	* %configure -> ./configure
