@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+84	Luke Howard <lukeh@padl.com>
+
+	* fixed typo in pam_ldap.c
+
 83	Luke Howard <lukeh@padl.com>
 
 	* patch from nalin@redhat.com for StartTLS,
