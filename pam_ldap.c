@@ -693,7 +693,7 @@ _read_config (pam_ldap_config_t ** presult)
   if (result->rootbinddn != NULL)
     {
       fp = fopen ("/etc/ldap.secret", "r");
-      if (fp)
+      if (fp != NULL)
 	{
 	  if (fgets (b, sizeof (b), fp) != NULL)
 	    {
@@ -871,7 +871,7 @@ _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp, int freeit)
       return LDAP_SUCCESS;
     }
 
-  if (session->info->bound_as_user == 1)
+  if (session->info != NULL && session->info->bound_as_user == 1)
     {
       /*
        * We're authenticating as a user.
@@ -881,15 +881,18 @@ _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp, int freeit)
     }
   else
     {
-      if (session->conf->rootbinddn && geteuid () == 0)
+      if (session->conf->rootbinddn != NULL && geteuid () == 0)
 	{
 	  *whop = strdup (session->conf->rootbinddn);
-	  *credp = strdup (session->conf->rootbindpw);
+	  *credp = session->conf->rootbindpw != NULL ? 
+		strdup (session->conf->rootbindpw) : NULL;
 	}
       else
 	{
-	  *whop = strdup (session->conf->binddn);
-	  *credp = strdup (session->conf->bindpw);
+	  *whop = session->conf->binddn != NULL ? 
+		strdup (session->conf->binddn) : NULL;
+	  *credp = session->conf->bindpw != NULL ? 
+		strdup (session->conf->bindpw) : NULL;
 	}
     }
 
@@ -1301,9 +1304,9 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
 #ifdef UID_NOBODY
   session->info->uid = UID_NOBODY;
 #else
-  session->info->uid = (uid_t) - 2;
+  session->info->uid = (uid_t) -2;
 #endif /* UID_NOBODY */
-  _get_integer_value (session->ld, msg, "uidNumber", &session->info->uid);
+  _get_integer_value (session->ld, msg, "uidNumber", (uid_t *)&session->info->uid);
 
   /*
    * get mapped user; some PAM host applications let PAM_USER be reset

@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+70	Luke Howard <lukeh@padl.com>
+
+	* in rebind proc, check session->info != NULL
+	* in rebind proc, check {user,bind}{dn,pw} != NULL
+
 68	Luke Howard <lukeh@padl.com>
 
 	* initialize tmplattr/tmpluser fields
