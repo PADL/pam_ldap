@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+164	Luke Howard <lukeh@padl.com>
+
+	* fix typo in ldapns.schema (!)
+
 163	Luke Howard <lukeh@padl.com>
 
 	* fix typo in authorizedService patch
