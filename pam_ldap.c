@@ -92,6 +92,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE
+#endif /* _XOPEN_SOURCE */
 #include <unistd.h>
 #include <syslog.h>
 #include <netdb.h>
