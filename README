@@ -4,25 +4,28 @@ available (under the terms of the GNU General Library Public Licence).
 
 The advantages of this particular version are:
 
-	o Support for changing passwords in LDAP
+   o Support for changing passwords in LDAP
 
-	o Support for the V3 client API and protocol (to minimize
-	  rebinds)
+   o Support for the V3 client API and protocol (to minimize
+     rebinds)
 
-	o Support for Netscape's SSL API (not tested, though)
+   o Support for Netscape's SSL API (not tested, though)
 
-	o Compatibility with the nss_ldap configuration file format
+   o Compatibility with the nss_ldap configuration file format
 
-	o Supports ypldapd LDAP locator for plug-and-play installation
+   o Supports ypldapd LDAP locator for plug-and-play installation
+
+   o Supports Netscape Directory Server password policies
+
+   o Supports access authorization on the "host" attribute of the
+     account objectclass
+
 
 The module builds under both Linux and Solaris although it has only been
 tested under Solaris 2.6.
 
-I intend to add support for account management from the directory some
-day.
-
 --
-	Luke Howard
-	PADL Software
-	lukeh@padl.com
+   Luke Howard
+   PADL Software
+   lukeh@padl.com
 

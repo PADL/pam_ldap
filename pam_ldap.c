@@ -14,7 +14,7 @@
  * Library General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with the nss_ldap library; see the file COPYING.LIB.  If not,
+ * License along with the pam_ldap library; see the file COPYING.LIB.  If not,
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
@@ -54,7 +54,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Main coding by Elliot Lee <sopwith@redhat.com>, Red Hat Software.
+ * Portions by Elliot Lee <sopwith@redhat.com>, Red Hat Software.
  * Copyright (C) 1996.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -92,7 +92,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <syslog.h>
+#include <netdb.h>
 #include <lber.h>
 #include <ldap.h>
 #ifdef SSL                                                                      
@@ -174,6 +176,10 @@ void _release_user_info(
     if ((*info)->dn != NULL) {
         LDAP_MEMFREE((*info)->dn);
     }
+
+    if ((*info)->hosts_allow != NULL) {
+        ldap_value_free((*info)->hosts_allow);
+    }
     
     free(&info);
     *info = NULL;
@@ -227,6 +233,10 @@ int _alloc_config(
 
 
 #ifdef YPLDAPD
+/*
+ * Use the "internal" ypldapd.conf map to figure some things
+ * out.
+ */
 int _read_config(
                         pam_ldap_config **presult
                         )
@@ -252,7 +262,7 @@ int _read_config(
                  &tmp,
                  &len
                  )) {
-        return PAM_SERVICE_ERR;
+        return PAM_SYSTEM_ERR;
     }
 
     result->host = (char *)malloc(len + 1);
@@ -291,8 +301,13 @@ int _read_config(
                  )) {
         result->port = LDAP_PORT;
     } else {
-        result->port = atoi(tmp);
+        char *p = (char *)malloc(len + 1);
+        if (p == NULL)
+            return PAM_BUF_ERR;
+        memcpy(p, tmp, len);
+        result->port = atoi(p);
         free(tmp);
+        free(p);
     }
     
     yp_unbind(domain);
@@ -301,6 +316,9 @@ int _read_config(
     if (result->attr == NULL) {
         return PAM_BUF_ERR;
     }
+
+    /* turn on getting policies */
+    result->getpolicy = 1;
 
     return PAM_SUCCESS;
 }
@@ -329,7 +347,7 @@ int _read_config(
     
     fp = fopen("/etc/ldap.conf", "r");
     if (fp == NULL) {
-        return PAM_SERVICE_ERR;
+        return PAM_SYSTEM_ERR;
     }
 
     while (fgets(b, sizeof(b), fp) != NULL) {
@@ -382,7 +400,7 @@ int _read_config(
 
     fclose(fp);
     if (result->host == NULL) {
-        return PAM_SERVICE_ERR;
+        return PAM_SYSTEM_ERR;
     }
     
     if (result->attr == NULL) {
@@ -464,12 +482,74 @@ static int _get_integer_value(
 
     vals = ldap_get_values(ld, e, (char *)attr);
     if (vals == NULL) {
-        return PAM_SUCCESS;
+        return PAM_SYSTEM_ERR;
     }
     *ptr = atol(vals[0]);
     ldap_value_free(vals);
 
     return PAM_SUCCESS;
+}
+
+static int _get_string_value(
+                     LDAP *ld,
+                     LDAPMessage *e,
+                     const char *attr,
+                     char **ptr
+                     )
+{
+    char **vals;
+    int rc;
+
+    vals = ldap_get_values(ld, e, (char *)attr);
+    if (vals == NULL) {
+        return PAM_SYSTEM_ERR;
+    }
+    *ptr = strdup(vals[0]);
+    if (*ptr == NULL) {
+        rc = PAM_BUF_ERR;
+    } else {
+        rc = PAM_SUCCESS;
+    }
+    
+    ldap_value_free(vals);
+
+    return rc;
+}
+
+static inline int _hasvalue(
+                            char **src,
+                            const char *tgt
+                            )
+{
+    char **p;
+
+    for (p = src; *p != NULL; p++) {
+        fprintf(stderr, "%s vs %s\n", *p, tgt);
+        if (!strcasecmp(*p, tgt)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static int _get_string_values(
+                     LDAP *ld,
+                     LDAPMessage *e,
+                     const char *attr,
+                     char ***ptr
+                     )
+{
+    char **vals;
+    int rc;
+
+    vals = ldap_get_values(ld, e, (char *)attr);
+    if (vals == NULL) {
+        return PAM_SYSTEM_ERR;
+    }
+    *ptr = vals;
+
+    return rc;
 }
 
 static int _open_session(
@@ -481,24 +561,25 @@ static int _open_session(
                                 session->conf->port
                                 );
     if (session->ld == NULL) {
-        return PAM_SERVICE_ERR;
+        return PAM_SYSTEM_ERR;
     }
 
 #ifdef SSL
+    /* haven't tested this, I don't know how the SSL API works. */
     if (session->conf->sslpath != NULL) {
         rc = ldapssl_client_init(session->conf->sslpath, NULL);
         if (rc != LDAP_SUCCESS) {
             syslog(LOG_ERR, "pam_ldap: ldapssl_client_init %s", ldap_err2string(rc));
-            return PAM_SERVICE_ERR;
+            return PAM_SYSTEM_ERR;
         }
         rc = ldapssl_install_routines(session->ld);
         if (rc != LDAP_SUCCESS) {
             syslog(LOG_ERR, "pam_ldap: ldapssl_install_routines %s", ldap_err2string(rc));
-            return PAM_SERVICE_ERR;
+            return PAM_SYSTEM_ERR;
         }
         rc = ldap_set_option(session->ld, LDAP_OPT_SSL, LDAP_OPT_ON);
         if (rc != LDAP_SUCCESS) {
-            return PAM_SERVICE_ERR;
+            return PAM_SYSTEM_ERR;
         }
     }
 #endif /* SSL */
@@ -585,15 +666,17 @@ static int _get_user_info(
     if (session->info->dn == NULL) {
         ldap_msgfree(res);
         _release_user_info(&session->info);
-        return PAM_SERVICE_ERR;
+        return PAM_SYSTEM_ERR;
     }
 
+    /* Get Netscape-specific password policies */
     _get_integer_value(session->ld, msg, "passwordExpirationTime", &session->info->password_expiration_time);
     _get_integer_value(session->ld, msg, "passwordExpWarned", &session->info->password_exp_warned);
     _get_integer_value(session->ld, msg, "passwordRetryCount", &session->info->password_retry_count);
     _get_integer_value(session->ld, msg, "retryCountResetTime", &session->info->retry_count_reset_time);
     _get_integer_value(session->ld, msg, "accountUnlockTime", &session->info->account_unlock_time);
-
+    _get_string_values(session->ld, msg, "host", &session->info->hosts_allow);
+        
     ldap_msgfree(res);
 
     return PAM_SUCCESS;
@@ -1011,6 +1094,9 @@ PAM_EXTERN int pam_sm_chauthtok(
             syslog(LOG_DEBUG, "unknown module option %s", argv[i]);
     }
 
+    if (flags & PAM_SILENT)
+        no_warn = 1;
+    
     rc = pam_get_item(pamh, PAM_CONV, (CONST_ARG void **)&appconv);
     if (rc != PAM_SUCCESS)
         return rc;
@@ -1215,7 +1301,7 @@ PAM_EXTERN int pam_sm_chauthtok(
         conv_sendmsg(appconv, errmsg, PAM_ERROR_MSG, no_warn);
     } else {
         snprintf(errmsg, sizeof errmsg, "LDAP password information changed for %s", usrname);
-        conv_sendmsg(appconv, errmsg, PAM_TEXT_INFO, 0);
+        conv_sendmsg(appconv, errmsg, PAM_TEXT_INFO, (flags & PAM_SILENT) ? 1 : 0);
     }                    
 
 out:
@@ -1232,23 +1318,98 @@ PAM_EXTERN int pam_sm_setcred(
 {
     return PAM_SUCCESS;
 }
-
-#if 0
+    
 PAM_EXTERN int pam_sm_acct_mgmt(
                                 pam_handle_t *pamh,
                                 int flags,
-                                int argc
+                                int argc,
                                 const char **argv
                                 )
 {
-    /* check whether the user can login */
+    /*
+     * check whether the user can login. For now, we do a simple
+     * match on the host attribute
+     */
     /* returns PAM_ACCT_EXPIRED
        PAM_AUTH_ERR
        PAM_AUTHTOKEN_REQD (expired)
        PAM_USER_UNKNOWN
      */
+    int rc;
+    const char *name;
+    char **q;
+    int no_warn = 0;
+    int herr, i;
+    pam_ldap_session *session = NULL;
+    char hostname[MAXHOSTNAMELEN], buf[1024];
+    struct hostent hbuf, *h;
+
+    for (i = 0; i < argc; i++) {
+        if (!strcmp(argv[i], "use_first_pass"))
+            ;
+        else if (!strcmp(argv[i], "try_first_pass"))
+            ;
+        else if (!strcmp(argv[i], "no_warn"))
+            no_warn = 1;
+        else if (!strcmp(argv[i], "debug"))
+            ;
+        else
+            syslog(LOG_DEBUG, "unknown module option %s", argv[i]);
+    }
+
+
+    fprintf(stderr, "==> pam_sm_acct_mgmt\n");
+    
+    if (flags & PAM_SILENT)
+        no_warn = 1;
+
+    rc = pam_get_user(pamh, (CONST_ARG char **)&name, NULL);
+    if (rc != PAM_SUCCESS)
+        return rc;
+
+    rc = _initialize(&session);
+    if (rc != PAM_SUCCESS) {
+        return rc;
+    }
+
+    rc = _get_user_info(name, session);
+    if (rc != PAM_SUCCESS)
+        goto out;
+
+    if (session->info->hosts_allow == NULL) {
+        rc = PAM_SUCCESS;
+        goto out;
+    }
+
+    if (gethostname(hostname, sizeof hostname) < 0) {
+        rc = PAM_SYSTEM_ERR;
+        goto out;
+    }
+
+    h = gethostbyname_r(hostname, &hbuf, buf, sizeof buf, &herr);
+    if (h == NULL) {
+        rc = PAM_SYSTEM_ERR;
+        goto out;
+    }
+
+    if (_hasvalue(session->info->hosts_allow, h->h_name)) {
+        rc = PAM_SUCCESS;
+        goto out;
+    }
+
+    for (q = h->h_aliases; *q != NULL; q++) {
+        if (_hasvalue(session->info->hosts_allow, *q)) {
+            rc = PAM_SUCCESS;
+            goto out;
+        }
+    }
+
+    rc = PAM_AUTH_ERR;
+
+out:
+    _release_session(&session);
+    return rc;
 }
-#endif
 
 /* static module data */
 #ifdef PAM_STATIC
@@ -1256,7 +1417,7 @@ struct pam_module _modstruct = {
     "pam_ldap",
     pam_sm_authenticate,
     pam_sm_setcred,
-    NULL,
+    pam_sm_acct_mgmt,
     NULL,
     NULL,
     pam_sm_chauthtok
