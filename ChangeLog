@@ -1,6 +1,14 @@
 $Id$
 ===============================================================
 
+86	Luke Howard <lukeh@padl.com>
+
+	* patches from Norbert Klasen:
+	* activate either Start TLS or LDAPS with
+	  OpenLDAP 2.x using "ssl start_tls" or
+	  "ssl yes" respectively in ldap.conf
+	* Active Directory password changing
+
 85	Luke Howard <lukeh@padl.com>
 
 	* patches from David Begley:

@@ -75,6 +75,8 @@ typedef struct pam_ldap_config
     uid_t max_uid;
     /* password change for NDS */
     int nds_passwd;
+    /* password change for Microsoft Active Directory */
+    int ad_passwd;
   }
 pam_ldap_config_t;
 

@@ -113,6 +113,10 @@
 #include <ldap_ssl.h>
 #endif
 
+#define SSL_OFF        0
+#define SSL_YES        1
+#define SSL_START_TLS  2
+
 #ifdef YPLDAPD
 #include <rpcsvc/yp_prot.h>
 #include <rpcsvc/ypclnt.h>
@@ -406,7 +410,7 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->bindpw = NULL;
   result->rootbinddn = NULL;
   result->rootbindpw = NULL;
-  result->ssl_on = 0;
+  result->ssl_on = SSL_OFF;
   result->sslpath = NULL;
   result->filter = NULL;
   result->userattr = NULL;
@@ -418,6 +422,7 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->min_uid = 0;
   result->max_uid = 0;
   result->nds_passwd = 0;
+  result->ad_passwd = 0;
   result->tmplattr = NULL;
   result->tmpluser = NULL;
 
@@ -646,7 +651,14 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	}
       else if (!strcasecmp (k, "ssl"))
 	{
-	  result->ssl_on = !strcasecmp (v, "yes");
+	  if (!strcasecmp (v, "yes"))
+	    {
+	      result->ssl_on = SSL_YES;
+	    }
+	  else if (!strcasecmp (v, "start_tls"))
+	    {
+	      result->ssl_on = SSL_START_TLS;
+	    }
 	}
       else if (!strcasecmp (k, "pam_filter"))
 	{
@@ -692,6 +704,10 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	{
 	  result->nds_passwd = !strcasecmp (v, "yes");
 	}
+      else if (!strcasecmp (k, "pam_ad_passwd"))
+	{
+	  result->ad_passwd = !strcasecmp (v, "yes");
+	}
     }
 
   if (result->host == NULL)
@@ -716,8 +732,8 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 
   if (result->port == 0)
     {
-#ifdef HAVE_LDAPSSL_INIT
-      if (result->ssl_on)
+#if defined(HAVE_LDAPSSL_INIT) || defined(LDAP_OPT_X_TLS)
+      if (result->ssl_on == SSL_YES)
 	{
 	  result->port = LDAPS_PORT;
 	}
@@ -767,7 +783,7 @@ _open_session (pam_ldap_session_t * session)
 #ifdef HAVE_LDAPSSL_INIT
   int rc;
 
-  if (session->conf->ssl_on && ssl_initialized == 0)
+  if (session->conf->ssl_on == SSL_YES && ssl_initialized == 0)
     {
       rc = ldapssl_client_init (session->conf->sslpath, NULL);
       if (rc != LDAP_SUCCESS)
@@ -789,6 +805,17 @@ _open_session (pam_ldap_session_t * session)
     {
 #ifdef HAVE_LDAP_INIT
       session->ld = ldap_init (session->conf->host, session->conf->port);
+#ifdef    LDAP_OPT_X_TLS
+      if (session->conf->ssl_on == SSL_YES)
+	{
+	  int tls = LDAP_OPT_X_TLS_HARD;
+	  if (ldap_set_option (session->ld, LDAP_OPT_X_TLS, &tls) !=
+	      LDAP_SUCCESS)
+	    {
+	      ldap_perror (session->ld, "ldap_set_option(LDAP_OPT_X_TLS)");
+	    }
+	}
+#endif /* LDAP_OPT_X_TLS */
 #else
       session->ld = ldap_open (session->conf->host, session->conf->port);
 #endif /* HAVE_LDAP_INIT */
@@ -818,7 +845,7 @@ _open_session (pam_ldap_session_t * session)
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
-  if (session->conf->ssl_on)
+  if (session->conf->ssl_on == SSL_START_TLS)
     {
       int version;
 
@@ -1655,6 +1682,89 @@ _update_authtok (pam_ldap_session_t * session,
 	  rc = PAM_SUCCESS;
 	}
     }
+  else if (session->conf->ad_passwd)
+    {
+      /*
+       * Patch from Norbert Klasen <klasen@zdv.uni-tuebingen.de>:
+       *
+       * To be able to change a password in AD via LDAP, an SSL connection
+       * with a cipher strength of at least 128 bit must be established.
+       * http://support.microsoft.com/support/kb/articles/q264/4/80.ASP
+       * http://support.microsoft.com/support/kb/articles/Q247/0/78.ASP
+       *
+       * The password attribute used by AD is unicodePwd. Its syntax is octect
+       * string. The actual value is the password surrounded by quotes in 
+       * Unicode (LSBFirst).
+       *
+       * NT passwords can have max. 14 characters. 
+       *
+       * FIXME:
+       * The conversion to Unicode only works if the locale is 
+       * ISO-8859-1 (aka Latin-1) [of which ASCII is a subset]. 
+       */
+
+      struct berval bvalold;
+      struct berval bvalnew;
+      struct berval *bvalsold[2];
+      struct berval *bvalsnew[2];
+      char old_password_with_quotes[17], new_password_with_quotes[17];
+      char old_unicode_password[34], new_unicode_password[34];
+      int i;
+
+      snprintf (new_password_with_quotes, sizeof (new_password_with_quotes),
+		"\"%s\"", new_password);
+      memset (new_unicode_password, 0, sizeof (new_unicode_password));
+      for (i = 0; i < strlen (new_password_with_quotes); i++)
+	new_unicode_password[i * 2] = new_password_with_quotes[i];
+      bvalnew.bv_val = new_unicode_password;
+      bvalnew.bv_len = strlen (new_password_with_quotes) * 2;
+
+      bvalsnew[0] = &bvalnew;
+      bvalsnew[1] = NULL;
+      mod.mod_vals.modv_bvals = bvalsnew;
+      mod.mod_type = (char *) "unicodePwd";
+      mod.mod_op = LDAP_MOD_ADD | LDAP_MOD_BVALUES;
+
+      if (!session->conf->rootbinddn || geteuid () != 0)
+	{
+	  /* user must supply old password */
+	  snprintf (old_password_with_quotes,
+		    sizeof (old_password_with_quotes), "\"%s\"",
+		    old_password);
+	  memset (old_unicode_password, 0, sizeof (old_unicode_password));
+	  for (i = 0; i < strlen (old_password_with_quotes); i++)
+	    old_unicode_password[i * 2] = old_password_with_quotes[i];
+	  bvalold.bv_val = old_unicode_password;
+	  bvalold.bv_len = strlen (old_password_with_quotes) * 2;
+
+	  bvalsold[0] = &bvalold;
+	  bvalsold[1] = NULL;
+	  mod2.mod_vals.modv_bvals = bvalsold;
+	  mod2.mod_type = (char *) "unicodePwd";
+	  mod2.mod_op = LDAP_MOD_DELETE | LDAP_MOD_BVALUES;
+
+	  mods[0] = &mod;
+	  mods[1] = &mod2;
+	  mods[2] = NULL;
+	}
+      else
+	{
+	  mods[0] = &mod;
+	  mods[1] = NULL;
+	}
+
+      rc = ldap_modify_s (session->ld, session->info->userdn, mods);
+      if (rc != LDAP_SUCCESS)
+	{
+	  syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s",
+		  ldap_err2string (rc));
+	  rc = PAM_PERM_DENIED;
+	}
+      else
+	{
+	  rc = PAM_SUCCESS;
+	}
+    }
   else
     {
       /* Netscape generates hashed automatically, but UMich doesn't. */
@@ -1859,10 +1969,10 @@ pam_sm_authenticate (pam_handle_t * pamh,
   if (rc == PAM_SUCCESS && session->info->tmpluser != NULL)
     {
       /* keep original username for posterity */
-      
-	(void) pam_set_data (pamh, PADL_LDAP_AUTH_DATA,
-			     (void *) strdup (session->info->username),
-			     _cleanup_data);
+
+      (void) pam_set_data (pamh, PADL_LDAP_AUTH_DATA,
+			   (void *) strdup (session->info->username),
+			   _cleanup_data);
       rc = pam_set_item (pamh, PAM_USER, (void *) session->info->tmpluser);
     }
 
