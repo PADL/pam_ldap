@@ -37,7 +37,7 @@
 #    not given, $PWD is used. The directory must have a file named certs.dat.
 #    If that file doesn't exist, the script refuses to do anything. If your
 #    certs.dat file is corrupted, "rm -rf" the whole dir and start from
-#    the scratch. cert.pem is the actual sertificate.
+#    the scratch. cert.pem is the actual certificate.
 #
 # 3. Delete certificate
 #
@@ -46,7 +46,7 @@
 #    This command removes the certificate named "My Cert". certdir is 
 #    optional, see 2.
 #
-# 4. List sertificates
+# 4. List certificates
 #
 #    $ certutil -l [-d certdir]
 #
@@ -69,10 +69,10 @@ Usage: $0 -l [-d dir]
           -v -n name [-d dir]
 
        Commands:
-          -l   -- List sertificates (requires a valid dir)
-          -a   -- Add sertificate and create dir if necessary
-          -r   -- Remove sertificate (requires a valid dir)
-          -v   -- View sertificate (requires a valid dir)
+          -l   -- List certificates (requires a valid dir)
+          -a   -- Add certificate and create dir if necessary
+          -r   -- Remove certificate (requires a valid dir)
+          -v   -- View certificate (requires a valid dir)
 
        Parameters:
           dir  -- Certificate directory, or \$PWD if not given
