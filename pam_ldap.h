@@ -133,6 +133,10 @@ typedef struct pam_ldap_config
     char *tls_key;
     /* tls randfile */
     char *tls_randfile;
+    /* directory for debug files */
+    char *logdir;
+    /* ldap debug level */
+    int debug;
   }
 pam_ldap_config_t;
 

@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+166	Luke Howard <lukeh@padl.com>
+
+	* fix signed/unsigned comparison issues
+	* merge in LDAP debug patch from Howard Chu
+
 165	Luke Howard <lukeh@padl.com>
 
 	* fix BUG#142

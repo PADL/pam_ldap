@@ -474,6 +474,11 @@ _release_config (pam_ldap_config_t ** pconfig)
       free (c->filter);
     }
 
+  if (c->logdir != NULL)
+    {
+      free (c->logdir);
+    }
+
   if (c->password_prohibit_message != NULL)
     {
       free (c->password_prohibit_message);
@@ -623,6 +628,8 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->tls_cert = NULL;
   result->tls_key = NULL;
   result->tls_randfile = NULL;
+  result->logdir = NULL;
+  result->debug = 0;
   return PAM_SUCCESS;
 }
 
@@ -1043,6 +1050,14 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	{
 	  CHECKPOINTER (result->tls_randfile = strdup (v));
 	}
+      else if (!strcasecmp (k, "logdir"))
+	{
+	  CHECKPOINTER (result->logdir = strdup (v));
+	}
+      else if (!strcasecmp (k, "debug"))
+	{
+	  result->debug = atol (v);
+	}
     }
 
 #ifdef HAVE_LDAP_INITIALIZE
@@ -1125,6 +1140,33 @@ _open_session (pam_ldap_session_t * session)
 #endif
 #ifdef LDAP_OPT_NETWORK_TIMEOUT
   struct timeval tv;
+#endif
+
+#ifdef HAVE_LDAP_SET_OPTION
+  if (session->conf->debug)
+    {
+#ifdef LBER_OPT_LOG_PRINT_FILE
+      if (session->conf->logdir && !debugfile)
+	{
+	  char *name = malloc(strlen(session->conf->logdir)+18);
+	  if (name)
+	    {
+	      sprintf(name, "%s/ldap.%d", session->conf->logdir, (int)getpid());
+	      debugfile = fopen(name, "a");
+	      free(name);
+	    }
+	  if (debugfile)
+	    {
+	      ber_set_option( NULL, LBER_OPT_LOG_PRINT_FILE, debugfile );
+	    }
+	}
+#endif
+      if (session->conf->debug)
+	{
+	  ber_set_option( NULL, LBER_OPT_DEBUG_LEVEL, &session->conf->debug );
+	  ldap_set_option( NULL, LDAP_OPT_DEBUG_LEVEL, &session->conf->debug );
+	}
+    }
 #endif
 
 #ifdef HAVE_LDAPSSL_INIT
@@ -2409,7 +2451,8 @@ _update_authtok (pam_ldap_session_t * session,
   LDAPMod mod, mod2;
   LDAPMod *mods[3];
   char buf[64], saltbuf[16];
-  int rc = PAM_SUCCESS, i;
+  int rc = PAM_SUCCESS;
+  size_t i;
 
   /* for Active Directory */
 
@@ -3126,7 +3169,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		  cmiscptr = "Passwords must differ";
 		  newpass = NULL;
 		}
-	      else if (strlen (newpass) < policy.password_min_length)
+	      else if (strlen (newpass) < (size_t)policy.password_min_length)
 		{
 		  cmiscptr = "Password too short";
 		  newpass = NULL;
