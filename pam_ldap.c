@@ -1776,7 +1776,7 @@ pam_sm_authenticate (pam_handle_t * pamh,
   if (rc == PAM_SUCCESS && session->info->tmpluser != NULL)
     {
       /* keep original username for posterity */
-      (void) pam_set_data (pamh, PADL_LDAP_AUTH_DATA, session->info->username, _cleanup_data);
+      (void) pam_set_data (pamh, PADL_LDAP_AUTH_DATA, strdup(session->info->username), _cleanup_data);
       rc = pam_set_item (pamh, PAM_USER, (void *) session->info->tmpluser);
     }
 
