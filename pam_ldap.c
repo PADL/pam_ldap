@@ -115,7 +115,7 @@
 #define CONST_ARG const
 #include <sys/param.h>
 #include <nss.h>
-#endif /* LINUX */
+#endif /* SOLARIS */
 #include <security/pam_modules.h>
 
 #ifdef LDAP_VERSION3
@@ -322,6 +322,9 @@ int _read_config(
 
     /* turn on getting policies */
     result->getpolicy = 1;
+#ifdef LDAP_VERSION3
+    result->version = LDAP_VERSION3;
+#endif /* LDAP_VERSION3 */
 
     return PAM_SUCCESS;
 }
@@ -414,7 +417,7 @@ int _read_config(
         
     return PAM_SUCCESS;
 }
-#endif
+#endif /* YPLDAPD */
 
 static int _anonymous_bind(
                            pam_ldap_session *session
@@ -434,7 +437,7 @@ static int _anonymous_bind(
          */
         rc = LDAP_SUCCESS;        
     } else {
-#endif        
+#endif /* LDAP_VERSION3 */
         rc = ldap_simple_bind_s(
                                 session->ld,
                                 session->conf->binddn,
@@ -442,7 +445,7 @@ static int _anonymous_bind(
                                 );
 #ifdef LDAP_VERSION3        
     }
-#endif
+#endif /* LDAP_VERSION3 */
     
     if (rc != LDAP_SUCCESS) {
         syslog(LOG_ERR, "pam_ldap: ldap_simple_bind_s %s", ldap_err2string(rc));
