@@ -561,6 +561,12 @@ _read_config (pam_ldap_config_t ** presult)
 	continue;
 
       *(v++) = '\0';
+
+      /* skip all whitespaces between keyword and value */
+      /* Lars Oergel <lars.oergel@innominate.de>, 05.10.2000 */
+      while (*v == ' ' || *v == '\t')
+        v++;
+
       len = strlen (v);
       v[--len] = '\0';
 
