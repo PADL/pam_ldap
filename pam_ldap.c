@@ -1648,12 +1648,12 @@ _get_password_policy_response_value (struct berval *response_value,
   int rc = LDAP_SUCCESS;
 
   if (!response_value || !session)
-    return PAM_BUF_ERR;
+    return LDAP_PARAM_ERROR;
 
   /* create a BerElement from the berval returned in the control */
   ber = ber_init (response_value);
-  if (!ber)
-    return PAM_BUF_ERR;
+  if (ber == NULL)
+    return LDAP_LOCAL_ERROR;
 
   /* parse the PasswordPolicyResponseValue */
   for (tag = ber_first_element (ber, &len, &opaque);
@@ -1690,6 +1690,7 @@ _get_password_policy_response_value (struct berval *response_value,
 	    {
 	      if (session->info->policy_error != POLICY_ERROR_SUCCESS)
 		session->info->policy_error = error;
+	      continue;
 	    }
 	}
       rc = LDAP_DECODING_ERROR;
