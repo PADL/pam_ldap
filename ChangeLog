@@ -1,14 +1,11 @@
 $Id$
 ===============================================================
 
-84	Luke Howard <lukeh@padl.com>
+83	Luke Howard <lukeh@padl.com>
 
 	* patch from nalin@redhat.com for StartTLS,
 	  enforce V3
 	* fixed up indenting
-
-83	Luke Howard <lukeh@padl.com>
-
 	* patch from David Begley to check for netscape4.1 lib
 
 82	Luke Howard <lukeh@padl.com>
