@@ -4,8 +4,6 @@ $Id$
 172	Luke Howard <lukeh@padl.com>
 
 	* preliminary SASL bind support
-	* fix from Pawel Wieleba <wielebap@volt.iem.pw.edu.pl>
-	  for duplicating PAM_OLDAUTHTOK before setting
 
 171	Luke Howard <lukeh@padl.com>
 
