@@ -2689,6 +2689,7 @@ pam_sm_authenticate (pam_handle_t * pamh,
 	  if (rc == PAM_USER_UNKNOWN && ignore_unknown_user)
 	    rc = PAM_IGNORE;
 	  if (rc == PAM_SUCCESS && session->info->tmpluser != NULL &&
+	      session->conf->tmpluser != NULL &&
 	      strcmp (session->info->tmpluser, session->conf->tmpluser) == 0)
 	    {
 	      (void) pam_set_data (pamh, PADL_LDAP_AUTH_DATA,
@@ -2719,6 +2720,7 @@ pam_sm_authenticate (pam_handle_t * pamh,
    * I think pam_sm_acct_mgmt() is the right place.
    */
   if (rc == PAM_SUCCESS && session->info->tmpluser != NULL &&
+      session->conf->tmpluser != NULL &&
       strcmp (session->info->tmpluser, session->conf->tmpluser) == 0)
     {
       /* keep original username for posterity */

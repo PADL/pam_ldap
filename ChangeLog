@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+156	Luke Howard <lukeh@padl.com>
+
+	* fix for bug #119
+
 155	Luke Howard <lukeh@padl.com>
 
 	* proper for for non-expermental password change exop;
