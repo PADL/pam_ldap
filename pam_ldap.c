@@ -590,6 +590,7 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->ssl_on = SSL_OFF;
   result->sslpath = NULL;
   result->filter = NULL;
+  result->ssd = NULL;
   result->userattr = NULL;
   result->groupattr = NULL;
   result->groupdn = NULL;
@@ -615,6 +616,7 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->tls_ciphers = NULL;
   result->tls_cert = NULL;
   result->tls_key = NULL;
+  result->tls_randfile = NULL;
   return PAM_SUCCESS;
 }
 
@@ -718,8 +720,6 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
   /* this is the same configuration file as nss_ldap */
   FILE *fp;
   char b[BUFSIZ];
-  char *defaultBase, *passwdBase, *defaultFilter, *passwdFilter;
-  int defaultScope, passwdScope;
   pam_ldap_config_t *result;
 
   if (_alloc_config (presult) != PAM_SUCCESS)
@@ -754,13 +754,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
       return PAM_SERVICE_ERR;
     }
 
-  defaultBase = NULL;
-  defaultFilter = NULL;
-  defaultScope = LDAP_SCOPE_SUBTREE;
-
-  passwdBase = NULL;
-  passwdFilter = NULL;
-  passwdScope = -1;
+  result->scope = LDAP_SCOPE_SUBTREE;
 
   while (fgets (b, sizeof (b), fp) != NULL)
     {
@@ -802,7 +796,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	}
       else if (!strcasecmp (k, "base"))
 	{
-	  CHECKPOINTER (defaultBase = strdup (v));
+	  CHECKPOINTER (result->base = strdup (v));
 	}
       else if (!strcasecmp (k, "binddn"))
 	{
@@ -883,28 +877,48 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
       else if (!strcasecmp (k, "nss_base_passwd"))
 	{
 	  char *s;
+          pam_ssd_t *p, *ssd = calloc(1, sizeof(pam_ssd_t));
 
 	  /* this doesn't do any escaping. XXX. */
-	  CHECKPOINTER (passwdBase = strdup (v));
-	  s = strchr (passwdBase, '?');
+	  s = strchr (v, '?');
 	  if (s != NULL)
 	    {
-	      *s = '\0';
+              len = s-v;
+	      if (s[-1] == ',' && result->base)
+                {
+		  ssd->base = malloc(len + strlen(result->base));
+		  strncpy(ssd->base, v, len);
+                  strcpy(ssd->base+len, result->base);
+                }
+              else
+                {
+                  ssd->base = malloc(len);
+                  strncpy(ssd->base, v, len);
+                  ssd->base[len] = '\0';
+                }
 	      s++;
-	      if (!strcasecmp (s, "sub"))
-		passwdScope = LDAP_SCOPE_SUBTREE;
-	      else if (!strcasecmp (s, "one"))
-		passwdScope = LDAP_SCOPE_ONELEVEL;
-	      else if (!strcasecmp (s, "base"))
-		passwdScope = LDAP_SCOPE_BASE;
+	      if (!strncasecmp (s, "sub", 3))
+		ssd->scope = LDAP_SCOPE_SUBTREE;
+	      else if (!strncasecmp (s, "one", 3))
+		ssd->scope = LDAP_SCOPE_ONELEVEL;
+	      else if (!strncasecmp (s, "base", 4))
+		ssd->scope = LDAP_SCOPE_BASE;
 	      s = strchr (s, '?');
 	      if (s != NULL)
 		{
-		  *s = '\0';
 		  s++;
-		  CHECKPOINTER (passwdFilter = strdup (s));
+		  CHECKPOINTER (ssd->filter = strdup (s));
 		}
 	    }
+	  for (p=result->ssd; p && p->next; p=p->next);
+	  if (p)
+            {
+	      p->next = ssd;
+            }
+          else
+            {
+              result->ssd = ssd;
+            }
 	}
       else if (!strcasecmp (k, "ldap_version"))
 	{
@@ -938,7 +952,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	}
       else if (!strcasecmp (k, "pam_filter"))
 	{
-	  CHECKPOINTER (defaultFilter = strdup (v));
+	  CHECKPOINTER (result->filter = strdup (v));
 	}
       else if (!strcasecmp (k, "pam_login_attribute"))
 	{
@@ -1009,58 +1023,10 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	{
 	  CHECKPOINTER (result->tls_key = strdup (v));
 	}
-    }
-
-  if (passwdBase != NULL)
-    {
-      if (defaultBase != NULL)
+      else if (!strcasecmp (k, "tls_randfile"))
 	{
-	  size_t len = strlen (passwdBase);
-
-	  if (passwdBase[len - 1] == ',')
-	    {
-	      char *p;
-
-	      p = (char *) malloc (len + strlen (defaultBase) + 1);
-	      if (p == NULL)
-		{
-		  fclose (fp);
-		  free (defaultBase);	/* leak the rest... */
-		  return PAM_BUF_ERR;
-		}
-
-	      strcpy (p, passwdBase);
-	      strcpy (&p[len], defaultBase);
-	      free (passwdBase);
-	      passwdBase = p;
-	    }
-	  free (defaultBase);
+	  CHECKPOINTER (result->tls_randfile = strdup (v));
 	}
-      result->base = passwdBase;
-    }
-  else
-    {
-      result->base = defaultBase;
-    }
-
-  if (passwdFilter != NULL)
-    {
-      result->filter = passwdFilter;
-      if (defaultFilter != NULL)
-	free (defaultFilter);
-    }
-  else
-    {
-      result->filter = defaultFilter;
-    }
-
-  if (passwdScope != -1)
-    {
-      result->scope = passwdScope;
-    }
-  else
-    {
-      result->scope = defaultScope;
     }
 
 #ifdef HAVE_LDAP_INITIALIZE
@@ -1315,6 +1281,20 @@ static int
 _set_ssl_default_options (pam_ldap_session_t * session)
 {
   int rc;
+
+  /* rand file */
+  if (session->conf->tls_randfile != NULL)
+    {
+      rc = ldap_set_option (NULL, LDAP_OPT_X_TLS_RANDOM_FILE,
+			    session->conf->tls_randfile);
+      if (rc != LDAP_SUCCESS)
+	{
+	  syslog (LOG_ERR,
+		  "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_RANDOM_FILE): %s",
+		  ldap_err2string (rc));
+	  return LDAP_OPERATIONS_ERROR;
+	}
+    }
 
   /* ca cert file */
   if (session->conf->tls_cacertfile != NULL)
@@ -1666,7 +1646,7 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
 	  else if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PWEXPIRED))
 	    {
 	      session->info->password_expired = 1;
-      	      _pam_overwrite (session->info->userpw);
+	      _pam_overwrite (session->info->userpw);
 	      _pam_drop (session->info->userpw);
 	      rc = LDAP_SUCCESS;
 	      /* That may be a lie, but we need to get to the acct_mgmt
@@ -1990,6 +1970,7 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
   char filter[LDAP_FILT_MAXSIZ], escapedUser[LDAP_FILT_MAXSIZ];
   int rc;
   LDAPMessage *res, *msg;
+  pam_ssd_t *ssd, ssdummy;
 
   rc = _connect_anonymously (session);
   if (rc != PAM_SUCCESS)
@@ -2008,10 +1989,20 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
       return rc;
     }
 
-  if (session->conf->filter != NULL)
+  ssd = session->conf->ssd;
+  if (ssd == NULL)
+    {
+      ssd = &ssdummy;
+      ssd->filter = session->conf->filter;
+      ssd->base = session->conf->base;
+      ssd->scope = session->conf->scope;
+      ssd->next = NULL;
+    }
+nxt:
+  if (ssd->filter != NULL)
     {
       snprintf (filter, sizeof filter, "(&(%s)(%s=%s))",
-		session->conf->filter, session->conf->userattr, escapedUser);
+		ssd->filter, session->conf->userattr, escapedUser);
     }
   else
     {
@@ -2019,11 +2010,8 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
 		session->conf->userattr, escapedUser);
     }
 
-
-
-  rc = ldap_search_s (session->ld,
-		      session->conf->base,
-		      session->conf->scope, filter, NULL, 0, &res);
+  rc = ldap_search_s (session->ld, ssd->base, ssd->scope,
+		      filter, NULL, 0, &res);
 
   if (rc != LDAP_SUCCESS &&
       rc != LDAP_TIMELIMIT_EXCEEDED && rc != LDAP_SIZELIMIT_EXCEEDED)
@@ -2036,6 +2024,11 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
   if (msg == NULL)
     {
       ldap_msgfree (res);
+      if (ssd->next)
+        {
+          ssd = ssd->next;
+          goto nxt;
+        }
       return PAM_USER_UNKNOWN;
     }
 

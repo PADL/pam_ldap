@@ -37,6 +37,14 @@
 #include <pam/pam_modules.h>
 #endif
 
+typedef struct pam_ssd
+  {
+    char *base;
+    int scope;
+    char *filter;
+    struct pam_ssd *next;
+  } pam_ssd_t;
+
 /* /etc/ldap.conf nss_ldap-style configuration */
 typedef struct pam_ldap_config
   {
@@ -67,6 +75,8 @@ typedef struct pam_ldap_config
     int ssl_on;
     /* SSL path */
     char *sslpath;
+    /* list of SSDs to augment defaults */
+    pam_ssd_t *ssd;
     /* filter to AND with uid=%s */
     char *filter;
     /* attribute to search on; defaults to uid. Use CN with ADS? */
@@ -119,6 +129,8 @@ typedef struct pam_ldap_config
     char *tls_cert;
     /* tls key */
     char *tls_key;
+    /* tls randfile */
+    char *tls_randfile;
   }
 pam_ldap_config_t;
 

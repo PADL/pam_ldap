@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+158	Luke Howard <lukeh@padl.com>
+
+	* support for multiple service search descriptors from
+	  Symas
+
 157	Luke Howard <lukeh@padl.com>
 
 	* BUG#120 feature: pam_password_prohibit_message
