@@ -2453,6 +2453,8 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
       pam_set_item (pamh, PAM_OLDAUTHTOK, (void *) curpass);
       return rc;
     }				/* prelim */
+   else if (session->info == NULL) /* this is no LDAP user */
+    return PAM_USER_UNKNOWN;
 
   if (use_authtok)
     use_first_pass = 1;

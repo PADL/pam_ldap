@@ -1,6 +1,14 @@
 $Id$
 ===============================================================
 
+108	Luke Howard <lukeh@padl.com>
+
+	* patch from Thorsten Kukuk <kukuk@suse.de>:
+	  The problem: pam_ldap does not abort in the second
+	  pam_sm_chauthtok call, if we really change the password
+	  and the user does not exist in the LDAP database (tested
+	  with pam_ldap-105 and pam_ldap-107).
+
 107	Luke Howard <lukeh@padl.com>
 
 	* s/HAVE_LDAP_SET_REBIND_PROC_ARGS/LDAP_SET_REBIND_PROC_ARGS/
