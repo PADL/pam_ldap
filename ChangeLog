@@ -1,8 +1,6 @@
 $Id$
 ===============================================================
 
-139	Luke Howard <lukeh@padl.com>
-
 138	Luke Howard <lukeh@padl.com>
 
 	* when flushing cached session data, check to see
