@@ -1,12 +1,9 @@
 $Id$
 ===============================================================
 
-152	Luke Howard <lukeh@padl.com>
-
-	* HP-UX port
-
 151	Luke Howard <lukeh@padl.com>
 
+	* HP-UX port
 	* import dlfcn.h on Solaris with Netscape SDK
 
 150	Luke Howard <lukeh@padl.com>
