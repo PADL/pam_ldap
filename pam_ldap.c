@@ -714,7 +714,6 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
   char *defaultBase, *passwdBase, *defaultFilter, *passwdFilter;
   int defaultScope, passwdScope;
   pam_ldap_config_t *result;
-  char errmsg[MAXPATHLEN + 25];
 
   if (_alloc_config (presult) != PAM_SUCCESS)
     {
@@ -744,9 +743,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
        * According to PAM Documentation, such an error in a config file
        * SHOULD be logged at LOG_ALERT level
        */
-      snprintf (errmsg, sizeof (errmsg), "pam_ldap: missing file \"%s\"",
-		configFile);
-      syslog (LOG_ALERT, errmsg);
+      syslog (LOG_ALERT, "pam_ldap: missing file \"%s\"", configFile);
       return PAM_SERVICE_ERR;
     }
 

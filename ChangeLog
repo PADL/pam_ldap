@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+144	Luke Howard <lukeh@padl.com>
+
+	* avoid use of temporary variable when reporting
+	  non-existent configuration file
+
 143	Luke Howard <lukeh@padl.com>
 
 	* specify runtime path for LDAP library correctly to
