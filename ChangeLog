@@ -4,6 +4,8 @@ $Id$
 169	Luke Howard <lukeh@padl.com>
 
 	* include password policy schema file
+	* preliminary support for
+	  draft-behera-ldap-password-policy-07.txt
 
 168	Luke Howard <lukeh@padl.com>
 

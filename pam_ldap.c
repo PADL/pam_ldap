@@ -1620,19 +1620,87 @@ _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp, int freeit)
 }
 #endif
 
+/*
+ * See Internet Draft "Password Policy for LDAP Directories".
+ * draft-behera-ldap-password-policy-07.txt
+ */
+static int
+_get_password_policy_response_value(struct berval *response_value,
+				    pam_ldap_session_t *session)
+{
+  char *opaque; 
+  BerElement *ber;
+  ber_tag_t tag;
+  ber_len_t len;
+  int rc = LDAP_SUCCESS;
+
+  if (!response_value || !session)
+    return PAM_BUF_ERR;
+
+  /* create a BerElement from the berval returned in the control */
+  ber = ber_init(response_value);
+  if (!ber)
+    return PAM_BUF_ERR;
+
+  /* parse the PasswordPolicyResponseValue */
+  for (tag = ber_first_element(ber, &len, &opaque); 
+       tag != LBER_DEFAULT; 
+       tag = ber_next_element(ber, &len, opaque))
+    {
+      ber_tag_t ttag;
+      ber_int_t error;
+      ber_int_t value;
+
+      if (tag == 160)	    /* warning [0] CHOICE { ... } */
+	{
+	  if (ber_skip_tag(ber, &len) == 160)
+	    {
+	      ttag = ber_peek_tag(ber, &len);
+	      switch (ttag)
+		{
+		case POLICY_WARN_TIME_BEFORE_EXPIRATION:
+		case POLICY_WARN_GRACE_LOGINS_REMAINING:
+		  if (ber_scanf(ber, "i", &value) != LBER_ERROR)
+		  {
+		    if (ttag == POLICY_WARN_TIME_BEFORE_EXPIRATION)
+		      session->info->password_expiration_time = value;
+		    else
+		      session->info->grace_logins_remaining = value;
+		    continue;
+		  }
+		}
+	    }
+	}
+      else if (tag == 129)  /* error [1] ENUMERATED { ... } */
+	{
+	  ttag = ber_scanf(ber, "e", &error);
+	  if (ttag != LBER_ERROR)
+	    {
+	      if (session->info->policy_error != POLICY_ERROR_SUCCESS)
+		session->info->policy_error = error;
+	    }
+	}
+      rc = LDAP_DECODING_ERROR;
+      break;
+    }
+
+  ber_free(ber, 1);
+  return rc;
+}
 
 static int
 _connect_as_user (pam_ldap_session_t * session, const char *password)
 {
   int rc, msgid;
+  struct timeval timeout;
 #if defined(HAVE_LDAP_PARSE_RESULT) && defined(HAVE_LDAP_CONTROLS_FREE)
   int parserc;
-#endif
-  struct timeval timeout;
   LDAPMessage *result;
-#ifdef HAVE_LDAP_CONTROLS_FREE
   LDAPControl **controls;
-#endif
+  LDAPControl passwd_policy_req;
+  LDAPControl *srvctrls[2];
+  struct berval userpw;
+#endif /* HAVE_LDAP_PARSE_RESULT && HAVE_LDAP_CONTROLS_FREE */
 
   /* avoid binding anonymously with a DN but no password */
   if (password == NULL || password[0] == '\0')
@@ -1668,6 +1736,43 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
   if (session->info->userpw == NULL)
     return PAM_BUF_ERR;
 
+#if defined(HAVE_LDAP_SASL_BIND) && defined(LDAP_SASL_SIMPLE)
+  if (session->conf->version > LDAP_VERSION2)
+    {
+      userpw.bv_val = session->info->userpw;
+      userpw.bv_len = (userpw.bv_val != 0) ? strlen(userpw.bv_val) : 0;
+      passwd_policy_req.ldctl_oid = LDAP_CONTROL_PWPOLICY;
+      passwd_policy_req.ldctl_value.bv_val = 0; /* none */
+      passwd_policy_req.ldctl_value.bv_len = 0;
+      passwd_policy_req.ldctl_iscritical = 0;   /* not critical */
+      srvctrls[0] = &passwd_policy_req;
+      srvctrls[1] = 0;
+
+      rc = ldap_sasl_bind(session->ld, session->info->userdn, LDAP_SASL_SIMPLE,
+			  &userpw, srvctrls, 0, &msgid);
+      if (rc != LDAP_SUCCESS || msgid == -1)
+	{
+	  syslog (LOG_ERR, "pam_ldap: ldap_sasl_bind %s",
+		  ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
+		  _pam_overwrite (session->info->userpw);
+		  _pam_drop (session->info->userpw);
+	  return PAM_AUTHINFO_UNAVAIL;
+	}
+    }
+  else
+    {
+      msgid = ldap_simple_bind (session->ld, session->info->userdn,
+				session->info->userpw);
+      if (msgid == -1)
+	{
+	  syslog (LOG_ERR, "pam_ldap: ldap_simple_bind %s",
+		  ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
+	  _pam_overwrite (session->info->userpw);
+	  _pam_drop (session->info->userpw);
+	  return PAM_AUTHINFO_UNAVAIL;
+	}
+    }
+#else
   msgid =
     ldap_simple_bind (session->ld, session->info->userdn,
 		      session->info->userpw);
@@ -1679,6 +1784,7 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
       _pam_drop (session->info->userpw);
       return PAM_AUTHINFO_UNAVAIL;
     }
+#endif /* HAVE_LDAP_SASL_BIND && LDAP_SASL_SIMPLE */
 
   timeout.tv_sec = 10;
   timeout.tv_usec = 0;
@@ -1719,13 +1825,18 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
 	    }
 	  else if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PWEXPIRED))
 	    {
-	      session->info->password_expired = 1;
+	      session->info->policy_error = POLICY_ERROR_PASSWORD_EXPIRED;
 	      _pam_overwrite (session->info->userpw);
 	      _pam_drop (session->info->userpw);
 	      rc = LDAP_SUCCESS;
 	      /* That may be a lie, but we need to get to the acct_mgmt
 	       * step and force the change...
 	       */
+	    }
+	  else if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PWPOLICY))
+	    {
+	      rc = _get_password_policy_response_value(&(*ctlp)->ldctl_value,
+							session);
 	    }
 	}
       ldap_controls_free (controls);
@@ -2196,6 +2307,7 @@ nxt:
     }
 
   session->info->bound_as_user = 0;
+  session->info->policy_error = POLICY_ERROR_SUCCESS;
 
   /*
    * it might be better to do a compare later, that way we can
@@ -3119,6 +3231,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
     return (ignore_flags & IGNORE_UNKNOWN_USER) ? PAM_IGNORE :
       PAM_USER_UNKNOWN;
 
+
   if (use_authtok)
     use_first_pass = 1;
 
@@ -3301,7 +3414,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		"LDAP password information changed for %s", username);
       _conv_sendmsg (appconv, errmsg, PAM_TEXT_INFO,
 		     (flags & PAM_SILENT) ? 1 : 0);
-      session->info->password_expired = 0;
+      session->info->policy_error = POLICY_ERROR_SUCCESS;
     }
 
   pam_set_item (pamh, PAM_AUTHTOK, (void *) newpass);
@@ -3414,7 +3527,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
        * expired. Apparently this is documented in the
        * shadow suite (libmisc/isexpired.c).
        */
-      session->info->password_expired = 1;
+      session->info->policy_error = POLICY_ERROR_PASSWORD_EXPIRED;
     }
 
   /*
@@ -3438,21 +3551,28 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
       if (currentday >= (session->info->shadow.lstchg +
 			 session->info->shadow.max))
 	{
-	  session->info->password_expired = 1;
+	  session->info->policy_error = POLICY_ERROR_PASSWORD_EXPIRED;
 	}
     }
 
   /* check whether the password has expired */
-  if (session->info->password_expired)
+  switch (session->info->policy_error)
     {
-      _conv_sendmsg (appconv,
-		     "You are required to change your LDAP password immediately.",
-		     PAM_ERROR_MSG, no_warn);
+      case POLICY_ERROR_SUCCESS:
+	break;
+      case POLICY_ERROR_PASSWORD_EXPIRED:
+	_conv_sendmsg (appconv,
+		       "You are required to change your LDAP password immediately.",
+		       PAM_ERROR_MSG, no_warn);
 #ifdef LINUX
-      rc = success = PAM_AUTHTOKEN_REQD;
+	rc = success = PAM_AUTHTOKEN_REQD;
 #else
-      rc = success = PAM_NEW_AUTHTOK_REQD;
+	rc = success = PAM_NEW_AUTHTOK_REQD;
 #endif /* LINUX */
+	break;
+      default:
+	/* XXX TODO: handle other password policy errors */
+	break;
     }
 
   /*
@@ -3464,7 +3584,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
   /*
    * If the password's expired, no sense warning
    */
-  if (!session->info->password_expired)
+  if (session->info->policy_error != POLICY_ERROR_PASSWORD_EXPIRED)
     {
       if (session->info->shadow.warn > 0)	/* shadowAccount */
 	{

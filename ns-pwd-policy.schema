@@ -44,7 +44,7 @@ attributetype ( 2.16.840.1.113730.3.1.102
 attributetype ( 2.16.840.1.113730.3.1.103
 	NAME 'passwordCheckSyntax'
 	DESC 'a flag which indicates whether the password syntax will be checked
-              before the password is saved'
+	          before the password is saved'
 	EQUALITY booleanMatch
 	SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 )
 	
@@ -117,10 +117,74 @@ objectclass ( 2.16.840.1.113730.3.2.13
 	SUP top
 	DESC 'Password Policy object class to hold password policy information'
 	MAY ( passwordMaxAge $ passwordExp $ passwordMinLength $
-	   passwordKeepHistory $ passwordInHistory $ passwordChange $
-	   passwordCheckSyntax $ passwordWarning $ passwordLockout $
-	   passwordMaxFailure $	passwordUnlock $ passwordLockoutDuration $
-	   passwordMustChange $	passwordStorageScheme $	passwordMinAge $
-	   passwordResetFailureCount )
+	      passwordKeepHistory $ passwordInHistory $ passwordChange $
+	      passwordCheckSyntax $ passwordWarning $ passwordLockout $
+	      passwordMaxFailure $ passwordUnlock $ passwordLockoutDuration $
+	      passwordMustChange $ passwordStorageScheme $ passwordMinAge $
+	      passwordResetFailureCount )
+	)
+
+attributetype ( 2.16.840.1.113730.3.1.91
+	NAME 'passwordExpirationTime'
+	DESC 'the time the entrys password expires'
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
+	EQUALITY generalizedTimeMatch
+	ORDERING generalizedTimeOrderingMatch
+	SINGLE-VALUE USAGE dSAOperation )
+
+attributetype ( 2.16.840.1.113730.3.1.92
+	NAME 'passwordExpWarned'
+	DESC 'a flag which indicates whether a password expiration warning is sent
+	      to the client'
+	EQUALITY booleanMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+	SINGLE-VALUE USAGE dSAOperation )
+
+attributetype  ( 2.16.840.1.113730.3.1.93
+	NAME 'passwordRetryCount'
+	DESC 'the count of consecutive failed password attempts'
+	EQUALITY integerMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+	SINGLE-VALUE USAGE dSAOperation )
+
+attributetype ( 2.16.840.1.113730.3.1.94
+	NAME 'retryCountResetTime'
+	DESC 'the time to reset the passwordRetryCount'
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
+	EQUALITY generalizedTimeMatch
+	ORDERING generalizedTimeOrderingMatch
+	SINGLE-VALUE USAGE dSAOperation )
+
+attributetype ( 2.16.840.1.113730.3.1.95
+	NAME 'accountUnlockTime'
+	DESC 'the time that the user can bind again after an account lockout'
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
+	EQUALITY generalizedTimeMatch
+	ORDERING generalizedTimeOrderingMatch
+	SINGLE-VALUE USAGE dSAOperation )
+
+attributetype ( 2.16.840.1.113730.3.1.96
+	NAME 'passwordHistory'
+	DESC 'the history of users passwords'
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+	EQUALITY octetStringMatch USAGE dSAOperation )
+
+attributetype ( 2.16.840.1.113730.3.1.214
+	NAME 'passwordAllowChangeTime'
+	DESC 'the time that the user is allowed change the password'
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
+	EQUALITY generalizedTimeMatch
+	ORDERING generalizedTimeOrderingMatch
+	SINGLE-VALUE USAGE dSAOperation )
+
+objectclass ( 2.16.840.1.113730.3.2.12
+	NAME 'passwordObject'
+	AUXILIARY
+	SUP top
+	DESC 'Password object class to hold password policy information for each
+	      entry'
+	MAY ( passwordExpirationTime $ passwordExpWarned $ passwordRetryCount $
+	      retryCountResetTime $ accountUnlockTime $ passwordHistory $
+	      passwordAllowChangeTime )
 	)
 

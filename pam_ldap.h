@@ -183,10 +183,27 @@ pam_ldap_shadow_t;
 #ifndef LDAP_CONTROL_PWEXPIRING
 #define LDAP_CONTROL_PWEXPIRING     "2.16.840.1.113730.3.4.5"
 #endif /* LDAP_CONTROL_PWEXPIRING */
+#ifndef LDAP_CONTROL_PWPOLICY
+#define LDAP_CONTROL_PWPOLICY	    "1.3.6.1.4.1.42.2.27.8.5.1"
+#endif	/* LDAP_CONTROL_PWPOLICY */
+
+#define POLICY_WARN_TIME_BEFORE_EXPIRATION		128
+#define POLICY_WARN_GRACE_LOGINS_REMAINING		129
+
+#define POLICY_ERROR_SUCCESS				-1
+#define POLICY_ERROR_PASSWORD_EXPIRED			0
+#define POLICY_ERROR_ACCOUNT_LOCKED			1
+#define POLICY_ERROR_CHANGE_AFTER_RESET			2
+#define POLICY_ERROR_PASSWORD_MOD_NOT_ALLOWED		3
+#define POLICY_ERROR_MUST_SUPPLY_OLD_PASSWORD		4
+#define POLICY_ERROR_INSUFFICIENT_PASSWORD_QUALITY	5
+#define POLICY_ERROR_PASSWORD_TOO_SHORT			6
+#define POLICY_ERROR_PASSWORD_TOO_YOUNG			7
+#define POLICY_ERROR_PASSWORD_INSUFFICIENT		8
 
 #ifndef LDAP_OPT_ON
 #define LDAP_OPT_ON ((void *) 1)
-#endif /* LDPA_OPT_ON */
+#endif /* LDAP_OPT_ON */
 #ifndef LDAP_OPT_OFF
 #define LDAP_OPT_OFF ((void *) 0)
 #endif /* LDAP_OPT_OFF */
@@ -215,8 +232,10 @@ typedef struct pam_ldap_user_info
     char **services_allow;
     /* seconds until password expires */
     long password_expiration_time;
-    /* password expires now */
-    int password_expired;
+    /* grace logins remaining */
+    int grace_logins_remaining;
+    /* password policy error */
+    int policy_error;
     /* bound as user DN */
     int bound_as_user;
     /* user ID */
