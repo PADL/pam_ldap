@@ -5,6 +5,7 @@ $Id$
 
 	* HP-UX port
 	* import dlfcn.h on Solaris with Netscape SDK
+	* export required symbols only on Linux
 
 150	Luke Howard <lukeh@padl.com>
 
