@@ -94,11 +94,11 @@ AC_DEFINE_UNQUOTED(GETHOSTBYNAME_R_ARGS, $pam_ldap_cv_gethostbyname_r_args)
 fi
 
 AC_CHECK_FUNCS(ldap_set_rebind_proc)
-AC_CACHE_CHECK(whether ldap_set_rebind_proc takes 3 arguments, nss_ldap2_cv_ldap_set_rebind_proc, [
+AC_CACHE_CHECK(whether ldap_set_rebind_proc takes 3 arguments, pam_ldap_cv_ldap_set_rebind_proc, [
 AC_TRY_COMPILE([
 #include <lber.h>
-#include <ldap.h>], [ldap_set_rebind_proc(0, 0, 0);], [nss_ldap2_cv_ldap_set_rebind_proc=3], [nss_ldap2_cv_ldap_set_rebind_proc=2]) ])
-AC_DEFINE_UNQUOTED(LDAP_SET_REBIND_PROC_ARGS, $nss_ldap2_cv_ldap_set_rebind_proc)
+#include <ldap.h>], [ldap_set_rebind_proc(0, 0, 0);], [pam_ldap_cv_ldap_set_rebind_proc=3], [pam_ldap_cv_ldap_set_rebind_proc=2]) ])
+AC_DEFINE_UNQUOTED(LDAP_SET_REBIND_PROC_ARGS, $pam_ldap_cv_ldap_set_rebind_proc)
 
 
 AC_OUTPUT(Makefile)

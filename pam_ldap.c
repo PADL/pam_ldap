@@ -1076,14 +1076,40 @@ _connect_anonymously (pam_ldap_session_t * session)
   return PAM_SUCCESS;
 }
 
-#if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
+#if LDAP_API_FEATURE_X_OPENLDAP >= 20000
+static int
+_rebind_proc (LDAP *ld, LDAP_CONST char *url, int request, ber_int_t msgid)
+{
+  pam_ldap_session_t *session = global_session;
+  char *who, *cred;
+
+  if (session->info != NULL && session->info->bound_as_user == 1) {
+      who = session->info->userdn;
+      cred = session->info->userpw;
+  } else {
+      if (session->conf->rootbinddn != NULL && geteuid () == 0)
+	{
+	  who = session->conf->rootbinddn;
+	  cred = session->conf->rootbindpw;
+	}
+      else
+	{
+	  who = session->conf->binddn;
+	  cred = session->conf->bindpw;
+	}
+  }
+
+  return ldap_simple_bind_s(ld, who, cred);
+}
+#else
+# if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
 static int
 _rebind_proc (LDAP * ld,
 	      char **whop, char **credp, int *methodp, int freeit, void *arg)
-#else
+# else
 static int
 _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp, int freeit)
-#endif
+# endif
 {
 #if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
   pam_ldap_session_t *session = (pam_ldap_session_t *) arg;
@@ -1129,6 +1155,8 @@ _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp, int freeit)
 
   return LDAP_SUCCESS;
 }
+#endif
+
 
 static int
 _connect_as_user (pam_ldap_session_t * session, const char *password)

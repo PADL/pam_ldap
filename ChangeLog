@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+90	Luke Howard <lukeh@padl.com>
+
+	* support for correct rebind function prototype
+	  with OpenLDAP SDK
+
 89	Luke Howard <lukeh@padl.com>
 
 	* support for connection timeout in Netscape SDK

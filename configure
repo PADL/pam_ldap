@@ -789,7 +789,7 @@ fi
 
 PACKAGE=pam_ldap
 
-VERSION=84
+VERSION=89
 
 if test "`cd $srcdir && pwd`" != "`pwd`" && test -f $srcdir/config.status; then
   { echo "configure: error: source directory already configured; run "make distclean" there first" 1>&2; exit 1; }
@@ -2279,7 +2279,7 @@ done
 
 echo $ac_n "checking whether ldap_set_rebind_proc takes 3 arguments""... $ac_c" 1>&6
 echo "configure:2282: checking whether ldap_set_rebind_proc takes 3 arguments" >&5
-if eval "test \"`echo '$''{'nss_ldap2_cv_ldap_set_rebind_proc'+set}'`\" = set"; then
+if eval "test \"`echo '$''{'pam_ldap_cv_ldap_set_rebind_proc'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   
@@ -2295,19 +2295,19 @@ ldap_set_rebind_proc(0, 0, 0);
 EOF
 if { (eval echo configure:2297: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
-  nss_ldap2_cv_ldap_set_rebind_proc=3
+  pam_ldap_cv_ldap_set_rebind_proc=3
 else
   echo "configure: failed program was:" >&5
   cat conftest.$ac_ext >&5
   rm -rf conftest*
-  nss_ldap2_cv_ldap_set_rebind_proc=2
+  pam_ldap_cv_ldap_set_rebind_proc=2
 fi
 rm -f conftest* 
 fi
 
-echo "$ac_t""$nss_ldap2_cv_ldap_set_rebind_proc" 1>&6
+echo "$ac_t""$pam_ldap_cv_ldap_set_rebind_proc" 1>&6
 cat >> confdefs.h <<EOF
-#define LDAP_SET_REBIND_PROC_ARGS $nss_ldap2_cv_ldap_set_rebind_proc
+#define LDAP_SET_REBIND_PROC_ARGS $pam_ldap_cv_ldap_set_rebind_proc
 EOF
 
 
