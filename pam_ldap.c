@@ -647,9 +647,11 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	    result->password_type = PASSWORD_NDS;
 	  else if (!strcasecmp (v, "ad"))
 	    result->password_type = PASSWORD_AD;
+	  else if (!strcasecmp (v, "exop"))
+	    result->password_type = PASSWORD_EXOP;
 	}
       else if (!strcasecmp (k, "pam_crypt"))
-       {
+	{
 	  /*
 	   * we still support this even though it is 
 	   * deprecated, as it could be a security
@@ -657,10 +659,10 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	   * unsuspecting users of pam_ldap.
 	   */
 	  if (!strcasecmp (v, "local"))
-		result->password_type = PASSWORD_CRYPT;
+	    result->password_type = PASSWORD_CRYPT;
 	  else
-		result->password_type = PASSWORD_CLEAR;
-        }
+	    result->password_type = PASSWORD_CLEAR;
+	}
       else if (!strcasecmp (k, "port"))
 	{
 	  result->port = atoi (v);
@@ -978,14 +980,14 @@ _open_session (pam_ldap_session_t * session)
 
 #ifdef LDAP_OPT_REFERRALS
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->conf->
-			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->
+			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef LDAP_OPT_RESTART
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->conf->
-			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->
+			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
@@ -1828,13 +1830,23 @@ _update_authtok (pam_ldap_session_t * session,
   LDAPMod *mods[3];
   char buf[64], saltbuf[16];
   int rc = PAM_SUCCESS, i;
-  /* AD stuff */
+
+  /* for Active Directory */
+
   struct berval bvalold;
   struct berval bvalnew;
   struct berval *bvalsold[2];
   struct berval *bvalsnew[2];
   char old_password_with_quotes[17], new_password_with_quotes[17];
   char old_unicode_password[34], new_unicode_password[34];
+
+#ifdef LDAP_EXOP_X_MODIFY_PASSWD
+  /* for OpenLDAP password change extended operation */
+  BerElement *ber;
+  struct berval *bv;
+  char *retoid;
+  struct berval *retdata;
+#endif /* LDAP_EXOP_X_MODIFY_PASSWD */
 
   if (session->info == NULL)
     {
@@ -1991,18 +2003,70 @@ _update_authtok (pam_ldap_session_t * session,
 	  mods[0] = &mod;
 	  mods[1] = NULL;
 	}
+
+      break;
+
+    case PASSWORD_EXOP:
+#ifdef LDAP_EXOP_X_MODIFY_PASSWD
+      ber = ber_alloc_t (LBER_USE_DER);
+
+      if (ber == NULL)
+	{
+	  return PAM_BUF_ERR;
+	}
+
+      ber_printf (ber, "{");
+      ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_ID,
+		  session->info->userdn);
+      ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_OLD, old_password);
+      ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_NEW, new_password);
+      ber_printf (ber, "N}");
+
+      rc = ber_flatten (ber, &bv);
+      if (rc < 0)
+	{
+	  return PAM_BUF_ERR;
+	}
+
+      ber_free (ber, 1);
+
+      rc =
+	ldap_extended_operation_s (session->ld, LDAP_EXOP_X_MODIFY_PASSWD, bv,
+				   NULL, NULL, &retoid, &retdata);
+      ber_bvfree (bv);
+
+      if (rc != LDAP_SUCCESS)
+	{
+	  syslog (LOG_ERR, "pam_ldap: ldap_extended_operation_s %s",
+		  ldap_err2string (rc));
+	  rc = PAM_PERM_DENIED;
+	}
+      else
+	{
+	  ber_bvfree (retdata);
+	  ber_memfree (retoid);
+	  rc = PAM_SUCCESS;
+	}
+#else
+      rc = PAM_SYSTEM_ERR;
+#endif /* LDAP_EXOP_X_MODIFY_PASSWD */
+
       break;
     }				/* end switch */
 
-  rc = ldap_modify_s (session->ld, session->info->userdn, mods);
-  if (rc != LDAP_SUCCESS)
+  if (session->conf->password_type != PASSWORD_EXOP)
     {
-      syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
-      rc = PAM_PERM_DENIED;
-    }
-  else
-    {
-      rc = PAM_SUCCESS;
+      rc = ldap_modify_s (session->ld, session->info->userdn, mods);
+      if (rc != LDAP_SUCCESS)
+	{
+	  syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s",
+		  ldap_err2string (rc));
+	  rc = PAM_PERM_DENIED;
+	}
+      else
+	{
+	  rc = PAM_SUCCESS;
+	}
     }
 
   return rc;
