@@ -26,12 +26,17 @@ The advantages of this particular version are:
 
 The module builds under both Linux 2.x and Solaris 2.6.
 
-Thanks to fellow Aussie Chris Albone who wrote the initial pam_ldap_auth
-module.
+Thanks to fellow Aussie Chris Albone who wrote the initial
+pam_ldap_auth module.
 
 I've tested this with Netscape Directory Server 3.1 under NT and
 Solaris, the University of Michigan LDAP server, and Microsoft's
 Exchange Server.
+
+pam_ldap is only secure if used with a SASL mechanism (like
+CRAM-MD5) or with transport security (like SSL/TLS). With simple
+authentication, it is less secure than using UNIX hashed passwords,
+because the LDAP bind request sends the password in the clear.
 
 Here are some possible deployment scenarios:
 
