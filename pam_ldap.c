@@ -1962,10 +1962,6 @@ pam_sm_chauthtok (
   else
     {
       /* update shadowLastChange */
-      rc = _connect_anonymously (session);
-      if (rc != PAM_SUCCESS)
-	return rc; 
-
       snprintf (buf, sizeof buf, "%ld", time(NULL) / (60 * 60 * 24));
       strvals[0] = buf;
       strvals[1] = NULL;
