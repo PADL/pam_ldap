@@ -1057,6 +1057,9 @@ _open_session (pam_ldap_session_t * session)
 #ifdef LDAP_X_OPT_CONNECT_TIMEOUT
   int timeout;
 #endif
+#ifdef LDAP_OPT_NETWORK_TIMEOUT
+  struct timeval tv;
+#endif
 
 #ifdef HAVE_LDAPSSL_INIT
   if (session->conf->ssl_on == SSL_LDAPS && ssl_initialized == 0)
@@ -1161,6 +1164,12 @@ _open_session (pam_ldap_session_t * session)
    */
   timeout = session->conf->bind_timelimit * 1000;
   (void) ldap_set_option (session->ld, LDAP_X_OPT_CONNECT_TIMEOUT, &timeout);
+#endif
+
+#if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_NETWORK_TIMEOUT)
+  tv.tv_sec = session->conf->bind_timelimit;
+  tv.tv_usec = 0;
+  (void) ldap_set_option (session->ld, LDAP_OPT_NETWORK_TIMEOUT, &tv);
 #endif
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_REFERRALS)

@@ -5,6 +5,7 @@ $Id$
 
 	* support for new OpenLDAP rebind procedure
 	* do not try to open /etc/ldap.secret unless root
+	* use LDAP_OPT_NETWORK_TIMEOUT if available
 
 122	Luke Howard <lukeh@padl.com>
 
