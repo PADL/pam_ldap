@@ -1,6 +1,12 @@
 $Id$
 ===============================================================
 
+101	Luke Howard <lukeh@padl.com>
+
+	* fix uninitialized variable
+	* retrieve password policy on actual password
+	  change, may not have been done if we were root.
+
 100	Luke Howard <lukeh@padl.com>
 
 	* use -rpath on all platforms except Solaris,
