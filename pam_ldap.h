@@ -32,6 +32,8 @@
 /* /etc/ldap.conf nss_ldap-style configuration */
 typedef struct pam_ldap_config
   {
+    /* URI */
+    char *uri;
     /* space delimited list of servers */
     char *host;
     /* port, expected to be common to all servers */

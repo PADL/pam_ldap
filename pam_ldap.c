@@ -143,7 +143,7 @@
 #endif
 
 static char rcsid[] __UNUSED__ =
-"$Id$";
+  "$Id$";
 #if HAVE_LDAP_SET_REBIND_PROC_ARGS < 3
 static pam_ldap_session_t *global_session = 0;
 #endif
@@ -171,11 +171,10 @@ static int ssl_initialized = 0;
  * 
  * If there is a better way of doing this, let us know.
  */
-void 
-nasty_pthread_hack (void) __attribute__ ((constructor));
+void nasty_pthread_hack (void) __attribute__ ((constructor));
 
-     void
-       nasty_pthread_hack (void)
+void
+nasty_pthread_hack (void)
 {
   (void) dlopen ("libpthread.so", RTLD_LAZY);
 }
@@ -186,11 +185,10 @@ nasty_pthread_hack (void) __attribute__ ((constructor));
  * We need to keep ourselves loaded so that ssl_initialized
  * is set across PAM sessions.
  */
-void 
-nasty_ssl_hack (void) __attribute__ ((constructor));
+void nasty_ssl_hack (void) __attribute__ ((constructor));
 
-     void
-       nasty_ssl_hack (void)
+void
+nasty_ssl_hack (void)
 {
   (void) dlopen ("/lib/security/pam_ldap.so", RTLD_LAZY);
 }
@@ -201,7 +199,7 @@ static int
 i64c (int i)
 {
   const char *base64 =
-  "./01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    "./01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
   if (i < 0)
     i = 0;
   else if (i > 63)
@@ -605,6 +603,10 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	{
 	  CHECKPOINTER (result->host = strdup (v));
 	}
+      else if (!strcasecmp (k, "uri"))
+	{
+	  CHECKPOINTER (result->uri = strdup (v));
+	}
       else if (!strcasecmp (k, "base"))
 	{
 	  CHECKPOINTER (defaultBase = strdup (v));
@@ -882,7 +884,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	{
 	  _pam_drop (result->rootbinddn);
 	  syslog (LOG_WARNING,
-	       "pam_ldap: could not open secret file /etc/ldap.secret (%s)",
+		  "pam_ldap: could not open secret file /etc/ldap.secret (%s)",
 		  strerror (errno));
 	}
     }
@@ -924,11 +926,28 @@ _open_session (pam_ldap_session_t * session)
   else
 #endif /* HAVE_LDAPSSL_INIT */
     {
+#ifdef HAVE_LDAP_INITIALIZE
+      if (session->conf->uri != NULL)
+	{
+	  rc = ldap_initialize (&session->ld, session->conf->uri);
+	  if (rc != LDAP_SUCCESS)
+	    {
+	      syslog (LOG_ERR, "pam_ldap: ldap_initialize %s",
+		      ldap_err2string (rc));
+	      return PAM_SYSTEM_ERR;
+	    }
+	}
+      else
+	{
+#endif /* HAVE_LDAP_INTITIALIZE */
 #ifdef HAVE_LDAP_INIT
-      session->ld = ldap_init (session->conf->host, session->conf->port);
+	  session->ld = ldap_init (session->conf->host, session->conf->port);
 #else
-      session->ld = ldap_open (session->conf->host, session->conf->port);
+	  session->ld = ldap_open (session->conf->host, session->conf->port);
 #endif /* HAVE_LDAP_INIT */
+#ifdef HAVE_LDAP_INITIALIZE
+	}
+#endif /* HAVE_LDAP_INTIALIZE */
     }
 
   if (session->ld == NULL)
@@ -986,14 +1005,14 @@ _open_session (pam_ldap_session_t * session)
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_REFERRALS)
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->
-			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_RESTART)
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->
-			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
@@ -1048,7 +1067,7 @@ _connect_anonymously (pam_ldap_session_t * session)
   else
     {
       msgid = ldap_simple_bind (session->ld,
-			      session->conf->binddn, session->conf->bindpw);
+				session->conf->binddn, session->conf->bindpw);
     }
 
   if (msgid == -1)
@@ -1314,7 +1333,8 @@ _get_integer_value (LDAP * ld, LDAPMessage * e, const char *attr, int *ptr)
 }
 
 static int
-_get_long_integer_value (LDAP * ld, LDAPMessage * e, const char *attr, long int *ptr)
+_get_long_integer_value (LDAP * ld, LDAPMessage * e, const char *attr,
+			 long int *ptr)
 {
   char **vals;
 
@@ -1675,13 +1695,13 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
 
 static int
 _pam_ldap_get_session (pam_handle_t * pamh, const char *username,
-		     const char *configFile, pam_ldap_session_t ** psession)
+		       const char *configFile, pam_ldap_session_t ** psession)
 {
   pam_ldap_session_t *session;
   int rc;
 
   if (pam_get_data
-    (pamh, PADL_LDAP_SESSION_DATA, (const void **) &session) == PAM_SUCCESS)
+      (pamh, PADL_LDAP_SESSION_DATA, (const void **) &session) == PAM_SUCCESS)
     {
       /*
        * we cache the information retrieved from the LDAP server, however
@@ -2353,7 +2373,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		      else
 			{
 			  _conv_sendmsg (appconv,
-				       "LDAP Password incorrect: try again",
+					 "LDAP Password incorrect: try again",
 					 PAM_ERROR_MSG, no_warn);
 			}
 		      return rc;
@@ -2739,7 +2759,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if (session->info->password_expired)
     {
       _conv_sendmsg (appconv,
-	       "You are required to change your LDAP password immediately.",
+		     "You are required to change your LDAP password immediately.",
 		     PAM_ERROR_MSG, no_warn);
 #ifdef LINUX
       success = PAM_AUTHTOKEN_REQD;
@@ -2840,8 +2860,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 
 /* static module data */
 #ifdef PAM_STATIC
-struct pam_module _modstruct =
-{
+struct pam_module _modstruct = {
   "pam_ldap",
   pam_sm_authenticate,
   pam_sm_setcred,
