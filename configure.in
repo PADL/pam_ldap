@@ -2,7 +2,7 @@ AC_INIT(pam_ldap.c)
 AC_CANONICAL_SYSTEM
 AC_PREFIX_DEFAULT()
 
-AM_INIT_AUTOMAKE(pam_ldap, 51)
+AM_INIT_AUTOMAKE(pam_ldap, 66)
 AM_CONFIG_HEADER(config.h)
 
 AC_PROG_CC
@@ -10,6 +10,7 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 
 AC_ARG_ENABLE(nds, [  --enable-nds            enable Novell NDS specific features], [AC_DEFINE(NDS)])
+AC_ARG_ENABLE(ypldapd, [  --enable-ypldapd            enable PADL ypldapd specific features], [AC_DEFINE(YPLDAPD)])
 AC_ARG_WITH(ldap-lib, [  --with-ldap-lib=type    select ldap library [auto|netscape3|netscape4|umich|openldap]])
 AC_ARG_WITH(ldap-dir, [  --with-ldap-dir=DIR     base directory of ldap SDK])
 
