@@ -19,9 +19,9 @@ endif
 
 install-data-local:
 	@$(NORMAL_INSTALL)
-	@if test ! -f $(DESTDIR)$(etcdir)/ldap.conf; then \
-		$(mkinstalldirs) $(DESTDIR)$(etcdir); \
-		$(INSTALL_DATA) -o root -g root $(srcdir)/ldap.conf $(DESTDIR)$(etcdir)/ldap.conf; \
+	@if test ! -f $(DESTDIR)$(sysconfdir)/ldap.conf; then \
+		$(mkinstalldirs) $(DESTDIR)$(sysconfdir); \
+		$(INSTALL_DATA) -o root -g root $(srcdir)/ldap.conf $(DESTDIR)$(sysconfdir)/ldap.conf; \
 	fi
 
 uninstall-local:

@@ -20,8 +20,10 @@ dnl This is needed for the native Solaris LDAP SDK
 CPPFLAGS="$CPPFLAGS -DLDAP_REFERRALS"
 CPPFLAGS="$CPPFLAGS -D_REENTRANT"
 
+dnl This depends on building on Solaris with gcc
+dnl because that accepts -Wl. Is this a good idea?
 case "$target_os" in
-solaris*) pam_ldap_so_LDFLAGS="-M mapfile -G" ;;
+solaris*) pam_ldap_so_LDFLAGS="-Wl,-M -Wl,mapfile -Wl,-G" ;;
 *) pam_ldap_so_LDFLAGS="--shared" ;;
 dnl "--shared" is undocumented for gcc, shouldn't this be "-shared"?
 esac
@@ -32,7 +34,7 @@ if test -n "$with_ldap_dir"; then
   LDFLAGS="$LDFLAGS -L$with_ldap_dir/lib"
   case "$target_os" in  
   linux*) LDFLAGS="$LDFLAGS -Wl,-rpath,$with_ldap_dir/lib" ;;
-  solaris*) LDFLAGS="$LDFLAGS -R$with_ldap_dir/lib" ;;  
+  solaris*) LDFLAGS="$LDFLAGS -Wl,-R$with_ldap_dir/lib" ;;  
   esac  
 fi
 
