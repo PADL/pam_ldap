@@ -157,6 +157,10 @@ ldap_version 2
 
 in /etc/ldap.conf.
 
+Scott M. Stone <sstone@foo3.com> writes:
+Your openldap libs *and* your SSL/RSAREF libs must be DYNAMIC LIBRARIES
+or neither nss_ldap nor pam_ldap will work.
+
 SUPPORT
 =======
 
