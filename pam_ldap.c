@@ -253,9 +253,11 @@ static int _get_authtok (pam_handle_t * pamh, int flags, int first);
 static int _conv_sendmsg (struct pam_conv *aconv,
 			  const char *message, int style, int no_warn);
 
+#if defined(HAVE_LIBPTHREAD) || defined(HAVE_LDAPSSL_INIT)
+#include <dlfcn.h>
+#endif
 
 #ifdef HAVE_LIBPTHREAD
-#include <dlfcn.h>
 
 /*
  * on Linux at least, the pthread library registers an atexit
@@ -1254,14 +1256,14 @@ _open_session (pam_ldap_session_t * session)
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_REFERRALS)
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->conf->
-			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->
+			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_RESTART)
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->conf->
-			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->
+			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
@@ -3020,7 +3022,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
       if (cmiscptr == NULL)
 	{
 	  /* get password again */
-	  char *miscptr;
+	  char *miscptr = NULL;
 
 	  pmsg = &msg;
 	  msg.msg_style = PAM_PROMPT_ECHO_OFF;
@@ -3030,15 +3032,15 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	  rc = appconv->conv (1, (CONST_ARG struct pam_message **) &pmsg,
 			      &resp, appconv->appdata_ptr);
 
-	  if (rc != PAM_SUCCESS)
-	    return rc;
-
-	  miscptr = resp->resp;
-	  free (resp);
-	  if (miscptr[0] == '\0')
+	  if (rc == PAM_SUCCESS)
 	    {
-	      free (miscptr);
-	      miscptr = NULL;
+	      miscptr = resp->resp;
+	      free (resp);
+	      if (miscptr[0] == '\0')
+		{
+		  free (miscptr);
+		  miscptr = NULL;
+		}
 	    }
 	  if (miscptr == NULL)
 	    {
@@ -3226,7 +3228,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
        */
       session->info->password_expired = 1;
     }
-       
+
   /*
    * Also check if user hasn't changed password for the inactive
    * amount of time.  This also counts as an expired account.

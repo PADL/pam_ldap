@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+151	Luke Howard <lukeh@padl.com>
+
+	* import dlfcn.h on Solaris with Netscape SDK
+
 150	Luke Howard <lukeh@padl.com>
 
 	* added depcomp for new automake
