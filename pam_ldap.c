@@ -886,13 +886,13 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
               len = s-v;
 	      if (s[-1] == ',' && result->base)
                 {
-		  ssd->base = malloc(len + strlen(result->base));
+		  ssd->base = malloc(len + strlen(result->base) + 1);
 		  strncpy(ssd->base, v, len);
                   strcpy(ssd->base+len, result->base);
                 }
               else
                 {
-                  ssd->base = malloc(len);
+                  ssd->base = malloc(len+1);
                   strncpy(ssd->base, v, len);
                   ssd->base[len] = '\0';
                 }
@@ -910,6 +910,12 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 		  CHECKPOINTER (ssd->filter = strdup (s));
 		}
 	    }
+	  else
+	    {
+	      ssd->base = strdup (v);
+	      ssd->scope = LDAP_SCOPE_SUBTREE;
+	    }
+
 	  for (p=result->ssd; p && p->next; p=p->next);
 	  if (p)
             {

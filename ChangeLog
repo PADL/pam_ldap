@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+161	Luke Howard <lukeh@padl.com>
+
+	* fix from Thorsten Kukuk (SuSE) to handle scope-less
+	  nss_base_passwd configuration
+
 160	Luke Howard <lukeh@padl.com>
 
 	* AD password change fix
