@@ -789,7 +789,7 @@ fi
 
 PACKAGE=pam_ldap
 
-VERSION=103
+VERSION=104
 
 if test "`cd $srcdir && pwd`" != "`pwd`" && test -f $srcdir/config.status; then
   { echo "configure: error: source directory already configured; run "make distclean" there first" 1>&2; exit 1; }
@@ -2082,7 +2082,7 @@ fi
 
 fi
 
-for ac_func in ldap_init ldapssl_init ldap_start_tls_s ldap_get_lderrno ldap_parse_result ldap_memfree ldap_controls_free
+for ac_func in ldap_init ldapssl_init ldap_start_tls_s ldap_get_lderrno ldap_parse_result ldap_memfree ldap_controls_free ldap_set_option
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:2089: checking for $ac_func" >&5

@@ -984,7 +984,7 @@ _open_session (pam_ldap_session_t * session)
   (void) ldap_set_option (session->ld, LDAP_X_OPT_CONNECT_TIMEOUT, &timeout);
 #endif
 
-#ifdef LDAP_OPT_REFERRALS
+#if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_REFERRALS)
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
 			  session->
 			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
