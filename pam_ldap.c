@@ -154,6 +154,10 @@ static int pam_debug_level __UNUSED__ = 0;
 static int ssl_initialized = 0;
 #endif
 
+#ifdef LBER_OPT_LOG_PRINT_FILE
+static FILE *debugfile = NULL;
+#endif
+
 #ifdef __GNUC__
 #define DEBUG_MSG(level, fmt, args...)		\
 	do {					\
