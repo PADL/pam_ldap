@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+59	Luke Howard <lukeh@padl.com>
+
+    * fixed some assumptions in chsh/chfn, need to look
+      further at this though
+
 58	Tom Lear <tom@trap.mtview.ca.us>
 
     * Debian bug #64217: remove redunant code in pam_ldap.c

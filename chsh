@@ -44,7 +44,7 @@ use Net::LDAP;
 
 $ldap=Net::LDAP->new($CONF{'host'});
 
-if($< or $CONF{'pwrootbinddn'} eq '') {
+if($< or $CONF{'rootbinddn'} eq '') {
   $ENV{'PATH'}='';
   system "/bin/stty -echo";
   print 'Password:';
@@ -55,8 +55,8 @@ if($< or $CONF{'pwrootbinddn'} eq '') {
              'password'   => $password,
   );
 } else {
-  %bindargs=('dn'         => $CONF{'pwrootbinddn'},
-             'password'   => $CONF{'pwrootbindpw'},
+  %bindargs=('dn'         => $CONF{'rootbinddn'},
+             'password'   => $CONF{'rootbindpw'},
   );
 }
 $bindargs{'version'}=2;
