@@ -121,6 +121,29 @@ Q: I get undefined symbols "pam_sm_authenticate"
 &c. Make sure that you compile with -DPIC, eg:
 CFLAGS=-DPIC LDFLAGS=-lgnuregex ./configure
 
+Q: The pam_nds_passwd, pam_ad_passwd, and 
+pam_crypt options don't seem to work anymore. Why?
+These have been replaced with the pam_password
+attribute, which takes the values:
+
+pam_password [clear|crypt|md5|nds|ad]
+
+clear -- send the new password in cleartext to
+         the server. Use with Netscape
+         Directory Server, others.
+
+crypt -- crypt the password using the UNIX
+         crypt(3) library call before updating
+         userPassword.
+
+md5   -- use inbuilt MD5 code to hash password
+
+nds   -- do the right thing for updating 
+         NDS passwords
+
+ad    -- do the right thing for updating
+         Active Directory passwords
+
 SUPPORT
 =======
 

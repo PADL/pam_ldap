@@ -1,6 +1,19 @@
 $Id$
 ===============================================================
 
+91	Luke Howard <lukeh@padl.com>
+
+	* centralized authtok update code. The pam_crypt,
+	  pam_ad_passwd, and pam_nds_passwd configuration
+	  file keys are deprecated; instead the following
+	  configuration file key will be used:
+
+		pam_password [clear|crypt|md5|nds|ad]
+
+	  See README for more information. (NB: The
+	  pam_crypt will continue to work so as to not
+	  compromise existing deployments.)
+
 90	Luke Howard <lukeh@padl.com>
 
 	* support for correct rebind function prototype

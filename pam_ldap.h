@@ -48,6 +48,10 @@ typedef struct pam_ldap_config
     /* bind dn/pw for "root" authentication */
     char *rootbinddn;
     char *rootbindpw;
+    /* SSL config states */
+#   define SSL_OFF          0
+#   define SSL_LDAPS        1
+#   define SSL_START_TLS    2
     int ssl_on;
     /* SSL path */
     char *sslpath;
@@ -75,16 +79,17 @@ typedef struct pam_ldap_config
     int referrals;
     /* restart interrupted syscalls, OpenLDAP only */
     int restart;
-    /* generate hashes locally */
-    int crypt_local;
+    /* chauthtok config states */
+#   define PASSWORD_CLEAR   0
+#   define PASSWORD_CRYPT   1
+#   define PASSWORD_MD5     2
+#   define PASSWORD_NDS     3
+#   define PASSWORD_AD      4
+    int password_type;
     /* min uid */
     uid_t min_uid;
     /* max uid */
     uid_t max_uid;
-    /* password change for NDS */
-    int nds_passwd;
-    /* password change for Microsoft Active Directory */
-    int ad_passwd;
   }
 pam_ldap_config_t;
 
@@ -186,9 +191,6 @@ pam_ldap_session_t;
 /* non-template user (pre-mapping) */
 #define PADL_LDAP_AUTH_DATA "PADL-LDAP-AUTH-DATA"
 
-#define PASSWORD_DES 0
-#define PASSWORD_MD5 1
-
 /* Configuration file routines */
 static int _alloc_config (pam_ldap_config_t **);
 static void _release_config (pam_ldap_config_t **);
@@ -220,14 +222,15 @@ static int _get_integer_value (LDAP *, LDAPMessage *, const char *, int *);
 static int _get_string_values (LDAP *, LDAPMessage *, const char *, char ***);
 static int _has_value (char **, const char *);
 static int _host_ok (pam_ldap_session_t * session);
-static char *_get_salt (char buf[3]);
+static char *_get_salt (char buf[16]);
+static char *_get_md5_salt (char buf[16]);
 static void _cleanup_data (pam_handle_t *, void *, int);
 
 /* LDAP cover routines */
 static int _get_user_info (pam_ldap_session_t *, const char *);
 static int _get_password_policy (pam_ldap_session_t *, pam_ldap_password_policy_t *);
 static int _do_authentication (pam_ldap_session_t *, const char *, const char *);
-static int _update_authtok (pam_ldap_session_t *, const char *, const char *, const char *, int);
+static int _update_authtok (pam_ldap_session_t *, const char *, const char *, const char *);
 
 /* PAM API helpers, public session management */
 static void _pam_ldap_cleanup_session (pam_handle_t *, void *, int);

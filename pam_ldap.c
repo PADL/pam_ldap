@@ -117,10 +117,6 @@
 #include <ldap_ssl.h>
 #endif
 
-#define SSL_OFF        0
-#define SSL_LDAPS        1
-#define SSL_START_TLS  2
-
 #ifdef YPLDAPD
 #include <rpcsvc/yp_prot.h>
 #include <rpcsvc/ypclnt.h>
@@ -426,11 +422,9 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->bind_timelimit = 10;
   result->referrals = 1;
   result->restart = 1;
-  result->crypt_local = 0;
+  result->password_type = PASSWORD_CRYPT;
   result->min_uid = 0;
   result->max_uid = 0;
-  result->nds_passwd = 0;
-  result->ad_passwd = 0;
   result->tmplattr = NULL;
   result->tmpluser = NULL;
 
@@ -641,6 +635,32 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	  else if (!strcasecmp (v, "always"))
 	    result->deref = LDAP_DEREF_ALWAYS;
 	}
+      else if (!strcasecmp (k, "pam_password"))
+	{
+	  if (!strcasecmp (v, "clear"))
+	    result->password_type = PASSWORD_CLEAR;
+	  else if (!strcasecmp (v, "crypt"))
+	    result->password_type = PASSWORD_CRYPT;
+	  else if (!strcasecmp (v, "md5"))
+	    result->password_type = PASSWORD_MD5;
+	  else if (!strcasecmp (v, "nds"))
+	    result->password_type = PASSWORD_NDS;
+	  else if (!strcasecmp (v, "ad"))
+	    result->password_type = PASSWORD_AD;
+	}
+      else if (!strcasecmp (k, "pam_crypt"))
+       {
+	  /*
+	   * we still support this even though it is 
+	   * deprecated, as it could be a security
+	   * hole to change this behaviour on 
+	   * unsuspecting users of pam_ldap.
+	   */
+	  if (!strcasecmp (v, "local"))
+		result->password_type = PASSWORD_CRYPT;
+	  else
+		result->password_type = PASSWORD_CLEAR;
+        }
       else if (!strcasecmp (k, "port"))
 	{
 	  result->port = atoi (v);
@@ -733,10 +753,6 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	{
 	  CHECKPOINTER (result->groupdn = strdup (v));
 	}
-      else if (!strcasecmp (k, "pam_crypt"))
-	{
-	  result->crypt_local = !strcasecmp (v, "local");
-	}
       else if (!strcasecmp (k, "pam_member_attribute"))
 	{
 	  CHECKPOINTER (result->groupattr = strdup (v));
@@ -748,17 +764,6 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
       else if (!strcasecmp (k, "pam_max_uid"))
 	{
 	  result->max_uid = (uid_t) atol (v);
-	}
-      else if (!strcasecmp (k, "pam_nds_passwd"))
-	{
-	  result->nds_passwd = (!strcasecmp (v, "on")
-				|| !strcasecmp (v, "yes")
-				|| !strcasecmp (v, "true"));
-	}
-      else if (!strcasecmp (k, "pam_ad_passwd"))
-	{
-	  result->ad_passwd = (!strcasecmp (v, "on") || !strcasecmp (v, "yes")
-			       || !strcasecmp (v, "true"));
 	}
     }
 
@@ -973,14 +978,14 @@ _open_session (pam_ldap_session_t * session)
 
 #ifdef LDAP_OPT_REFERRALS
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->
-			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef LDAP_OPT_RESTART
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->
-			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
@@ -1110,9 +1115,8 @@ static int
 _rebind_proc (LDAP * ld,
 	      char **whop, char **credp, int *methodp, int freeit, void *arg)
 # else
-     static int
-       _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp,
-		     int freeit)
+static int
+_rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp, int freeit)
 # endif
 {
 #if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
@@ -1450,7 +1454,34 @@ _host_ok (pam_ldap_session_t * session)
 }
 
 static char *
-_get_salt (char salt[3])
+_get_md5_salt (char saltbuf[16])
+{
+  md5_state_t state;
+  md5_byte_t digest[16];
+  struct timeval tv;
+  int i;
+
+  md5_init (&state);
+  gettimeofday (&tv, NULL);
+  md5_append (&state, (unsigned char *) &tv, sizeof (tv));
+  i = getpid ();
+  md5_append (&state, (unsigned char *) &i, sizeof (i));
+  i = clock ();
+  md5_append (&state, (unsigned char *) &i, sizeof (i));
+  md5_append (&state, (unsigned char *) saltbuf, sizeof (saltbuf));
+  md5_finish (&state, digest);
+
+  strcpy (saltbuf, "$1$");
+  for (i = 0; i < 8; i++)
+    saltbuf[i + 3] = i64c (digest[i] & 0x3f);
+
+  saltbuf[i + 3] = '\0';
+
+  return saltbuf;
+}
+
+static char *
+_get_salt (char salt[16])
 {
   int i;
   int j;
@@ -1475,7 +1506,7 @@ _get_salt (char salt[3])
       salt[j] = i;
     }
   salt[2] = '\0';
-  return (salt);
+  return salt;
 }
 
 static int
@@ -1789,15 +1820,21 @@ _do_authentication (pam_ldap_session_t * session,
 static int
 _update_authtok (pam_ldap_session_t * session,
 		 const char *user,
-		 const char *old_password,
-		 const char *new_password, int method)
+		 const char *old_password, const char *new_password)
 {
   char *strvalsold[2];
   char *strvalsnew[2];
   LDAPMod mod, mod2;
   LDAPMod *mods[3];
   char buf[64], saltbuf[16];
-  int rc = PAM_SUCCESS;
+  int rc = PAM_SUCCESS, i;
+  /* AD stuff */
+  struct berval bvalold;
+  struct berval bvalnew;
+  struct berval *bvalsold[2];
+  struct berval *bvalsnew[2];
+  char old_password_with_quotes[17], new_password_with_quotes[17];
+  char old_unicode_password[34], new_unicode_password[34];
 
   if (session->info == NULL)
     {
@@ -1827,8 +1864,52 @@ _update_authtok (pam_ldap_session_t * session,
 	return rc;
     }
 
-  if (session->conf->nds_passwd)
+  switch (session->conf->password_type)
     {
+    case PASSWORD_CLEAR:
+      strvalsnew[0] = (char *) new_password;
+      strvalsnew[1] = NULL;
+
+      mod.mod_op = LDAP_MOD_REPLACE;
+      mod.mod_type = (char *) "userPassword";
+      mod.mod_values = strvalsnew;
+
+      mods[0] = &mod;
+      mods[1] = NULL;
+
+      break;
+
+    case PASSWORD_CRYPT:
+      _get_salt (saltbuf);
+      snprintf (buf, sizeof buf, "{crypt}%s", crypt (new_password, saltbuf));
+      strvalsnew[0] = buf;
+      strvalsnew[1] = NULL;
+
+      mod.mod_op = LDAP_MOD_REPLACE;
+      mod.mod_type = (char *) "userPassword";
+      mod.mod_values = strvalsnew;
+
+      mods[0] = &mod;
+      mods[1] = NULL;
+
+      break;
+
+    case PASSWORD_MD5:
+      _get_md5_salt (saltbuf);
+      snprintf (buf, sizeof buf, "{crypt}%s", crypt (new_password, saltbuf));
+      strvalsnew[0] = buf;
+      strvalsnew[1] = NULL;
+
+      mod.mod_op = LDAP_MOD_REPLACE;
+      mod.mod_type = (char *) "userPassword";
+      mod.mod_values = strvalsnew;
+
+      mods[0] = &mod;
+      mods[1] = NULL;
+
+      break;
+
+    case PASSWORD_NDS:
       /* NDS requires that the old password is first removed */
       strvalsold[0] = (char *) old_password;
       strvalsold[1] = NULL;
@@ -1847,20 +1928,9 @@ _update_authtok (pam_ldap_session_t * session,
       mods[1] = &mod2;
       mods[2] = NULL;
 
-      rc = ldap_modify_s (session->ld, session->info->userdn, mods);
-      if (rc != LDAP_SUCCESS)
-	{
-	  syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s",
-		  ldap_err2string (rc));
-	  rc = PAM_PERM_DENIED;
-	}
-      else
-	{
-	  rc = PAM_SUCCESS;
-	}
-    }
-  else if (session->conf->ad_passwd)
-    {
+      break;
+
+    case PASSWORD_AD:
       /*
        * Patch from Norbert Klasen <klasen@zdv.uni-tuebingen.de>:
        *
@@ -1879,14 +1949,6 @@ _update_authtok (pam_ldap_session_t * session,
        * The conversion to Unicode only works if the locale is 
        * ISO-8859-1 (aka Latin-1) [of which ASCII is a subset]. 
        */
-
-      struct berval bvalold;
-      struct berval bvalnew;
-      struct berval *bvalsold[2];
-      struct berval *bvalsnew[2];
-      char old_password_with_quotes[17], new_password_with_quotes[17];
-      char old_unicode_password[34], new_unicode_password[34];
-      int i;
 
       snprintf (new_password_with_quotes, sizeof (new_password_with_quotes),
 		"\"%s\"", new_password);
@@ -1929,85 +1991,18 @@ _update_authtok (pam_ldap_session_t * session,
 	  mods[0] = &mod;
 	  mods[1] = NULL;
 	}
+      break;
+    }				/* end switch */
 
-      rc = ldap_modify_s (session->ld, session->info->userdn, mods);
-      if (rc != LDAP_SUCCESS)
-	{
-	  syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s",
-		  ldap_err2string (rc));
-	  rc = PAM_PERM_DENIED;
-	}
-      else
-	{
-	  rc = PAM_SUCCESS;
-	}
+  rc = ldap_modify_s (session->ld, session->info->userdn, mods);
+  if (rc != LDAP_SUCCESS)
+    {
+      syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
+      rc = PAM_PERM_DENIED;
     }
   else
     {
-      /* Netscape generates hashed automatically, but UMich doesn't. */
-      if (session->conf->crypt_local)
-	{
-	  switch (method)
-	    {
-	    case PASSWORD_DES:
-	      _get_salt (saltbuf);
-	      break;
-	    case PASSWORD_MD5:
-	      {
-		md5_state_t state;
-		md5_byte_t digest[16];
-		struct timeval tv;
-		int i;
-
-		md5_init (&state);
-		gettimeofday (&tv, NULL);
-		md5_append (&state, (unsigned char *) &tv, sizeof (tv));
-		i = getpid ();
-		md5_append (&state, (unsigned char *) &i, sizeof (i));
-		i = clock ();
-		md5_append (&state, (unsigned char *) &i, sizeof (i));
-		md5_append (&state, (unsigned char *) saltbuf,
-			    sizeof (saltbuf));
-		md5_finish (&state, digest);
-
-		strcpy (saltbuf, "$1$");
-		for (i = 0; i < 8; i++)
-		  saltbuf[i + 3] = i64c (digest[i] & 0x3f);
-
-		saltbuf[i + 3] = '\0';
-		break;
-	      }
-	    }
-
-	  snprintf (buf, sizeof buf, "{crypt}%s",
-		    crypt (new_password, saltbuf));
-	  strvalsnew[0] = buf;
-	}
-      else
-	{
-	  strvalsnew[0] = (char *) new_password;
-	}
-
-      strvalsnew[1] = NULL;
-
-      mod.mod_op = LDAP_MOD_REPLACE;
-      mod.mod_type = (char *) "userPassword";
-      mod.mod_values = strvalsnew;
-
-      mods[0] = &mod;
-      mods[1] = NULL;
-
-      rc = ldap_modify_s (session->ld, session->info->userdn, mods);
-      if (rc != LDAP_SUCCESS)
-	{
-	  syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s",
-		  ldap_err2string (rc));
-	  rc = PAM_PERM_DENIED;
-	}
-      else
-	{
-	  rc = PAM_SUCCESS;
-	}
+      rc = PAM_SUCCESS;
     }
 
   return rc;
@@ -2189,7 +2184,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   int tries = 0, i, canabort = 1;
   pam_ldap_session_t *session = NULL;
   int use_first_pass = 0, try_first_pass = 0, no_warn = 0;
-  int use_authtok = 0, method = PASSWORD_DES;
+  int use_authtok = 0;
   char errmsg[1024];
   pam_ldap_password_policy_t policy;
   LDAPMod *mods[2], mod;
@@ -2209,8 +2204,6 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	;
       else if (!strcmp (argv[i], "use_authtok"))
 	use_authtok = 1;
-      else if (!strcmp (argv[i], "md5"))
-	method = PASSWORD_MD5;
       else
 	syslog (LOG_ERR, "illegal option %s", argv[i]);
     }
@@ -2489,7 +2482,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
     return PAM_MAXTRIES;
 
   pam_set_item (pamh, PAM_AUTHTOK, (void *) newpass);
-  rc = _update_authtok (session, username, curpass, newpass, method);
+  rc = _update_authtok (session, username, curpass, newpass);
   if (rc != PAM_SUCCESS)
     {
       int lderr;
