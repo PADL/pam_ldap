@@ -94,6 +94,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <sys/time.h>
 #include <sys/param.h>
 #include <unistd.h>
@@ -2051,10 +2052,14 @@ _host_ok (pam_ldap_session_t * session)
 {
   char hostname[MAXHOSTNAMELEN];
   struct hostent *h;
-#ifdef HAVE_GETHOSTBYNAME_R
-  int herr;
   struct hostent hbuf;
+#ifdef HAVE_GETHOSTBYNAME_R
+#if GETHOSTBYNAME_R_ARGS == 3
+  struct hostent_data buf;
+#else
+  int herr;
   char buf[1024];
+#endif /* GETHOSTBYNAME_R_ARGS == 3 */
 #endif
   char **q;
 
@@ -2076,12 +2081,20 @@ _host_ok (pam_ldap_session_t * session)
     {
       return PAM_SYSTEM_ERR;
     }
-#else
+#elif GETHOSTBYNAME_R_ARGS == 5
   h = gethostbyname_r (hostname, &hbuf, buf, sizeof buf, &herr);
   if (h == NULL)
     {
       return PAM_SYSTEM_ERR;
     }
+#elif GETHOSTBYNAME_R_ARGS == 3
+  if (gethostbyname_r (hostname, &hbuf, &buf) != 0)
+    {
+      return PAM_SYSTEM_ERR;
+    }
+  h = &hbuf;
+#else
+#error Unknown gethostbyname_r() implementation
 #endif
 #else
   h = gethostbyname (hostname);

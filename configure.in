@@ -28,7 +28,9 @@ aix*) CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE" ;;
 esac
 
 case "$target_os" in
-aix*) pam_ldap_so_LD="ld"
+aix*) if test "$ac_cv_prog_gcc" = "yes"; then
+    pam_ldap_so_LD="/usr/ccs/bin/ld"
+  fi
   pam_ldap_so_LDFLAGS="-bM:SRE -bnoentry -bE:\$(srcdir)/exports.aix"
   TARGET_OS="AIX" ;;
 darwin*) pam_ldap_so_LDFLAGS="-bundle" ;;
@@ -52,8 +54,8 @@ if test -n "$with_ldap_dir"; then
   CPPFLAGS="$CPPFLAGS -I$with_ldap_dir/include"
   LDFLAGS="$LDFLAGS -L$with_ldap_dir/lib"
   case "$target_os" in  
-  aix*) LDFLAGS="$LDFLAGS -Wl,-brtl -Wl,-blibpath:$with_ldap_dir/lib"
-    pam_ldap_so_LDFLAGS="$pam_ldap_so_LDFLAGS -L$with_ldap_dir/lib -brtl -blibpath:$with_ldap_dir/lib" ;;
+  aix*) LDFLAGS="$LDFLAGS -Wl,-brtl -Wl,-blibpath:$with_ldap_dir/lib -lc"
+    pam_ldap_so_LDFLAGS="$pam_ldap_so_LDFLAGS -L$with_ldap_dir/lib -brtl -blibpath:$with_ldap_dir/lib -lc" ;;
   hpux*) LDFLAGS="$LDFLAGS -Wl,+b$with_ldap_dir/lib"
     pam_ldap_so_LDFLAGS="$pam_ldap_so_LDFLAGS -L$with_ldap_dir/lib +b$with_ldap_dir/lib" ;;
   solaris*) LDFLAGS="$LDFLAGS -R$with_ldap_dir/lib" 
@@ -130,10 +132,14 @@ AC_CHECK_FUNCS(ldap_sasl_bind)
 AC_CHECK_FUNCS(gethostbyname_r)
 
 if test "$ac_cv_func_gethostbyname_r" = "yes"; then
-AC_CACHE_CHECK(whether gethostbyname_r takes 6 arguments, pam_ldap_cv_gethostbyname_r_args, [
+AC_CACHE_CHECK(whether gethostbyname_r takes 6 arguments, xad_cv_gethostbyname_r_args, [
 AC_TRY_COMPILE([
-#include <netdb.h>], [gethostbyname_r(0, 0, 0, 0, 0, 0);], [pam_ldap_cv_gethostbyname_r_args=6], [pam_ldap_cv_gethostbyname_r_args=5]) ])
-AC_DEFINE_UNQUOTED(GETHOSTBYNAME_R_ARGS, $pam_ldap_cv_gethostbyname_r_args)
+#include <netdb.h>], [gethostbyname_r(0, 0, 0, 0, 0, 0);], [xad_cv_gethostbyname_r_args=6], [
+	AC_TRY_COMPILE([
+		#include <netdb.h>],
+		[gethostbyname_r(0, 0, 0, 0, 0);], [xad_cv_gethostbyname_r_args=5], [xad_cv_gethostbyname_r_args=3]
+)]) ])
+AC_DEFINE_UNQUOTED(GETHOSTBYNAME_R_ARGS, $xad_cv_gethostbyname_r_args)
 fi
 
 AC_CHECK_FUNCS(ldap_set_rebind_proc)
