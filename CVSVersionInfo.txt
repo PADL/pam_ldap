@@ -2,7 +2,7 @@
 # $Id$
 # $Name$
 ProjectName: pam_ldap
-ProjectVersion: 99
+ProjectVersion: 100
 ProjectMaintainer: lukeh
 # run this before building in RC. @@@PLATFORM@@@ is
 # substituted for our platform names (linux, solaris etc)
