@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+99	Luke Howard <lukeh@padl.com>
+
+	* use --shared not -shared
+	* compile with -DPIC on FreeBSD
+
 98	Luke Howard <lukeh@padl.com>
 
 	* merged ldap.conf
