@@ -881,7 +881,7 @@ _connect_as_user (
 		    {
 		      char seconds[32];
 		      snprintf (seconds, sizeof seconds, "%.*s",
-				(*ctlp)->ldctl_value.bv_len,
+				(int) (*ctlp)->ldctl_value.bv_len,
 				(*ctlp)->ldctl_value.bv_val);
 		      session->info->password_expiration_time = atol (seconds);
 		    }
