@@ -24,17 +24,17 @@ MAKE = make
 # Linux Section
 CC = gcc
 CFLAGS = -Wall -I$(LDAP_INC_DIR) $(CON_FILE) -D_GNU_SOURCE -DLINUX $(CDEFS) -fPIC
-LD_FLAGS = -x --shared -rpath $(LDAP_LIB_DIR)
+LD_FLAGS = -x --shared -rpath $(LDAP_LIB_DIR) -lcrypt
 
 # Solaris 2.6 Sun Pro C Compiler
 #CC = /opt/SUNWspro/bin/cc
 #CFLAGS = -I$(LDAP_INC_DIR) $(CON_FILE) -DSOLARIS $(CDEFS) -K PIC 
 
 # Solaris 2.6 GCC 2.7.2.3
-CC = gcc
-CFLAGS = -Wall -I$(LDAP_INC_DIR) -DSOLARIS -D__EXTENSIONS__ $(CDEFS) -fPIC
-LD_FLAGS = -M mapfile -G -h $(LIBAUTHSH) -z text -Bsymbolic \
-			-R$(LDAP_LIB_DIR) -R/usr/ucblib
+#CC = gcc
+#CFLAGS = -Wall -I$(LDAP_INC_DIR) -DSOLARIS -D__EXTENSIONS__ $(CDEFS) -fPIC
+#LD_FLAGS = -M mapfile -G -h $(LIBAUTHSH) -z text -Bsymbolic \
+#			-R$(LDAP_LIB_DIR) -R/usr/ucblib
 
 LIBAUTHSH = pam_ldap.so.1
 

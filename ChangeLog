@@ -3,13 +3,14 @@ $Id$
 
 13   Luke Howard <lukeh@padl.com>
 
+    * added -lcrypt for Linux
+
+12   Luke Howard <lukeh@padl.com>
+
     * Use ldap_open() for V2 as ldap_init() doesn't work
     * Support hashing passwords locally for UMich crypt
       patched server
     * Tested against Microsoft Exchange Server
-
-12   Luke Howard <lukeh@padl.com>
-
     * Fixed some errors in ldap.conf and mapfile
 
 11   Luke Howard <lukeh@padl.com>

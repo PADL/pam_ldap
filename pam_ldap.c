@@ -1085,7 +1085,8 @@ static int _update_authtok(
     rc = _connect_as_user(session, old_password);
     if (rc != PAM_SUCCESS)
         return rc;
-    
+   
+    /* Netscape generates hashed automatically, but UMich doesn't. */ 
     if (session->conf->crypt_local) {
         snprintf(buf, sizeof buf, "{crypt}%s", crypt(new_password, _get_salt(saltbuf)));
         strvals[0] = buf;
