@@ -682,7 +682,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
       result->configFile = strdup (configFile);
       if (result->configFile == NULL)
 	return PAM_BUF_ERR;
-    }      
+    }
 
   fp = fopen (configFile, "r");
 
@@ -731,11 +731,11 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 
       /* kick off all whitespaces and newline at the end of value */
       /* Bob Guo <bob@mail.ied.ac.cn>, 08.10.2001 */
-      len = strlen (v)-1;
-      while (v[len] == ' ' || v[len] == '\t' || v[len] =='\n' )
-        --len;
-      v[len+1] = '\0';
-                         
+      len = strlen (v) - 1;
+      while (v[len] == ' ' || v[len] == '\t' || v[len] == '\n')
+	--len;
+      v[len + 1] = '\0';
+
       if (!strcasecmp (k, "host"))
 	{
 	  CHECKPOINTER (result->host = strdup (v));
@@ -1013,7 +1013,8 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
        * According to PAM Documentation, such an error in a config file
        * SHOULD be logged at LOG_ALERT level
        */
-      syslog (LOG_ALERT, "pam_ldap: missing \"host\" in file \"%s\"", PAM_LDAP_PATH_CONF);
+      syslog (LOG_ALERT, "pam_ldap: missing \"host\" in file \"%s\"",
+	      PAM_LDAP_PATH_CONF);
       return PAM_SERVICE_ERR;
     }
 
@@ -1204,14 +1205,14 @@ _open_session (pam_ldap_session_t * session)
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_REFERRALS)
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->
-			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_RESTART)
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->
-			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
@@ -1962,8 +1963,7 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
 		      session->conf->scope, filter, NULL, 0, &res);
 
   if (rc != LDAP_SUCCESS &&
-      rc != LDAP_TIMELIMIT_EXCEEDED &&
-      rc != LDAP_SIZELIMIT_EXCEEDED)
+      rc != LDAP_TIMELIMIT_EXCEEDED && rc != LDAP_SIZELIMIT_EXCEEDED)
     {
       syslog (LOG_ERR, "pam_ldap: ldap_search_s %s", ldap_err2string (rc));
       return PAM_USER_UNKNOWN;
@@ -2218,8 +2218,7 @@ _get_password_policy (pam_ldap_session_t * session,
 		      "(objectclass=passwordPolicy)", NULL, 0, &res);
 
   if (rc == LDAP_SUCCESS ||
-      rc == LDAP_TIMELIMIT_EXCEEDED ||
-      rc == LDAP_SIZELIMIT_EXCEEDED)
+      rc == LDAP_TIMELIMIT_EXCEEDED || rc == LDAP_SIZELIMIT_EXCEEDED)
     {
       msg = ldap_first_entry (session->ld, res);
       if (msg != NULL)
@@ -2634,11 +2633,13 @@ pam_sm_authenticate (pam_handle_t * pamh,
 	      (void) pam_set_data (pamh, PADL_LDAP_AUTH_DATA,
 				   (void *) strdup (session->info->username),
 				   _cleanup_data);
-	      rc = pam_set_item (pamh, PAM_USER, (void *) session->info->tmpluser);
+	      rc =
+		pam_set_item (pamh, PAM_USER,
+			      (void *) session->info->tmpluser);
 	    }
 	  return rc;
+	}
     }
-  }
 
   /* can prompt for authentication token */
   rc = _get_authtok (pamh, flags, (p == NULL) ? 1 : 0);
@@ -2858,7 +2859,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	  if (curpass == NULL)
 	    return PAM_MAXTRIES;	/* maximum tries exceeded */
 	  else
-            pam_set_item (pamh, PAM_OLDAUTHTOK, (void *) curpass);
+	    pam_set_item (pamh, PAM_OLDAUTHTOK, (void *) curpass);
 	}
       else
 	{
@@ -3262,7 +3263,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	  return PAM_PERM_DENIED;
 	}
       else
-	  rc = success;
+	rc = success;
     }
 
   if (session->conf->checkhostattr)
