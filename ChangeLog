@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+174	Luke Howard <lukeh@padl.com>
+
+	* fix typo s/intereact/interact
+
 173	Luke Howard <lukeh@padl.com>
 
 	* s/pam_sasl_mechanism/pam_sasl_mech/ for

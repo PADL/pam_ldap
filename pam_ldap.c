@@ -1748,7 +1748,7 @@ _do_sasl_assign_cb (sasl_interact_t *interact, const char *dflt)
     result = "";
 
 #if SASL_VERSION_MAJOR < 2
-  intereact->result = strdup (result);
+  interact->result = strdup (result);
   if (interact->result == NULL)
     {
       return LDAP_NO_MEMORY;
