@@ -1641,20 +1641,6 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
       _pam_drop (session->info->userpw);
       return PAM_SERVICE_ERR;
     }
-#else
-  rc = ldap_result2error (session->ld, result, TRUE);
-#endif
-
-  if (rc != LDAP_SUCCESS)
-    {
-      syslog (LOG_ERR, "pam_ldap: error trying to bind as user \"%s\" (%s)",
-	      session->info->userdn, ldap_err2string (rc));
-      _pam_overwrite (session->info->userpw);
-      _pam_drop (session->info->userpw);
-      return PAM_AUTH_ERR;
-    }
-
-#if defined(HAVE_LDAP_CONTROLS_FREE)
   if (controls != NULL)
     {
       LDAPControl **ctlp;
@@ -1671,11 +1657,28 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
 	  else if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PWEXPIRED))
 	    {
 	      session->info->password_expired = 1;
+      	      _pam_overwrite (session->info->userpw);
+	      _pam_drop (session->info->userpw);
+	      rc = LDAP_SUCCESS;
+	      /* That may be a lie, but we need to get to the acct_mgmt
+	       * step and force the change...
+	       */
 	    }
 	}
       ldap_controls_free (controls);
     }
+#else
+  rc = ldap_result2error (session->ld, result, TRUE);
 #endif
+
+  if (rc != LDAP_SUCCESS)
+    {
+      syslog (LOG_ERR, "pam_ldap: error trying to bind as user \"%s\" (%s)",
+	      session->info->userdn, ldap_err2string (rc));
+      _pam_overwrite (session->info->userpw);
+      _pam_drop (session->info->userpw);
+      return PAM_AUTH_ERR;
+    }
 
   session->info->bound_as_user = 1;
   /* userpw is now set. Be sure to clobber it later. */
@@ -3116,6 +3119,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		"LDAP password information changed for %s", username);
       _conv_sendmsg (appconv, errmsg, PAM_TEXT_INFO,
 		     (flags & PAM_SILENT) ? 1 : 0);
+      session->info->password_expired = 0;
     }
 
   pam_set_item (pamh, PAM_AUTHTOK, (void *) newpass);
