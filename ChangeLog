@@ -1,7 +1,20 @@
 $Id$
 ===============================================================
 
-8   Luke Howard <lukeh@padl.com>
+11   Luke Howard <lukeh@padl.com>
+
+    * Added support for group membership as in Chris'
+      pam_ldap_auth module; see the pam_groupdn and
+      pam_group_attribute configuration keys.
+    * Changed pam_attribute to pam_login_attribute to
+      avoid confusion with pam_group_attribute.
+    * Support Netscape password expiration controls
+    * Avoid authenticating users with empty passwords,
+      even if the directory server does
+    * Fill in pam_sm_{open,close}_session for completeness
+      (they return PAM_IGNORE)
+
+10   Luke Howard <lukeh@padl.com>
 
     * tested with Linux-PAM 0.57
     * made all functions static
@@ -11,7 +24,7 @@ $Id$
       pam_get_data()
     * fixed some bugs
     
-7   Luke Howard <lukeh@padl.com>
+9   Luke Howard <lukeh@padl.com>
 
     * first publically available version.
 

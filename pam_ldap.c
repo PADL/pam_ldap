@@ -86,7 +86,7 @@
  * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
+ * OF THE POSSIBILITY OF SUCH DAMAGE. 
  */
 
 #include <stdio.h>
@@ -154,8 +154,16 @@ static void _release_config(
         free(c->sslpath);
     }
 
-    if (c->attr != NULL) {
-        free(c->attr);
+    if (c->userattr != NULL) {
+        free(c->userattr);
+    }
+
+    if (c->groupattr != NULL) {
+        free(c->groupattr);
+    }
+
+    if (c->groupdn != NULL) {
+        free(c->groupdn);
     }
 
     if (c->filter != NULL) {
@@ -191,7 +199,7 @@ static void _release_user_info(
     return;
 }
 
-static void _pam_ldap_release_session(
+static void _pam_ldap_cleanup_session(
                       pam_handle_t *pamh,
                       void *data,
                       int error_status
@@ -237,7 +245,9 @@ static int _alloc_config(
     result->bindpw = NULL;
     result->sslpath = NULL;
     result->filter = NULL;
-    result->attr = NULL;
+    result->userattr = NULL;
+    result->groupattr = NULL;
+    result->groupdn = NULL;
     result->getpolicy = 0;
     result->version = LDAP_VERSION2;
 
@@ -325,8 +335,8 @@ static int _read_config(
     
     yp_unbind(domain);
 
-    result->attr = strdup("uid");
-    if (result->attr == NULL) {
+    result->userattr = strdup("uid");
+    if (result->userattr == NULL) {
         return PAM_BUF_ERR;
     }
 
@@ -409,10 +419,14 @@ static int _read_config(
             CHECKPOINTER(result->sslpath = strdup(v));
         } else if (!strcmp(k, "pam_filter")) {
             CHECKPOINTER(result->filter = strdup(v));
-        } else if (!strcmp(k, "pam_attribute")) {
-            CHECKPOINTER(result->attr = strdup(v));
+        } else if (!strcmp(k, "pam_login_attribute")) {
+            CHECKPOINTER(result->userattr = strdup(v));
         } else if (!strcmp(k, "pam_lookup_policy")) {
             result->getpolicy = !strcmp(v, "yes");
+        } else if (!strcmp(k, "pam_groupdn")) {
+            CHECKPOINTER(result->groupdn = strdup(v));
+        } else if (!strcmp(k, "pam_member_attribute")) {
+            CHECKPOINTER(result->groupattr = strdup(v));
         }
     }
 
@@ -420,8 +434,12 @@ static int _read_config(
         return PAM_SYSTEM_ERR;
     }
     
-    if (result->attr == NULL) {
-        CHECKPOINTER(result->attr = strdup("uid"));
+    if (result->userattr == NULL) {
+        CHECKPOINTER(result->userattr = strdup("uid"));
+    }
+
+    if (result->groupattr == NULL) {
+        CHECKPOINTER(result->groupattr = strdup("uniquemember"));
     }
     
     fclose(fp);
@@ -527,7 +545,17 @@ static int _connect_as_user(
                             )
 {
     int rc;
+#ifdef LDAP_VERSION3
+    PLDAPControl *controls;
+    int msgid, parserc, finished = 0;
+    struct timeval zerotime;   
+    LDAPMessage *result;
+#endif /* LDAP_VERSION3 */
 
+    /* avoid binding anonymously with a DN but no password */
+    if (password == NULL || password[0] == '\0')
+        return PAM_AUTH_ERR;
+    
     /* this shouldn't ever happen */
     if (session->info == NULL)
         return PAM_SYSTEM_ERR;
@@ -541,18 +569,84 @@ static int _connect_as_user(
         if (rc != PAM_SUCCESS)
             return rc;
     }
-    
-    rc = ldap_simple_bind_s(
-                            session->ld,
-                            session->info->userdn,
-                            (char *)password
-                            );
 
+#ifndef LDAP_VERSION2
+    /*
+     * Use the synchronous API as we don't need to fetch controls etc
+     */
+    rc = ldap_simple_bind_s(session->ld, session->info->userdn, (char *)password);
     if (rc != LDAP_SUCCESS) {
         syslog(LOG_ERR, "pam_ldap: ldap_simple_bind_s %s", ldap_err2string(rc));
         return PAM_AUTH_ERR;
     }
-        
+#else
+    /*
+     * Use LDAP v3 controls to find out when the user's password will
+     * expire.
+     */
+    zerotime.tv_sec = zerotime.tv_usec = 0L;
+
+    msgid = ldap_simple_bind(session->ld, session->info->userdn, (char *)password);
+    if (msgid < 0) {
+        syslog(LOG_ERR, "pam_ldap: ldap_simple_bind %s",
+               ldap_err2string(ldap_get_lderrno(session->ld, NULL, NULL)));
+        return PAM_AUTH_ERR;
+    }
+    
+    while (!finished) {        
+        rc = ldap_result(session->ld, msgid, 0, &zerotime, &result);
+        switch (rc) {
+            case -1:
+                /* error */
+                syslog(LOG_ERR, "pam_ldap: ldap_result %s",
+                       ldap_err2string(ldap_get_lderrno(session->ld, NULL, NULL)));
+                return PAM_SYSTEM_ERR;
+                break;
+            case 0:
+                /* in progress */
+                continue;
+            default:
+                /* The client has received the bind result */
+                finished = 1;
+                parserc = ldap_parse_result(
+                                            session->ld,
+                                            result,
+                                            &rc,
+                                            NULL,
+                                            NULL,
+                                            NULL,
+                                            &controls,
+                                            1
+                                            );
+                
+                if (parserc != LDAP_SUCCESS) {
+                    syslog(LOG_ERR, "pam_ldap: ldap_parse_result %s", ldap_err2string(parserc));
+                    return PAM_SYSTEM_ERR;
+                }
+                if (rc != LDAP_SUCCESS) {
+                    syslog(LOG_ERR, "pam_ldap: ldap_simple_bind %s", ldap_err2string(rc));
+                    return PAM_AUTH_ERR;
+                }
+
+                if (controls != NULL) {
+                    PLDAPControl *ctlp; /* ldctl_oid, ldctl_value, ldctl_iscritical */
+                    for (ctlp = controls; *ctlp != NULL; ctlp++) {
+                        if (!strcmp((*ctlp)->ldctl_oid, LDAP_CONTROL_PWEXPIRING)) {
+                            char seconds[32];
+                            snprintf(seconds, sizeof seconds, "%.*s",
+                                          (*ctlp)->ldctl_value.bv_len,
+                                          (*ctlp)->ldctl_value.bv_val);
+                            session->info->password_expiration_time = atol(seconds);
+                        } else if (!strcmp((*ctlp)->ldctl_oid, LDAP_CONTROL_PWEXPIRED)) {
+                            session->info->password_expired = 1;
+                        }
+                    }
+                    ldap_controls_free(controls);
+                }
+        }
+    }
+#endif /* LDAP_VERSION3 */
+                        
     session->info->bound_as_user = 1;
     
     return PAM_SUCCESS;
@@ -639,6 +733,51 @@ static int _has_value(
     return 0;
 }
 
+static int _host_ok(
+                    pam_ldap_session_t *session
+                    )
+{
+    int herr;
+    struct hostent hbuf, *h;
+    char hostname[MAXHOSTNAMELEN];
+    char buf[1024];
+    char **q;
+
+    /* simple host based access authorization */
+    if (session->info->hosts_allow == NULL) {
+        return PAM_SUCCESS;
+    }
+    
+    if (gethostname(hostname, sizeof hostname) < 0) {
+        return PAM_SYSTEM_ERR;
+    }
+
+#ifndef LINUX
+    h = gethostbyname_r(hostname, &hbuf, buf, sizeof buf, &herr);
+    if (h == NULL) {
+        return PAM_SYSTEM_ERR;
+    }
+#else
+    if (gethostbyname_r(hostname, &hbuf, buf, sizeof buf, &h, &herr) != 0) {
+        return PAM_SYSTEM_ERR;
+    }
+#endif /* !LINUX */
+
+    if (_has_value(session->info->hosts_allow, h->h_name)) {
+        return PAM_SUCCESS;
+    }
+
+    if (h->h_aliases != NULL) {
+        for (q = h->h_aliases; *q != NULL; q++) {
+            if (_has_value(session->info->hosts_allow, *q)) {
+                return PAM_SUCCESS;
+            }
+        }
+    }
+
+    return PAM_AUTH_ERR;
+}
+
 static int _get_user_info(
                    pam_ldap_session_t *session,
                    const char *user
@@ -663,11 +802,11 @@ static int _get_user_info(
     if (session->conf->filter != NULL) {
         snprintf(filter, sizeof filter, "(&(%s)(%s=%s))",
                  session->conf->filter,
-                 session->conf->attr,
+                 session->conf->userattr,
                  user);
     } else {
         snprintf(filter, sizeof filter, "(%s=%s)",
-                 session->conf->attr,
+                 session->conf->userattr,
                  user);
     }
     
@@ -718,12 +857,6 @@ static int _get_user_info(
 
     session->info->bound_as_user = 0;
 
-    /* Get Netscape-specific password policies */
-    _get_integer_value(session->ld, msg, "passwordExpirationTime", &session->info->password_expiration_time);
-    _get_integer_value(session->ld, msg, "passwordExpWarned", &session->info->password_exp_warned);
-    _get_integer_value(session->ld, msg, "passwordRetryCount", &session->info->password_retry_count);
-    _get_integer_value(session->ld, msg, "retryCountResetTime", &session->info->retry_count_reset_time);
-    _get_integer_value(session->ld, msg, "accountUnlockTime", &session->info->account_unlock_time);
     _get_string_values(session->ld, msg, "host", &session->info->hosts_allow);
         
     ldap_msgfree(res);
@@ -731,7 +864,7 @@ static int _get_user_info(
     return PAM_SUCCESS;
 }
 
-static int _pam_get_ldap_session(
+static int _pam_ldap_get_session(
                                 pam_handle_t *pamh,
                                 const char *username,
                                 pam_ldap_session_t **psession
@@ -770,7 +903,7 @@ static int _pam_get_ldap_session(
         return rc;
     }
 
-    rc = pam_set_data(pamh, "PADL_LDAP_SESSION_DATA", session, _pam_ldap_release_session);
+    rc = pam_set_data(pamh, "PADL_LDAP_SESSION_DATA", session, _pam_ldap_cleanup_session);
     if (rc != PAM_SUCCESS) {
         _release_config(&session->conf);
         free(session);
@@ -1047,7 +1180,7 @@ PAM_EXTERN int pam_sm_authenticate(
     if (rc != PAM_SUCCESS)
         return rc;
 
-    rc = _pam_get_ldap_session(pamh, username, &session);
+    rc = _pam_ldap_get_session(pamh, username, &session);
     if (rc != PAM_SUCCESS)
         return rc;
 
@@ -1059,6 +1192,7 @@ PAM_EXTERN int pam_sm_authenticate(
         }
     }
 
+    /* can prompt for authentication token */
     rc = _get_authtok(pamh, flags, (p == NULL) ? 1 : 0);
     if (rc != PAM_SUCCESS) {
         return rc;
@@ -1070,8 +1204,38 @@ PAM_EXTERN int pam_sm_authenticate(
     } else {
         rc = _authenticate(session, username, p);
     }
-
+    
     return rc;
+}
+
+PAM_EXTERN int pam_sm_setcred(
+                   pam_handle_t *pamh,
+                   int flags,
+                   int argc,
+                   const char **argv
+                   )
+{
+    return PAM_SUCCESS;
+}
+
+PAM_EXTERN int pam_sm_open_session(
+                                   pam_handle_t *pamh,
+                                   int flags,
+                                   int argc,
+                                   const char **argv
+                                   )
+{
+    return PAM_IGNORE;
+}
+
+PAM_EXTERN int pam_sm_close_session(
+                                   pam_handle_t *pamh,
+                                   int flags,
+                                   int argc,
+                                   const char **argv
+                                   )
+{
+    return PAM_IGNORE;
 }
 
 PAM_EXTERN int pam_sm_chauthtok(
@@ -1117,10 +1281,10 @@ PAM_EXTERN int pam_sm_chauthtok(
     if (rc != PAM_SUCCESS)
         return rc;
 
-    if (username == NULL || strlen(username) < 1)
+    if (username == NULL)
         return PAM_USER_UNKNOWN;
 
-    rc = _pam_get_ldap_session(pamh, username, &session);
+    rc = _pam_ldap_get_session(pamh, username, &session);
     if (rc != PAM_SUCCESS)
         return rc;
 
@@ -1324,16 +1488,6 @@ PAM_EXTERN int pam_sm_chauthtok(
     return rc;
 }
 
-PAM_EXTERN int pam_sm_setcred(
-                   pam_handle_t *pamh,
-                   int flags,
-                   int argc,
-                   const char **argv
-                   )
-{
-    return PAM_SUCCESS;
-}
-    
 PAM_EXTERN int pam_sm_acct_mgmt(
                                 pam_handle_t *pamh,
                                 int flags,
@@ -1342,8 +1496,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(
                                 )
 {
     /*
-     * check whether the user can login. For now, we do a simple
-     * match on the host attribute
+     * check whether the user can login.
      */
     /* returns PAM_ACCT_EXPIRED
        PAM_AUTH_ERR
@@ -1352,12 +1505,11 @@ PAM_EXTERN int pam_sm_acct_mgmt(
      */
     int rc;
     const char *username;
-    char **q;
     int no_warn = 0;
-    int herr, i;
+    int i, success = PAM_SUCCESS;
+    struct pam_conv *appconv;
     pam_ldap_session_t *session = NULL;
-    char hostname[MAXHOSTNAMELEN], buf[1024];
-    struct hostent hbuf, *h;
+    char buf[1024];
 
     for (i = 0; i < argc; i++) {
         if (!strcmp(argv[i], "use_first_pass"))
@@ -1376,11 +1528,18 @@ PAM_EXTERN int pam_sm_acct_mgmt(
     if (flags & PAM_SILENT)
         no_warn = 1;
 
-    rc = pam_get_user(pamh, (CONST_ARG char **)&username, "login: ");
+    rc = pam_get_item(pamh, PAM_CONV, (CONST_ARG void **)&appconv);
     if (rc != PAM_SUCCESS)
         return rc;
 
-    rc = _pam_get_ldap_session(pamh, username, &session);
+    rc = pam_get_item(pamh, PAM_USER, (CONST_ARG void **)&username);
+    if (rc != PAM_SUCCESS)
+        return rc;
+
+    if (username == NULL)
+        return PAM_USER_UNKNOWN;
+
+    rc = _pam_ldap_get_session(pamh, username, &session);
     if (rc != PAM_SUCCESS) {
         return rc;
     }
@@ -1392,38 +1551,54 @@ PAM_EXTERN int pam_sm_acct_mgmt(
         }
     }
 
-    if (session->info->hosts_allow == NULL) {
-        return PAM_SUCCESS;
-    }
-
-    if (gethostname(hostname, sizeof hostname) < 0) {
-        return PAM_SYSTEM_ERR;
-    }
-
-#ifndef LINUX
-    h = gethostbyname_r(hostname, &hbuf, buf, sizeof buf, &herr);
-    if (h == NULL) {
-        return PAM_SYSTEM_ERR;
-    }
+    /* check whether the password has expired */
+    if (session->info->password_expired) {
+        _conv_sendmsg(
+                      appconv,
+                      "You are required to change your LDAP password immediately.",
+                      PAM_ERROR_MSG,
+                      no_warn
+                      );
+#ifdef PAM_AUTHTOK_EXPIRED
+        success = PAM_AUTHTOK_EXPIRED;
 #else
-    if (gethostbyname_r(hostname, &hbuf, buf, sizeof buf, &h, &herr) != 0) {
-        return PAM_SYSTEM_ERR;
-    }
-#endif /* !LINUX */
-
-    if (_has_value(session->info->hosts_allow, h->h_name)) {
-        return PAM_SUCCESS;
-    }
-
-    if (h->h_aliases != NULL) {
-        for (q = h->h_aliases; *q != NULL; q++) {
-            if (_has_value(session->info->hosts_allow, *q)) {
-                return PAM_SUCCESS;
-            }
+        success = PAM_AUTHTOKEN_REQD;
+#endif /* PAM_AUTHTOK_EXPIRED */        
+    } else if (session->info->password_expiration_time) {
+        if (session->info->password_expiration_time < (60*60*24)) {
+            snprintf(buf, sizeof buf,
+                     "Your LDAP password will expire within 24 hours.");
+            /* override no_warn */
+            _conv_sendmsg(appconv, buf, PAM_ERROR_MSG, 1);
+        } else {
+            int days = session->info->password_expiration_time / (60*60*24);
+            snprintf(buf, sizeof buf,
+                     "Your LDAP password will expire in %d day%s.",
+                     days, (days == 1) ? "" : "s");
+            _conv_sendmsg(appconv, buf, PAM_ERROR_MSG, no_warn);
         }
     }
 
-    return PAM_AUTH_ERR;
+    /* group auth, per Chris's pam_ldap_auth module */
+    if (session->conf->groupdn != NULL) {
+        rc = ldap_compare_s(
+                            session->ld,
+                            session->conf->groupdn,
+                            session->conf->groupattr,
+                            session->info->userdn
+                            );
+        if (rc != LDAP_COMPARE_TRUE) {
+            snprintf(buf, sizeof buf, "You must be a %s of %s to login.", session->conf->groupattr, session->conf->groupdn);
+            _conv_sendmsg(appconv, buf, PAM_ERROR_MSG, no_warn);           
+            return PAM_AUTH_ERR;
+        }
+    }
+
+    rc = _host_ok(session);
+    if (rc == PAM_SUCCESS)
+        rc = success;
+
+    return rc;
 }
 
 /* static module data */
@@ -1433,8 +1608,8 @@ struct pam_module _modstruct = {
     pam_sm_authenticate,
     pam_sm_setcred,
     pam_sm_acct_mgmt,
-    NULL,
-    NULL,
+    pam_sm_open_session,
+    pam_sm_close_session,
     pam_sm_chauthtok
 };
 #endif /* PAM_STATIC */

@@ -8,20 +8,21 @@ The advantages of this particular version are:
    o Support for the V3 client API and protocol (to minimize
      rebinds)
 
-   o Support for Netscape's SSL API (not tested, though)
+   o Support for Netscape's SSL API (untested as of yet)
 
    o Compatibility with the nss_ldap configuration file format
 
    o Supports ypldapd LDAP locator for plug-and-play installation
 
-   o Supports Netscape Directory Server password policies
+   o Supports Netscape Directory Server password policies and
+     password expiration controls
 
    o Supports access authorization on the "host" attribute of the
-     account objectclass
-
+     account objectclass, and on group membership
 
 The module builds under both Linux 2.x and Solaris 2.6.
 
+Thanks to fellow Aussie Chris Albone who wrote the initial pam_ldap_auth module.
 
 --
    Luke Howard

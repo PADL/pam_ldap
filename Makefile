@@ -10,7 +10,7 @@ LDAPLIBS = -L$(LDAP_LIB_DIR) -lldap -llber -lpam -lnsl
 
 #CDEFS = -O2
 WARNINGS = -ansi -D_POSIX_SOURCE -Wall -Wwrite-strings \
-	-Wpointer-arith -Wcast-qual -Wcast-align \
+	-Wpointer-arith -Wcast-align \
 	-Wtraditional -Wstrict-prototypes -Wmissing-prototypes \
 	-Wnested-externs -Winline -Wshadow -pedantic
 
@@ -31,7 +31,7 @@ LD_FLAGS = -x --shared -rpath $(LDAP_LIB_DIR)
 #CFLAGS = -I$(LDAP_INC_DIR) $(CON_FILE) -DSOLARIS $(CDEFS) -K PIC 
 
 # Solaris 2.6 GCC 2.7.2.3
-#CC = gcc
+CC = gcc
 CFLAGS = -Wall -I$(LDAP_INC_DIR) -DSOLARIS -D__EXTENSIONS__ $(CDEFS) -fPIC
 LD_FLAGS = -M mapfile -G -h $(LIBAUTHSH) -z text -Bsymbolic \
 			-R$(LDAP_LIB_DIR) -R/usr/ucblib

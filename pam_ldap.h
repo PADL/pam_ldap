@@ -44,9 +44,13 @@ typedef struct pam_ldap_config
         /* filter to AND with uid=%s */
         char *filter;
         /* attribute to search on; defaults to uid. Use CN with ADS? */
-        char *attr;
+        char *userattr;
         /* search for Netscape password policy */
         int getpolicy;
+        /* group name; optional, for access authorization */
+        char *groupdn;
+        /* group membership attribute; defaults to uniquemember */
+        char *groupattr;
         /* LDAP protocol version */
         int version;
 } pam_ldap_config_t;
@@ -69,17 +73,27 @@ typedef struct pam_ldap_password_policy
     int password_reset_duration;
 } pam_ldap_password_policy_t;
 
+/* Password controls sent to client */
+#ifndef LDAP_CONTROL_PWEXPIRED
+#define LDAP_CONTROL_PWEXPIRED      "2.16.840.1.113730.3.4.4"
+#endif /* LDAP_CONTROL_PWEXPIRED */
+#ifndef LDAP_CONTROL_PWEXPIRING
+#define LDAP_CONTROL_PWEXPIRING     "2.16.840.1.113730.3.4.5"
+#endif /* LDAP_CONTROL_PWEXPIRING */
+
 /* Netscape per-use password attributes. Unused except for DN. */
 typedef struct pam_ldap_user_info {
+    /* user name, to validate info cache */
     char *username;
+    /* DN of user in directory */
     char *userdn;
     /* host attribute from account objectclass */
     char **hosts_allow;
-    int password_expiration_time;
-    int password_exp_warned;
-    int password_retry_count;
-    int retry_count_reset_time;
-    int account_unlock_time;
+    /* seconds until password expires */
+    long password_expiration_time;
+    /* password expires now */
+    int password_expired;
+    /* bound as user DN */
     int bound_as_user;
 } pam_ldap_user_info_t;
 
@@ -118,6 +132,7 @@ static int _reopen(pam_ldap_session_t *);
 static int _get_integer_value(LDAP *, LDAPMessage *, const char *, int *);
 static int _get_string_values(LDAP *, LDAPMessage *, const char *, char ***);
 static int _has_value(char **, const char *);
+static int _host_ok(pam_ldap_session_t *session);
 
 /* LDAP cover routines */
 static int _get_user_info(pam_ldap_session_t *, const char *);
@@ -126,8 +141,8 @@ static int _authenticate(pam_ldap_session_t *, const char *, const char *);
 static int _update_authtok(pam_ldap_session_t *, const char *, const char *, const char *);
 
 /* PAM API helpers, public session management */
-static void _pam_ldap_release_session(pam_handle_t *, void *, int);
-static int _pam_get_ldap_session(pam_handle_t *, const char *, pam_ldap_session_t **);
+static void _pam_ldap_cleanup_session(pam_handle_t *, void *, int);
+static int _pam_ldap_get_session(pam_handle_t *, const char *, pam_ldap_session_t **);
 static int _get_authtok(pam_handle_t *, int, int);
 static int _conv_sendmsg(struct pam_conv *, const char *, int, int);
 
@@ -139,6 +154,11 @@ static int _conv_sendmsg(struct pam_conv *, const char *, int, int);
 #define PAM_SM_AUTH
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *, int, int, const char **);
 PAM_EXTERN int pam_sm_setcred(pam_handle_t *, int, int, const char **);
+
+/* PAM session management */
+#define PAM_SM_SESSION
+PAM_EXTERN int pam_sm_open_session(pam_handle_t *, int, int, const char **);
+PAM_EXTERN int pam_sm_close_session(pam_handle_t *, int, int, const char **);
 
 /* PAM password changing routine */
 #define PAM_SM_PASSWORD
