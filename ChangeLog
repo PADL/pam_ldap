@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+163	Luke Howard <lukeh@padl.com>
+
+	* fix typo in authorizedService patch
+
 162	Luke Howard <lukeh@padl.com>
 
 	* support for service-based authorization
