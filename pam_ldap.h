@@ -112,6 +112,7 @@ typedef struct pam_ldap_config
 #define PASSWORD_CLEAR_REMOVE_OLD     3
 #define PASSWORD_AD      4
 #define PASSWORD_EXOP    5
+#define PASSWORD_EXOP_SEND_OLD	6
     int password_type;
     /* stop all changes, present message */
     char *password_prohibit_message;

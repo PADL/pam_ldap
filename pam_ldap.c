@@ -890,6 +890,8 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	    result->password_type = PASSWORD_AD;
 	  else if (!strcasecmp (v, "exop"))
 	    result->password_type = PASSWORD_EXOP;
+	  else if (!strcasecmp (v, "exop_send_old"))
+	    result->password_type = PASSWORD_EXOP_SEND_OLD;
 	}
       else if (!strcasecmp (k, "pam_password_prohibit_message"))
 	{
@@ -2971,6 +2973,7 @@ _update_authtok (pam_handle_t *pamh,
       break;
 
     case PASSWORD_EXOP:
+    case PASSWORD_EXOP_SEND_OLD:
 #ifdef LDAP_EXOP_MODIFY_PASSWD
       ber = ber_alloc_t (LBER_USE_DER);
 
@@ -2982,8 +2985,10 @@ _update_authtok (pam_handle_t *pamh,
       ber_printf (ber, "{");
       ber_printf (ber, "ts", LDAP_TAG_EXOP_MODIFY_PASSWD_ID,
 		  session->info->userdn);
-      /* this doesn't appear to be necessary anymore */
-      ber_printf (ber, "ts", LDAP_TAG_EXOP_MODIFY_PASSWD_OLD, old_password);
+      if (session->conf->password_type == PASSWORD_EXOP_SEND_OLD)
+	{
+	  ber_printf (ber, "ts", LDAP_TAG_EXOP_MODIFY_PASSWD_OLD, old_password);
+	}
       ber_printf (ber, "ts", LDAP_TAG_EXOP_MODIFY_PASSWD_NEW, new_password);
       ber_printf (ber, "N}");
 
