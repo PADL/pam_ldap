@@ -29,7 +29,7 @@ aix*) CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE" ;;
 esac
 
 case "$target_os" in
-aix*) pam_ldap_so_LDFLAGS="-bM:SRE -bnoentry -bE:\$(srcdir)/exports.aix" ;;
+aix*) pam_ldap_so_LD="ld"; pam_ldap_so_LDFLAGS="-bM:SRE -bnoentry -bE:\$(srcdir)/exports.aix" ;;
 solaris*) pam_ldap_so_LD="/usr/ccs/bin/ld"; pam_ldap_so_LDFLAGS="-B dynamic -M mapfile -G" ;;
 darwin*) pam_ldap_so_LDFLAGS="-bundle" ;;
 *) pam_ldap_so_LDFLAGS="-shared" ;;
