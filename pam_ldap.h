@@ -93,6 +93,12 @@ typedef struct pam_ldap_config
     uid_t min_uid;
     /* max uid */
     uid_t max_uid;
+    /* tls check peer */
+    int tls_checkpeer;
+    /* tls ca certificate file */
+    char *tls_cacertfile;
+    /* tls ca certificate dir */
+    char *tls_cacertdir;
   }
 pam_ldap_config_t;
 

@@ -1,6 +1,13 @@
 $Id$
 ===============================================================
 
+109	Luke Howard <lukeh@padl.com>
+
+	* patch from Tero Pelander <tpeland@tkukoulu.fi> for
+	  testing scope in nss_base_passwd
+	* patch from Jarkko Turkulainen <jt@wapit.com> for client
+	  side certificate support
+
 108	Luke Howard <lukeh@padl.com>
 
 	* patch from Thorsten Kukuk <kukuk@suse.de>:

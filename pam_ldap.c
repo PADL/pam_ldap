@@ -117,6 +117,7 @@
 #include <ldap_ssl.h>
 #endif
 
+
 #ifdef YPLDAPD
 #include <rpcsvc/yp_prot.h>
 #include <rpcsvc/ypclnt.h>
@@ -433,7 +434,9 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->max_uid = 0;
   result->tmplattr = NULL;
   result->tmpluser = NULL;
-
+  result->tls_checkpeer = 0;
+  result->tls_cacertfile = NULL;
+  result->tls_cacertdir = NULL;
   return PAM_SUCCESS;
 }
 
@@ -777,6 +780,27 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	{
 	  result->max_uid = (uid_t) atol (v);
 	}
+      else if (!strcasecmp (k, "tls_checkpeer"))
+	{
+	  if (!strcasecmp (v, "on") || !strcasecmp (v, "yes")
+	      || !strcasecmp (v, "true"))
+	    {
+	      result->tls_checkpeer = 1;
+	    }
+	  else if (!strcasecmp (v, "off") || !strcasecmp (v, "no")
+	      || !strcasecmp (v, "false"))
+	    {
+	      result->tls_checkpeer = 0;
+	    }
+	}
+      else if (!strcasecmp (k, "tls_cacertfile"))
+	{
+	  CHECKPOINTER (result->tls_cacertfile = strdup (v));
+	}
+      else if (!strcasecmp (k, "tls_cacertdir"))
+	{
+	  CHECKPOINTER (result->tls_cacertdir = strdup (v));
+	}
     }
 
   if (passwdBase != NULL)
@@ -993,6 +1017,7 @@ _open_session (pam_ldap_session_t * session)
   session->ld->ld_timelimit = session->conf->timelimit;
 #endif
 
+
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_X_OPT_CONNECT_TIMEOUT)
   /*
    * This is a new option in the Netscape SDK which sets 
@@ -1018,6 +1043,7 @@ _open_session (pam_ldap_session_t * session)
 #ifdef HAVE_LDAP_START_TLS_S
   if (session->conf->ssl_on == SSL_START_TLS)
     {
+      int ldap_pvt_tls_set_option(void *, int, void *);
       int version, rc;
 
       if (ldap_get_option (session->ld, LDAP_OPT_PROTOCOL_VERSION, &version)
@@ -1029,17 +1055,46 @@ _open_session (pam_ldap_session_t * session)
 	      (void) ldap_set_option (session->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 	    }
 
+	  if (session->conf->tls_checkpeer)
+	    {
+	      rc = ldap_pvt_tls_set_option (NULL, LDAP_OPT_X_TLS_CACERTDIR,
+			session->conf->tls_cacertdir);
+	      if (rc != LDAP_SUCCESS)
+	        {
+	          syslog (LOG_ERR, "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_CACERTDIR): %s",
+		  ldap_err2string (rc));	
+	          return PAM_SYSTEM_ERR;
+	         }
+
+	      rc = ldap_pvt_tls_set_option (NULL, LDAP_OPT_X_TLS_CACERTFILE,
+			session->conf->tls_cacertfile);
+	      if (rc != LDAP_SUCCESS)
+	        {
+	          syslog (LOG_ERR, "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_CACERTFILE): %s",
+		  ldap_err2string (rc));	
+	          return PAM_SYSTEM_ERR;
+	         }
+
+	      rc = ldap_pvt_tls_set_option (NULL, LDAP_OPT_X_TLS_REQUIRE_CERT, 
+			&session->conf->tls_checkpeer);
+	      if (rc != LDAP_SUCCESS)
+	        {
+	          syslog (LOG_ERR, "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_REQUIRE_CERT): %s",
+	          ldap_err2string (rc));	
+	          return PAM_SYSTEM_ERR;
+	        }
+	  }
+
 	  rc = ldap_start_tls_s (session->ld, NULL, NULL);
 	  if (rc != LDAP_SUCCESS)
 	    {
-	      syslog (LOG_ERR, "pam_ldap: ldap_start_tls_s %s",
-		      ldap_err2string (rc));
+	      syslog (LOG_ERR, "pam_ldap: ldap_starttls_s: %s",
+		ldap_err2string (rc));	
 	      return PAM_SYSTEM_ERR;
 	    }
 	}
     }
-#endif
-
+#endif /* HAVE_LDAP_START_TLS_S */
   return PAM_SUCCESS;
 }
 
