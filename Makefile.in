@@ -407,7 +407,7 @@ install-exec-local: pam_ldap.so
 	@$(NORMAL_INSTALL)
 	$(mkinstalldirs) $(DESTDIR)$(libdir)/security
 @EXTENSION_SO_TRUE@	$(INSTALL_PROGRAM) -o root -g root pam_ldap.so $(DESTDIR)$(libdir)/security/pam_ldap.so
-@EXTENSION_SO_FALSE@@EXTENSION_1_TRUE@	$(INSTALL_PROGRAM) -o root -g root pam_ldap.so $(DESTDIR)$(libdir)/security/pam_ldap.1
+@EXTENSION_SO_FALSE@@EXTENSION_1_TRUE@	$(INSTALL_PROGRAM) -o root -g root pam_ldap.so $(DESTDIR)$(libdir)/security/libpam_ldap.1
 @EXTENSION_SO_FALSE@@EXTENSION_1_FALSE@	$(INSTALL_PROGRAM) -o root -g root pam_ldap.so $(DESTDIR)$(libdir)/security/pam_ldap.so.1
 @EXTENSION_SO_FALSE@@EXTENSION_1_FALSE@	(cd $(DESTDIR)$(libdir)/security; rm -f pam_ldap.so; ln -s pam_ldap.so.1 pam_ldap.so)
 

@@ -1463,7 +1463,7 @@ hpux*) pam_ldap_so_LD="/bin/ld"
   pam_ldap_so_LDFLAGS="-b -dynamic -G `cat exports.hpux`"
   TARGET_OS="HPUX" ;;
 solaris*) pam_ldap_so_LD="/usr/ccs/bin/ld"
-  pam_ldap_so_LDFLAGS="-B dynamic -M \$(srcdir)/exports.solaris -G" ;;
+  pam_ldap_so_LDFLAGS="-B dynamic -M \$(srcdir)/exports.solaris -G -B group -lc" ;;
 linux*) pam_ldap_so_LDFLAGS="-shared -Wl,-Bdynamic -Wl,--version-script,\$(srcdir)/exports.linux" ;;
 *) pam_ldap_so_LDFLAGS="-shared" ;;
 esac
