@@ -1063,7 +1063,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
        * SHOULD be logged at LOG_ALERT level
        */
       syslog (LOG_ALERT, "pam_ldap: missing \"host\" in file \"%s\"",
-	      PAM_LDAP_PATH_CONF);
+	      configFile);
       return PAM_SERVICE_ERR;
     }
 
