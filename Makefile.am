@@ -5,8 +5,10 @@ EXTRA_DIST = COPYING.LIB CVSVersionInfo.txt ChangeLog README \
 pam_ldap_so_SOURCES = pam_ldap.c pam_ldap.h md5.c md5.h
 pam_ldap_so_LDFLAGS = @pam_ldap_so_LDFLAGS@
 
+DEFS = @DEFS@
+
 if USE_NATIVE_LINKER
-NATIVE_LINK = $(pam_ldap_so_LD) $(AM_LDFLAGS) $(LDFLAGS) -o $@ 
+NATIVE_LINK = $(pam_ldap_so_LD) $(AM_LDFLAGS) -o $@ 
 else
 GNU_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 endif
