@@ -2187,7 +2187,11 @@ pam_sm_acct_mgmt (
 		      PAM_ERROR_MSG,
 		      no_warn
 	);
+#ifdef LINUX      
+	success = PAM_AUTHTOKEN_REQD;
+#else
 	success = PAM_NEW_AUTHTOK_REQD;
+#endif /* LINUX */
 /* ???? */
 /*
 #ifdef PAM_AUTHTOK_EXPIRED
