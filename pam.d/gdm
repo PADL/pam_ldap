@@ -9,3 +9,4 @@ password   sufficient   /lib/security/pam_ldap.so
 password   required	/lib/security/pam_pwdb.so use_first_pass
 session    sufficient   /lib/security/pam_ldap.so
 session    required	/lib/security/pam_unix_session.so
+session    optional	/lib/security/pam_console.so
