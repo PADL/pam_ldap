@@ -80,8 +80,7 @@ OpenLDAP, also use a configuration file of the same name.
 pam_ldap
 supports many of the same configuration file options as OpenLDAP,
 but it adds several that are specific to the functionality it provides.
-Unlike OpenLDAP, pam_ldap configuration file keywords are not case
-sensitive. Additionally, it is not guaranteed that
+It is not guaranteed that
 .B
 pam_ldap
 will continue to match the configuration file semantics of OpenLDAP.
@@ -300,7 +299,7 @@ The following configuration options apply to pam_ldap only:
 .B pam_login_attribute <attribute>
 Specifies the attribute to use when constructing the attribute value
 assertion for retrieving a directory entry for a user's login name.
-The default is "uid", for compatability with RFC 2307.
+The default is "uid", for compatibility with RFC 2307.
 .TP
 .B pam_filter <filter>
 Specifies a filter to use when retrieving user information. The user
