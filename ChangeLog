@@ -1,6 +1,15 @@
 $Id$
 ===============================================================
 
+168	Luke Howard <lukeh@padl.com>
+
+	* define LDAP_DEPRECATED for compiling with
+	  OpenLDAP 2.2
+	* send old password when calling password change
+	  extended operation: if the password had expired
+	  the user may not be bound and so relying on the
+	  LDAP connection to be authenticated is unwise
+
 167	Luke Howard <lukeh@padl.com>
 
 	* fix compilation error on Solaris 9
