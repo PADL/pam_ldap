@@ -1,6 +1,13 @@
 $Id$
 ===============================================================
 
+76	Luke Howard <lukeh@padl.com>
+
+	* fixes to configure from David Begley;
+	  detect LDAP client libraries properly
+	* fix to Makefile.am from David Begley;
+	  don't delete nss_ldap library on uninstall
+
 75	Luke Howard <lukeh@padl.com>
 
 	* updated README with Solaris crypt(3) FAQ

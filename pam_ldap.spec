@@ -1,6 +1,6 @@
 Summary: LDAP Pluggable Authentication Module
 Name: pam_ldap
-Version: 75
+Version: 76
 Release: 7
 Source: ftp://ftp.padl.com/pub/pam_ldap-%{version}.tar.gz
 URL: http://www.padl.com/
