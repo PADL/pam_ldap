@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+77	Luke Howard <lukeh@padl.com>
+	
+	* renamed _authenticate() to _do_authentication()
+	  to avoid name conflict with ONC RPC headers
+
 76	Luke Howard <lukeh@padl.com>
 
 	* fixes to configure from David Begley;

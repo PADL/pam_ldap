@@ -212,7 +212,7 @@ static void _cleanup_data (pam_handle_t *, void *, int);
 /* LDAP cover routines */
 static int _get_user_info (pam_ldap_session_t *, const char *);
 static int _get_password_policy (pam_ldap_session_t *, pam_ldap_password_policy_t *);
-static int _authenticate (pam_ldap_session_t *, const char *, const char *);
+static int _do_authentication (pam_ldap_session_t *, const char *, const char *);
 static int _update_authtok (pam_ldap_session_t *, const char *, const char *, const char *, int);
 
 /* PAM API helpers, public session management */

@@ -1543,7 +1543,7 @@ _get_password_policy (pam_ldap_session_t * session,
 }
 
 static int
-_authenticate (pam_ldap_session_t * session,
+_do_authentication (pam_ldap_session_t * session,
 	       const char *user, const char *password)
 {
   int rc = PAM_SUCCESS;
@@ -1811,7 +1811,7 @@ pam_sm_authenticate (pam_handle_t * pamh,
   rc = pam_get_item (pamh, PAM_AUTHTOK, (CONST_ARG void **) &p);
   if (rc == PAM_SUCCESS && (use_first_pass || try_first_pass))
     {
-      rc = _authenticate (session, username, p);
+      rc = _do_authentication (session, username, p);
       if (rc == PAM_SUCCESS || use_first_pass)
 	{
 	  return rc;
@@ -1825,7 +1825,7 @@ pam_sm_authenticate (pam_handle_t * pamh,
 
   rc = pam_get_item (pamh, PAM_AUTHTOK, (CONST_ARG void **) &p);
   if (rc == PAM_SUCCESS)
-    rc = _authenticate (session, username, p);
+    rc = _do_authentication (session, username, p);
 
   /*
    * reset username to template user if necessary
@@ -1947,7 +1947,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		  (pamh, PAM_OLDAUTHTOK,
 		   (CONST_ARG void **) &curpass) == PAM_SUCCESS)
 		{
-		  rc = _authenticate (session, username, curpass);
+		  rc = _do_authentication (session, username, curpass);
 		  if (rc != PAM_SUCCESS)
 		    {
 		      if (use_first_pass)
@@ -1994,7 +1994,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	      free (resp);
 
 	      /* authenticate the old password */
-	      rc = _authenticate (session, username, curpass);
+	      rc = _do_authentication (session, username, curpass);
 	      if (rc != PAM_SUCCESS)
 		{
 		  int abortme = 0;
