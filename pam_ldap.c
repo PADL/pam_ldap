@@ -627,11 +627,11 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	}
       else if (!strcasecmp (k, "scope"))
 	{
-	  if (!strcasecmp (v, "sub"))
+	  if (!strncasecmp (v, "sub", 3))
 	    result->scope = LDAP_SCOPE_SUBTREE;
-	  else if (!strcasecmp (v, "one"))
+	  else if (!strncasecmp (v, "one", 3))
 	    result->scope = LDAP_SCOPE_ONELEVEL;
-	  else if (!strcasecmp (v, "base"))
+	  else if (!strncasecmp (v, "base", 4))
 	    result->scope = LDAP_SCOPE_BASE;
 	}
       else if (!strcasecmp (k, "deref"))
@@ -1005,14 +1005,14 @@ _open_session (pam_ldap_session_t * session)
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_REFERRALS)
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->conf->
-			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->
+			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_RESTART)
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->conf->
-			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->
+			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
@@ -2453,7 +2453,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
       pam_set_item (pamh, PAM_OLDAUTHTOK, (void *) curpass);
       return rc;
     }				/* prelim */
-   else if (session->info == NULL) /* this is no LDAP user */
+  else if (session->info == NULL)	/* this is no LDAP user */
     return PAM_USER_UNKNOWN;
 
   if (use_authtok)
