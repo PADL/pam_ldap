@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+66	Luke Howard <lukeh@padl.com>
+
+    * ypldapd locator support is now a configure option
+
 65	Luke Howard <lukeh@padl.com>
 
     * set shadowLastChange silently (allow it to fail)

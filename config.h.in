@@ -9,6 +9,9 @@
 /* define to support novell specific features */
 #undef NDS
 
+/* define to support YPLDAPD locator */
+#undef YPLDAPD
+
 /* Define if you have the gethostbyname function.  */
 #undef HAVE_GETHOSTBYNAME
 
