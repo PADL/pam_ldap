@@ -4,7 +4,11 @@ $Id$
 92	Luke Howard <lukeh@padl.com>
 
 	* support for OpenLDAP password change extended
-	  operation, if available
+	  operation, if available. Enable with 
+
+		pam_password exop
+
+	  in ldap.conf
 
 91	Luke Howard <lukeh@padl.com>
 
