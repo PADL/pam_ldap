@@ -5,6 +5,8 @@ $Id$
 
 	* per suggest from Bill Welliver, check for
 	  effective UID being 0, not real UID
+	* added ber_free() after ber_flatten() in 
+	  extended operation password changing code
 
 133	Luke Howard <lukeh@padl.com>
 
