@@ -2430,6 +2430,7 @@ _update_authtok (pam_ldap_session_t * session,
       rc = ber_flatten (ber, &bv);
       if (rc < 0)
 	{
+	  ber_free (ber, 1);
 	  return PAM_BUF_ERR;
 	}
 
