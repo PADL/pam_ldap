@@ -95,6 +95,7 @@
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE
 #endif /* _XOPEN_SOURCE */
+#include <sys/time.h>
 #include <unistd.h>
 #include <syslog.h>
 #include <netdb.h>
@@ -129,6 +130,32 @@
 #endif /* LDAP_VERSION3_API */
 
 static char rcsid[] = "$Id$";
+
+#if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
+#ifndef LDAP_VERSION3_API
+#define LDAP_VERSION3_API
+#endif /* LDAP_VERSION3_API */
+
+static int ldap_get_lderrno(LDAP *ld, char **m, char **s)
+{
+    int rc;
+    int lderrno;
+
+    rc = ldap_get_option(ld, LDAP_OPT_ERROR_NUMBER, &lderrno);
+    if (rc != LDAP_SUCCESS) return rc;
+
+    if (s != NULL) {
+        rc = ldap_get_option(ld, LDAP_OPT_ERROR_STRING, &s);
+        if (rc != LDAP_SUCCESS) return rc;
+    }
+
+    if (m != NULL) {
+        *m = NULL;
+    }
+
+    return lderrno;
+}
+#endif
 
 static void _release_config(
                          pam_ldap_config_t **pconfig
@@ -528,7 +555,9 @@ static int _open_session(
 
 #ifdef LDAP_VERSION3_API
     (void) ldap_set_option(session->ld, LDAP_OPT_PROTOCOL_VERSION, &session->conf->version);
+#ifdef NETSCAPE_API_EXTENSIONS
     ldap_set_rebind_proc(session->ld, _rebind_proc, (void *)session);
+#endif /* NETSCAPE_API_EXTENSIONS */
 #else
     session->ld->ld_version = session->conf->version;
 #endif /* LDAP_VERSION3_API */
@@ -583,7 +612,7 @@ static int _connect_anonymously(
     return PAM_SUCCESS;
 }
 
-#ifdef LDAP_VERSION3_API
+#ifdef NETSCAPE_API_EXTENSIONS
 static int _rebind_proc(
                         LDAP *ld,
                         char **whop,
@@ -614,7 +643,7 @@ static int _rebind_proc(
     *methodp = LDAP_AUTH_SIMPLE;
     return LDAP_SUCCESS;
 }
-#endif /* LDAP_VERSION3_API */
+#endif /* NETSCAPE_API_EXTENSIONS */
 
 static int _connect_as_user(
                             pam_ldap_session_t *session,

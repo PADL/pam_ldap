@@ -1,6 +1,13 @@
 $Id$
 ===============================================================
 
+33   Luke Howard <lukeh@padl.com>
+
+    * fixed pam_ldap.c to support compiling against an API
+      which conforms to draft-ietf-ldapext-ldap-c-api-02.txt.
+      Should make it easier to work with OpenLDAP 2. Netscape
+      specific extensions are guarded with NETSCAPE_API_EXTENSIONS.
+
 30   Luke Howard <lukeh@padl.com>
 
     * fixed Make.defs for linking against OpenLDAP libldap
