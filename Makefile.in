@@ -101,7 +101,7 @@ mkinstalldirs
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
-TAR = gtar
+TAR = tar
 GZIP_ENV = --best
 DEP_FILES =  .deps/md5.P .deps/pam_ldap.P
 SOURCES = $(pam_ldap_so_SOURCES)

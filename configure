@@ -789,7 +789,7 @@ fi
 
 PACKAGE=pam_ldap
 
-VERSION=99
+VERSION=100
 
 if test "`cd $srcdir && pwd`" != "`pwd`" && test -f $srcdir/config.status; then
   { echo "configure: error: source directory already configured; run "make distclean" there first" 1>&2; exit 1; }
@@ -1294,8 +1294,8 @@ if test -n "$with_ldap_dir"; then
   CPPFLAGS="$CPPFLAGS -I$with_ldap_dir/include"
   LDFLAGS="$LDFLAGS -L$with_ldap_dir/lib"
   case "$target_os" in  
-  linux*) LDFLAGS="$LDFLAGS -Wl,-rpath,$with_ldap_dir/lib" ;;
   solaris*) LDFLAGS="$LDFLAGS -Wl,-R$with_ldap_dir/lib" ;;  
+  *) LDFLAGS="$LDFLAGS -Wl,-rpath,$with_ldap_dir/lib" ;;
   esac  
 fi
 

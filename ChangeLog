@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+100	Luke Howard <lukeh@padl.com>
+
+	* use -rpath on all platforms except Solaris,
+	  not just Linux
+
 99	Luke Howard <lukeh@padl.com>
 
 	* use -shared not --shared
