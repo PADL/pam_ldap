@@ -1,0 +1,10 @@
+#ident $Id$
+
+# OS Part
+# Linux Section
+CC = gcc
+CFLAGS = -Wall -I$(LDAP_INC_DIR) $(CON_FILE) -D_GNU_SOURCE -DLINUX $(CDEFS) -fPIC
+LD_FLAGS = -x --shared -rpath $(LDAP_LIB_DIR) -lcrypt
+
+include Make.defs
+
