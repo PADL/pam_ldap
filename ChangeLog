@@ -6,6 +6,9 @@ $Id$
 	* default to LDAP protocol version 3
 	* documented exop in README
 	* link on Solaris with -M mapfile
+	* Solaris link with -Wl; will work with
+	  gcc only, I think
+	* use sysconfdir, not etcdir
 
 93	Luke Howard <lukeh@padl.com>
 
