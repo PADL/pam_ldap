@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+105	Luke Howard <lukeh@padl.com>
+
+	* check for HAVE_LDAP_{SET,GET}_OPTION always
+
 104	Luke Howard <lukeh@padl.com>
 
 	* check for ldap_set_option(), as LDAP_OPT_REFERRALS

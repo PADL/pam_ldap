@@ -217,7 +217,7 @@ ldap_get_lderrno (LDAP * ld, char **m, char **s)
   int rc;
   int lderrno;
 
-#ifdef LDAP_OPT_ERROR_NUMBER
+#if defined(HAVE_LDAP_GET_OPTION) && defined(LDAP_OPT_ERROR_NUMBER)
   /* is this needed? */
   rc = ldap_get_option (ld, LDAP_OPT_ERROR_NUMBER, &lderrno);
   if (rc != LDAP_SUCCESS)
@@ -228,7 +228,7 @@ ldap_get_lderrno (LDAP * ld, char **m, char **s)
 
   if (s != NULL)
     {
-#ifdef LDAP_OPT_ERROR_STRING
+#if defined(HAVE_LDAP_GET_OPTION) && defined(LDAP_OPT_ERROR_STRING)
       rc = ldap_get_option (ld, LDAP_OPT_ERROR_STRING, &s);
       if (rc != LDAP_SUCCESS)
 	return rc;
@@ -936,7 +936,7 @@ _open_session (pam_ldap_session_t * session)
       return PAM_SYSTEM_ERR;
     }
 
-#ifdef LDAP_OPT_X_TLS
+#if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_X_TLS)
   if (session->conf->ssl_on == SSL_LDAPS)
     {
       int tls = LDAP_OPT_X_TLS_HARD;
@@ -950,7 +950,7 @@ _open_session (pam_ldap_session_t * session)
     }
 #endif /* LDAP_OPT_X_TLS */
 
-#ifdef LDAP_OPT_PROTOCOL_VERSION
+#if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_PROTOCOL_VERSION)
   (void) ldap_set_option (session->ld, LDAP_OPT_PROTOCOL_VERSION, &session->conf->version);
 #else
   session->ld->ld_version = session->conf->version;
@@ -962,19 +962,19 @@ _open_session (pam_ldap_session_t * session)
   ldap_set_rebind_proc (session->ld, _rebind_proc);
 #endif
 
-#ifdef LDAP_OPT_DEREF
+#if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_DEREF)
   (void) ldap_set_option (session->ld, LDAP_OPT_DEREF, &session->conf->deref);
 #else
   session->ld->ld_deref = session->conf->deref;
 #endif
 
-#ifdef LDAP_OPT_TIMELIMIT
+#if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_TIMELIMIT)
   (void) ldap_set_option (session->ld, LDAP_OPT_TIMELIMIT, &session->conf->timelimit);
 #else
   session->ld->ld_timelimit = session->conf->timelimit;
 #endif
 
-#ifdef LDAP_X_OPT_CONNECT_TIMEOUT
+#if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_X_OPT_CONNECT_TIMEOUT)
   /*
    * This is a new option in the Netscape SDK which sets 
    * the TCP connect timeout. For want of a better value,
@@ -990,7 +990,7 @@ _open_session (pam_ldap_session_t * session)
 			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
-#ifdef LDAP_OPT_RESTART
+#if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_RESTART)
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
 			  session->
 			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
@@ -1545,7 +1545,7 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
   if (rc != PAM_SUCCESS)
     return rc;
 
-#ifdef LDAP_OPT_SIZELIMIT
+#if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_SIZELIMIT)
   rc = 1;
   (void) ldap_set_option (session->ld, LDAP_OPT_SIZELIMIT, &rc);
 #else
@@ -1791,7 +1791,7 @@ _get_password_policy (pam_ldap_session_t * session,
       return rc;
     }
 
-#ifdef LDAP_OPT_SIZELIMIT
+#if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_SIZELIMIT)
   rc = 1;
   (void) ldap_set_option (session->ld, LDAP_OPT_SIZELIMIT, &rc);
 #else
