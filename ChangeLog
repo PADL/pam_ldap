@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+136	Luke Howard <lukeh@padl.com>
+
+	* module stack fixes from Thorsten Kukuk
+
 135	Luke Howard <lukeh@padl.com>
 
 	* revert UID check to getuid() per patch from
