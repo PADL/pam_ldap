@@ -616,7 +616,7 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->max_uid = 0;
   result->tmplattr = NULL;
   result->tmpluser = NULL;
-  result->tls_checkpeer = 0;
+  result->tls_checkpeer = -1;
   result->tls_cacertfile = NULL;
   result->tls_cacertdir = NULL;
   result->tls_ciphers = NULL;
@@ -883,25 +883,25 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
       else if (!strcasecmp (k, "nss_base_passwd"))
 	{
 	  char *s;
-          pam_ssd_t *p, *ssd = calloc(1, sizeof(pam_ssd_t));
+	  pam_ssd_t *p, *ssd = calloc (1, sizeof (pam_ssd_t));
 
 	  /* this doesn't do any escaping. XXX. */
 	  s = strchr (v, '?');
 	  if (s != NULL)
 	    {
-              len = s-v;
+	      len = s - v;
 	      if (s[-1] == ',' && result->base)
-                {
-		  ssd->base = malloc(len + strlen(result->base) + 1);
-		  strncpy(ssd->base, v, len);
-                  strcpy(ssd->base+len, result->base);
-                }
-              else
-                {
-                  ssd->base = malloc(len+1);
-                  strncpy(ssd->base, v, len);
-                  ssd->base[len] = '\0';
-                }
+		{
+		  ssd->base = malloc (len + strlen (result->base) + 1);
+		  strncpy (ssd->base, v, len);
+		  strcpy (ssd->base + len, result->base);
+		}
+	      else
+		{
+		  ssd->base = malloc (len + 1);
+		  strncpy (ssd->base, v, len);
+		  ssd->base[len] = '\0';
+		}
 	      s++;
 	      if (!strncasecmp (s, "sub", 3))
 		ssd->scope = LDAP_SCOPE_SUBTREE;
@@ -922,15 +922,15 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	      ssd->scope = LDAP_SCOPE_SUBTREE;
 	    }
 
-	  for (p=result->ssd; p && p->next; p=p->next);
+	  for (p = result->ssd; p && p->next; p = p->next);
 	  if (p)
-            {
+	    {
 	      p->next = ssd;
-            }
-          else
-            {
-              result->ssd = ssd;
-            }
+	    }
+	  else
+	    {
+	      result->ssd = ssd;
+	    }
 	}
       else if (!strcasecmp (k, "ldap_version"))
 	{
@@ -1011,12 +1011,12 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	  if (!strcasecmp (v, "on") || !strcasecmp (v, "yes")
 	      || !strcasecmp (v, "true"))
 	    {
-	      result->tls_checkpeer = 1;
+	      result->tls_checkpeer = 1;	/* LDAP_OPT_X_TLS_HARD */
 	    }
 	  else if (!strcasecmp (v, "off") || !strcasecmp (v, "no")
 		   || !strcasecmp (v, "false"))
 	    {
-	      result->tls_checkpeer = 0;
+	      result->tls_checkpeer = 0;	/* LDAP_OPT_X_TLS_NEVER */
 	    }
 	}
       else if (!strcasecmp (k, "tls_cacertfile"))
@@ -1345,15 +1345,18 @@ _set_ssl_default_options (pam_ldap_session_t * session)
 	}
     }
 
-  /* require cert? */
-  rc = ldap_set_option (NULL, LDAP_OPT_X_TLS_REQUIRE_CERT,
-			&session->conf->tls_checkpeer);
-  if (rc != LDAP_SUCCESS)
+  if (session->conf->tls_checkpeer > -1)
     {
-      syslog (LOG_ERR,
-	      "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_REQUIRE_CERT): %s",
-	      ldap_err2string (rc));
-      return LDAP_OPERATIONS_ERROR;
+      /* require cert? */
+      rc = ldap_set_option (NULL, LDAP_OPT_X_TLS_REQUIRE_CERT,
+			    &session->conf->tls_checkpeer);
+      if (rc != LDAP_SUCCESS)
+	{
+	  syslog (LOG_ERR,
+		  "pam_ldap: ldap_set_option(LDAP_OPT_X_TLS_REQUIRE_CERT): %s",
+		  ldap_err2string (rc));
+	  return LDAP_OPERATIONS_ERROR;
+	}
     }
 
   if (session->conf->tls_ciphers != NULL)
@@ -2071,8 +2074,9 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
 nxt:
   if ((session->conf->filter != NULL) && (ssd->filter != NULL))
     {
-      snprintf(filter, sizeof filter, "(&(%s)(%s)(%s=%s))",
-                ssd->filter, session->conf->filter, session->conf->userattr, escapedUser);
+      snprintf (filter, sizeof filter, "(&(%s)(%s)(%s=%s))",
+		ssd->filter, session->conf->filter, session->conf->userattr,
+		escapedUser);
     }
   else if (ssd->filter != NULL)
     {
@@ -2105,10 +2109,10 @@ nxt:
     {
       ldap_msgfree (res);
       if (ssd->next)
-        {
-          ssd = ssd->next;
-          goto nxt;
-        }
+	{
+	  ssd = ssd->next;
+	  goto nxt;
+	}
       return PAM_USER_UNKNOWN;
     }
 
@@ -2148,7 +2152,8 @@ nxt:
    * avoid fetching any attributes at all
    */
   _get_string_values (session->ld, msg, "host", &session->info->hosts_allow);
-  _get_string_values (session->ld, msg, "authorizedService", &session->info->services_allow);
+  _get_string_values (session->ld, msg, "authorizedService",
+		      &session->info->services_allow);
 
   /* get UID */
 #ifdef UID_NOBODY
@@ -2774,7 +2779,7 @@ pam_sm_authenticate (pam_handle_t * pamh,
       rc = _do_authentication (session, username, p);
       if (rc == PAM_SUCCESS || use_first_pass)
 	{
-	  STATUS_MAP_IGNORE_POLICY(rc, ignore_flags);
+	  STATUS_MAP_IGNORE_POLICY (rc, ignore_flags);
 
 	  if (rc == PAM_SUCCESS && session->info->tmpluser != NULL &&
 	      session->conf->tmpluser != NULL &&
@@ -2799,7 +2804,7 @@ pam_sm_authenticate (pam_handle_t * pamh,
   rc = pam_get_item (pamh, PAM_AUTHTOK, (CONST_ARG void **) &p);
   if (rc == PAM_SUCCESS)
     rc = _do_authentication (session, username, p);
-  STATUS_MAP_IGNORE_POLICY(rc, ignore_flags);
+  STATUS_MAP_IGNORE_POLICY (rc, ignore_flags);
 
   /*
    * reset username to template user if necessary
@@ -2927,7 +2932,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if (session->conf->password_prohibit_message)
     {
       rc = _get_user_info (session, username);
-      STATUS_MAP_IGNORE_POLICY(rc, ignore_flags);
+      STATUS_MAP_IGNORE_POLICY (rc, ignore_flags);
       /* skip non-ldap users */
       if (rc != PAM_SUCCESS)
 	return rc;
@@ -2941,7 +2946,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
     {
       /* see whether the user exists */
       rc = _get_user_info (session, username);
-      STATUS_MAP_IGNORE_POLICY(rc, ignore_flags);
+      STATUS_MAP_IGNORE_POLICY (rc, ignore_flags);
       if (rc != PAM_SUCCESS)
 	return rc;
 
@@ -3049,7 +3054,8 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
       return rc;
     }				/* prelim */
   else if (session->info == NULL)	/* this is no LDAP user */
-    return (ignore_flags & IGNORE_UNKNOWN_USER) ? PAM_IGNORE : PAM_USER_UNKNOWN;
+    return (ignore_flags & IGNORE_UNKNOWN_USER) ? PAM_IGNORE :
+      PAM_USER_UNKNOWN;
 
   if (use_authtok)
     use_first_pass = 1;
@@ -3318,7 +3324,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
       rc = _get_user_info (session, username);
       if (rc != PAM_SUCCESS)
 	{
-	  STATUS_MAP_IGNORE_POLICY(rc, ignore_flags);
+	  STATUS_MAP_IGNORE_POLICY (rc, ignore_flags);
 
 	  return rc;
 	}

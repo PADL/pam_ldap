@@ -4,6 +4,8 @@ $Id$
 165	Luke Howard <lukeh@padl.com>
 
 	* fix BUG#142
+	* don't set LDAP_OPT_X_TLS_REQUIRE_CERT if not specified
+	  in configuration file
 
 164	Luke Howard <lukeh@padl.com>
 
