@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+177	Luke Howard <lukeh@padl.com>
+
+	* fix for BUG#188: better documentation for OpenLDAP
+	  SSL options
+
 176	Luke Howard <lukeh@padl.com>
 
 	* fix for compilation with Netscape SDK
