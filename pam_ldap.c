@@ -2761,7 +2761,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
       if (rc != PAM_SUCCESS)
 	return rc;
 
-      if (!(session->conf->rootbinddn && geteuid () == 0))
+      if (!(session->conf->rootbinddn && getuid () == 0))
 	{
 	  /* we are not root, authenticate old password */
 	  if (try_first_pass || use_first_pass)

@@ -3,9 +3,6 @@ $Id$
 
 139	Luke Howard <lukeh@padl.com>
 
-	* revert UID check for password changes per patch
-	  from Martin Schwenke
-
 138	Luke Howard <lukeh@padl.com>
 
 	* when flushing cached session data, check to see
