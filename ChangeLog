@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+172	Luke Howard <lukeh@padl.com>
+
+	* preliminary SASL bind support
+
 171	Luke Howard <lukeh@padl.com>
 
 	* use correct AIX link flags even if --with-ldap-dir
