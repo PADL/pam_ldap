@@ -1,6 +1,16 @@
 $Id$
 ===============================================================
 
+8   Luke Howard <lukeh@padl.com>
+
+    * tested with Linux-PAM 0.57
+    * made all functions static
+    * added prototypes
+    * LDAP connections can be persistent over an entire PAM
+      session through the use of pam_set_data() and
+      pam_get_data()
+    * fixed some bugs
+    
 7   Luke Howard <lukeh@padl.com>
 
     * first publically available version.

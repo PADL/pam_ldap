@@ -20,8 +20,7 @@ The advantages of this particular version are:
      account objectclass
 
 
-The module builds under both Linux and Solaris although it has only been
-tested under Solaris 2.6.
+The module builds under both Linux 2.x and Solaris 2.6.
 
 
 --

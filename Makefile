@@ -1,15 +1,20 @@
 #ident $Id$
 
-# The PAM lib directory
-SECURITY_DIR = /lib/security
+# The PAM library directory
+SECURITY_DIR = /usr/lib/security
 
 # The Mozilla LDAP libraries
 LDAP_LIB_DIR = /usr/local/ldapsdk/lib
 LDAP_INC_DIR = /usr/local/ldapsdk/include
 LDAPLIBS = -L$(LDAP_LIB_DIR) -lldap -llber -lpam -lnsl
 
-#OPT_FLAGS = -O2
-OPT_FLAGS = -g  #-DYPLDAPD
+#CDEFS = -O2
+WARNINGS = -ansi -D_POSIX_SOURCE -Wall -Wwrite-strings \
+	-Wpointer-arith -Wcast-qual -Wcast-align \
+	-Wtraditional -Wstrict-prototypes -Wmissing-prototypes \
+	-Wnested-externs -Winline -Wshadow -pedantic
+
+CDEFS = -g $(WARNINGS) #-DYPLDAPD
 
 # Which Make is gnu make
 MAKE = make
@@ -18,16 +23,16 @@ MAKE = make
 # OS Part
 # Linux Section
 CC = gcc
-CFLAGS = -Wall -I$(LDAP_INC_DIR) $(CON_FILE) -DLINUX $(OPT_FLAGS) -fPIC
+CFLAGS = -Wall -I$(LDAP_INC_DIR) $(CON_FILE) -D_GNU_SOURCE -DLINUX $(CDEFS) -fPIC
 LD_FLAGS = -x --shared -rpath $(LDAP_LIB_DIR)
 
 # Solaris 2.6 Sun Pro C Compiler
 #CC = /opt/SUNWspro/bin/cc
-#CFLAGS = -I$(LDAP_INC_DIR) $(CON_FILE) -DSOLARIS $(OPT_FLAGS) -K PIC 
+#CFLAGS = -I$(LDAP_INC_DIR) $(CON_FILE) -DSOLARIS $(CDEFS) -K PIC 
 
 # Solaris 2.6 GCC 2.7.2.3
-CC = gcc
-CFLAGS = -Wall -I$(LDAP_INC_DIR) -DSOLARIS $(OPT_FLAGS) -fPIC
+#CC = gcc
+CFLAGS = -Wall -I$(LDAP_INC_DIR) -DSOLARIS -D__EXTENSIONS__ $(CDEFS) -fPIC
 LD_FLAGS = -M mapfile -G -h $(LIBAUTHSH) -z text -Bsymbolic \
 			-R$(LDAP_LIB_DIR) -R/usr/ucblib
 
