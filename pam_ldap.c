@@ -1839,7 +1839,8 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
 	    }
 	  else if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PWEXPIRED))
 	    {
-	      session->info->policy_error = POLICY_ERROR_PASSWORD_EXPIRED;
+	      if (session->info->policy_error == POLICY_ERROR_SUCCESS)
+		session->info->policy_error = POLICY_ERROR_PASSWORD_EXPIRED;
 	      rc = LDAP_SUCCESS;
 	      /* That may be a lie, but we need to get to the acct_mgmt
 	       * step and force the change...
