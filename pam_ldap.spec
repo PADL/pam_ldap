@@ -1,6 +1,6 @@
 Summary: PAM module for LDAP.
 Name: pam_ldap
-Version: 134
+Version: 135
 Release: 1
 Source0: ftp://ftp.padl.com/pub/%{name}-%{version}.tar.gz
 Source1: ldap.conf
