@@ -87,6 +87,7 @@ clean:
 
 extraclean: clean
 	rm -f *.a *.out *.o *.so *.bak
+	test ./dynamic && rmdir ./dynamic
 
 .c.o:	
 	$(CC) -c $(CFLAGS) $<
