@@ -155,7 +155,7 @@ static int ldap_get_lderrno(LDAP *ld, char **m, char **s)
 
     return lderrno;
 }
-#endif
+#endif /* LDAP_VERSION3_API */
 
 static void _release_config(
                          pam_ldap_config_t **pconfig
