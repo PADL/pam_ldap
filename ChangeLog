@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+120	Luke Howard <lukeh@padl.com>
+
+	* escape search filter to avoid wildcards etc
+	* put prototypes back in, where did they go?
+
 119	Luke Howard <lukeh@padl.com>
 
 	* with password change exop, use bind password not encoded

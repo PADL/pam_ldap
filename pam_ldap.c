@@ -160,6 +160,82 @@ static int ssl_initialized = 0;
 			syslog(LOG_DEBUG, "%s:%i " fmt , __FUNCTION__ , __LINE__ , ## args); \
 	} while (0)
 
+static int i64c (int i);
+
+#ifndef HAVE_LDAP_GET_LDERRNO
+static int ldap_get_lderrno (LDAP * ld, char **m, char **s);
+#endif
+
+static void _release_config (pam_ldap_config_t ** pconfig);
+static void _release_user_info (pam_ldap_user_info_t ** info);
+static void _pam_ldap_cleanup_session (pam_handle_t * pamh, void *data,
+				       int error_status);
+static void _cleanup_data (pam_handle_t * pamh, void *data, int error_status);
+static void _cleanup_authtok_data (pam_handle_t * pamh, void *data,
+				   int error_status);
+static int _alloc_config (pam_ldap_config_t ** presult);
+#ifdef YPLDAPD
+static int _ypldapd_read_config (pam_ldap_config_t ** presult);
+#endif
+static int _read_config (const char *configFile,
+			 pam_ldap_config_t ** presult);
+static int _open_session (pam_ldap_session_t * session);
+
+/* TLS routines */
+#if defined HAVE_LDAP_START_TLS_S || (defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_X_TLS))
+static int _set_ssl_options (pam_ldap_session_t *);
+#endif
+
+static int _connect_anonymously (pam_ldap_session_t * session);
+#if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
+static int _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request,
+			 ber_int_t msgid);
+#else
+#if LDAP_SET_REBIND_PROC_ARGS == 3
+static int _rebind_proc (LDAP * ld,
+			 char **whop, char **credp, int *methodp, int freeit,
+			 void *arg);
+#else
+static int _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp,
+			 int freeit);
+#endif
+#endif
+
+
+static int _connect_as_user (pam_ldap_session_t * session,
+			     const char *password);
+static int _get_integer_value (LDAP * ld, LDAPMessage * e, const char *attr,
+			       int *ptr);
+static int _get_long_integer_value (LDAP * ld, LDAPMessage * e,
+				    const char *attr, long int *ptr);
+static int _get_string_value (LDAP * ld, LDAPMessage * e, const char *attr,
+			      char **ptr);
+static int _get_string_values (LDAP * ld, LDAPMessage * e, const char *attr,
+			       char ***ptr);
+static int _has_value (char **src, const char *tgt);
+static int _host_ok (pam_ldap_session_t * session);
+
+
+static char *_get_md5_salt (char saltbuf[16]);
+static char *_get_salt (char salt[16]);
+static int _escape_string (const char *str, char *buf, size_t buflen);
+static int _get_user_info (pam_ldap_session_t * session, const char *user);
+static int _pam_ldap_get_session (pam_handle_t * pamh, const char *username,
+				  const char *configFile,
+				  pam_ldap_session_t ** psession);
+static int _reopen (pam_ldap_session_t * session);
+static int _get_password_policy (pam_ldap_session_t * session,
+				 pam_ldap_password_policy_t * policy);
+static int _do_authentication (pam_ldap_session_t * session,
+			       const char *user, const char *password);
+static int _update_authtok (pam_ldap_session_t * session,
+			    const char *user,
+			    const char *old_password,
+			    const char *new_password);
+static int _get_authtok (pam_handle_t * pamh, int flags, int first);
+static int _conv_sendmsg (struct pam_conv *aconv,
+			  const char *message, int style, int no_warn);
+
 
 #ifdef HAVE_LIBPTHREAD
 #include <dlfcn.h>
@@ -1064,14 +1140,14 @@ _open_session (pam_ldap_session_t * session)
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_REFERRALS)
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->conf->
-			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->
+			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_RESTART)
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->conf->
-			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->
+			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
@@ -1710,9 +1786,54 @@ _get_salt (char salt[16])
 }
 
 static int
+_escape_string (const char *str, char *buf, size_t buflen)
+{
+  int ret = PAM_BUF_ERR;
+  char *p = buf;
+  char *limit = p + buflen - 3;
+  const char *s = str;
+
+  while (p < limit && *s)
+    {
+      switch (*s)
+	{
+	case '*':
+	  strcpy (p, "\\2a");
+	  p += 3;
+	  break;
+	case '(':
+	  strcpy (p, "\\28");
+	  p += 3;
+	  break;
+	case ')':
+	  strcpy (p, "\\29");
+	  p += 3;
+	  break;
+	case '\\':
+	  strcpy (p, "\\5c");
+	  p += 3;
+	  break;
+	default:
+	  *p++ = *s;
+	  break;
+	}
+      s++;
+    }
+
+  if (*s == '\0')
+    {
+      /* got to end */
+      *p = '\0';
+      ret = PAM_SUCCESS;
+    }
+
+  return ret;
+}
+
+static int
 _get_user_info (pam_ldap_session_t * session, const char *user)
 {
-  char filter[LDAP_FILT_MAXSIZ];
+  char filter[LDAP_FILT_MAXSIZ], escapedFilter[LDAP_FILT_MAXSIZ];
   int rc;
   LDAPMessage *res, *msg;
 
@@ -1738,9 +1859,16 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
 		session->conf->userattr, user);
     }
 
+
+  rc = _escape_string (filter, escapedFilter, sizeof (escapedFilter));
+  if (rc != PAM_SUCCESS)
+    {
+      return rc;
+    }
+
   rc = ldap_search_s (session->ld,
 		      session->conf->base,
-		      session->conf->scope, filter, NULL, 0, &res);
+		      session->conf->scope, escapedFilter, NULL, 0, &res);
 
   if (rc != LDAP_SUCCESS)
     {
