@@ -161,6 +161,33 @@ Scott M. Stone <sstone@foo3.com> writes:
 Your openldap libs *and* your SSL/RSAREF libs must be DYNAMIC LIBRARIES
 or neither nss_ldap nor pam_ldap will work.
 
+Q: Solaris stdio bug
+
+Mark Blackman <mark.blackman@netscalibur.co.uk> writes:
+
+Our problem was trigged by the Solaris bug where stdio can
+only open 256 STREAMS (fopen), i.e. 
+>From http://www.science.uva.nl/pub/solaris/solaris2.html
+
+"Programs using stdio or even library calls that use stdio may break when they
+have more than 256 files open as that is the stdio limit. Programs using many
+filedescriptors should try and reserve a number of low numbered file
+descriptors for use by stdio."
+
+We are running a large application from Critical Path (imsd) and they open
+thousands of file descriptors under load. This is not a problem, however after
+all these descriptors are open and when pam_ldap is loadedp/called and it
+attempts to open its config file '/etc/ldap.conf', it fails because of the
+stdio bug that internally casts the 'int' file descriptor to a 'char'
+representation in the FILEHANDLE structure.
+
+To remedy this, we recommend that pam_ldap either keeps a set of compile time
+specified defaults in the binary and harmless ignore the absence
+of '/etc/ldap.conf' or to rewrite config file routines to use
+open/close instead of the STREAMS version fopen/fclose or
+to make it easy to link against SFIO
+(http://www.research.att.com/sw/tools/sfio/)
+
 SUPPORT
 =======
 

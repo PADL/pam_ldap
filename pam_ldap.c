@@ -2190,7 +2190,8 @@ _update_authtok (pam_ldap_session_t * session,
       ber_printf (ber, "{");
       ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_ID,
 		  session->info->userdn);
-      ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_OLD, old_password);
+	/* this doesn't appear to be necessary anymore */
+/*      ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_OLD, old_password); */
       ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_NEW, new_password);
       ber_printf (ber, "N}");
 
