@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+95	Luke Howard <lukeh@padl.com>
+
+	* add files for automake happiness
+
 94 	Luke Howard <lukeh@padl.com>
 
 	* default to LDAP protocol version 3
