@@ -424,6 +424,8 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->version = LDAP_VERSION2;
   result->timelimit = LDAP_NO_LIMIT;
   result->bind_timelimit = 10;
+  result->referrals = 1;
+  result->restart = 1;
   result->crypt_local = 0;
   result->min_uid = 0;
   result->max_uid = 0;
@@ -672,7 +674,7 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	}
       else if (!strcasecmp (k, "ssl"))
 	{
-	  if (!strcasecmp (v, "yes"))
+	  if (!strcasecmp (v, "on") || !strcasecmp (v, "yes") || !strcasecmp (v, "true"))
 	    {
 	      result->ssl_on = SSL_LDAPS;
 	    }
@@ -680,6 +682,14 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	    {
 	      result->ssl_on = SSL_START_TLS;
 	    }
+	}
+      else if (!strcasecmp (k, "referrals"))
+	{
+	  result->referrals = (!strcasecmp(v,"on") || !strcasecmp(v, "yes") || !strcasecmp(v, "true"));
+	}
+      else if (!strcasecmp (k, "restart"))
+	{
+	  result->restart = (!strcasecmp(v,"on") || !strcasecmp(v, "yes") || !strcasecmp(v, "true"));
 	}
       else if (!strcasecmp (k, "pam_filter"))
 	{
@@ -885,6 +895,14 @@ _open_session (pam_ldap_session_t * session)
   (void) ldap_set_option (session->ld, LDAP_OPT_TIMELIMIT, &session->conf->timelimit);
 #else
   session->ld->ld_timelimit = session->conf->timelimit;
+#endif
+
+#ifdef LDAP_OPT_REFERRALS
+  (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS, session->conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+#endif
+
+#ifdef LDAP_OPT_RESTART
+  (void) ldap_set_option (session->ld, LDAP_OPT_RESTART, session->conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S

@@ -100,7 +100,7 @@ config.sub configure configure.in install-sh missing mkinstalldirs
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
-TAR = tar
+TAR = gtar
 GZIP_ENV = --best
 DEP_FILES =  .deps/md5.P .deps/pam_ldap.P
 SOURCES = $(pam_ldap_so_SOURCES)

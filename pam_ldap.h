@@ -71,6 +71,10 @@ typedef struct pam_ldap_config
     int timelimit;
     /* bind timelimit */
     int bind_timelimit;
+    /* automatically chase referrals */
+    int referrals;
+    /* restart interrupted syscalls, OpenLDAP only */
+    int restart;
     /* generate hashes locally */
     int crypt_local;
     /* min uid */

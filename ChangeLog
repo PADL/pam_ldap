@@ -3,6 +3,8 @@ $Id$
 
 88	Luke Howard <lukeh@padl.com>
 
+	* support for "referrals" and "restart" in
+	  ldap.conf
 	* don't use ldap_perror() for logging TLS errors
 
 87	Luke Howard <lukeh@padl.com>
