@@ -113,6 +113,8 @@
 #define CONST_ARG
 #else
 #define CONST_ARG const
+#include <sys/param.h>
+#include <nss.h>
 #endif /* LINUX */
 #include <security/pam_modules.h>
 
@@ -524,7 +526,6 @@ static inline int _hasvalue(
     char **p;
 
     for (p = src; *p != NULL; p++) {
-        fprintf(stderr, "%s vs %s\n", *p, tgt);
         if (!strcasecmp(*p, tgt)) {
             return 1;
         }
@@ -609,10 +610,11 @@ static int _get_user_info(
         if (rc != PAM_SUCCESS) {
             return rc;
         }
-        rc = _anonymous_bind(session);
-        if (rc != PAM_SUCCESS) {
-            return rc;
-        }
+    }
+
+    rc = _anonymous_bind(session);
+    if (rc != PAM_SUCCESS) {
+        return rc;
     }
 
 #ifdef LDAP_VERSION3
@@ -718,7 +720,9 @@ static int _reopen(
 {
     /* V3 lets us avoid five unneeded binds in a password change */
     if (session->ldap_version == LDAP_VERSION2) {
-        ldap_unbind(session->ld);
+        if (session->ld != NULL) {
+            ldap_unbind(session->ld);
+        }
         session->bound_as_user = 0;
         return _open_session(session);
     }
@@ -730,19 +734,21 @@ static int _get_password_policy(
                                 pam_ldap_session **psession
                                 )
 {
-    int rc;
+    int rc = PAM_SUCCESS;
     LDAPMessage *res, *msg;
     pam_ldap_session *session;
 
     if (psession != NULL) {
-        if (*psession != NULL) {
-            rc = _reopen(*psession);
-        } else {
+        if (*psession == NULL) {
             rc = _initialize(psession);
         }
         session = *psession;
     } else {
         rc = _initialize(&session);
+    }
+
+    if (rc != PAM_SUCCESS) {
+        return rc;
     }
 
     /* set some reasonable defaults */
@@ -758,10 +764,11 @@ static int _get_password_policy(
         rc = _open_session(session);
         if (rc != PAM_SUCCESS)
             return rc;
-        rc = _anonymous_bind(session);
-        if (rc != PAM_SUCCESS) {
-            return rc;
-        }
+    }
+
+    rc = _anonymous_bind(session);
+    if (rc != PAM_SUCCESS) {
+        return rc;
     }
 
 #ifdef LDAP_VERSION3
@@ -797,24 +804,26 @@ static int _get_password_policy(
     return PAM_SUCCESS;
 }
 
-static int _validate(
+static int _authenticate(
                      const char *user,
                      const char *password,
                      pam_ldap_session **psession
                     )
 {
-    int rc;
+    int rc = PAM_SUCCESS;
     pam_ldap_session *session;
 
     if (psession != NULL) {
-        if (*psession != NULL) {
-            rc = _reopen(*psession);
-        } else {
+        if (*psession == NULL) {
             rc = _initialize(psession);
         }
         session = *psession;
     } else {
         rc = _initialize(&session);
+    }
+
+    if (rc != PAM_SUCCESS) {
+        goto out;
     }
 
     if (session->ld == NULL) {
@@ -855,20 +864,18 @@ static int _change_password(
 {
     char *strvals[2];
     LDAPMod *mods[2], mod;
-    int rc;
+    int rc = PAM_SUCCESS;
     pam_ldap_session *session;
 
     if (psession != NULL) {
-        if (*psession != NULL) {           
-            rc = _reopen(*psession);
-        } else {
+        if (*psession == NULL) {
             rc = _initialize(psession);
         }
         session = *psession;
-    } else {       
-	rc = _initialize(&session);
+    } else {
+        rc = _initialize(&session);
     }
-    
+
     if (rc != PAM_SUCCESS) {
         goto out;
     }
@@ -1013,7 +1020,7 @@ PAM_EXTERN int pam_sm_authenticate(
                                    )
 {
     int rc;
-    const char *name;
+    const char *usrname;
     char *p;
     int use_first_pass = 0, try_first_pass = 0;
     int i;
@@ -1029,16 +1036,16 @@ PAM_EXTERN int pam_sm_authenticate(
         else if (!strcmp(argv[i], "debug"))
             ;
         else
-            syslog(LOG_DEBUG, "unknown module option %s", argv[i]);
+            syslog(LOG_DEBUG, "illegal option %s", argv[i]);
     }
 
-    rc = pam_get_user(pamh, (CONST_ARG char **)&name, NULL);
+    rc = pam_get_user(pamh, (CONST_ARG char **)&usrname, NULL);
     if (rc != PAM_SUCCESS)
         return rc;
 
     pam_get_item(pamh, PAM_AUTHTOK, (void *)&p);
     if (p != NULL && (use_first_pass || try_first_pass)) {
-        rc = _validate(name, p, &session);
+        rc = _authenticate(usrname, p, &session);
         if (rc == PAM_SUCCESS || use_first_pass) {
             goto out;
         }
@@ -1053,7 +1060,7 @@ PAM_EXTERN int pam_sm_authenticate(
     if (p == NULL) {
         rc = PAM_AUTH_ERR;
     } else {
-        rc = _validate(name, p, &session);
+        rc = _authenticate(usrname, p, &session);
     }
 
 out:
@@ -1091,7 +1098,7 @@ PAM_EXTERN int pam_sm_chauthtok(
         else if (!strcmp(argv[i], "debug"))
             ;
         else
-            syslog(LOG_DEBUG, "unknown module option %s", argv[i]);
+            syslog(LOG_DEBUG, "illegal option %s", argv[i]);
     }
 
     if (flags & PAM_SILENT)
@@ -1122,7 +1129,7 @@ PAM_EXTERN int pam_sm_chauthtok(
 
     if (try_first_pass || use_first_pass) {
         if (pam_get_item(pamh, PAM_OLDAUTHTOK, (CONST_ARG void **)&curpass) == PAM_SUCCESS) {
-            rc = _validate(usrname, curpass, &session);
+            rc = _authenticate(usrname, curpass, &session);
             if (use_first_pass && rc != PAM_SUCCESS) {
                 conv_sendmsg(appconv, "LDAP Password incorrect", PAM_ERROR_MSG, no_warn);
                 goto out;
@@ -1158,8 +1165,8 @@ PAM_EXTERN int pam_sm_chauthtok(
         curpass = resp->resp;
         free(resp);
 
-        /* validate the old password */
-        rc = _validate(usrname, curpass, &session);
+        /* authenticate the old password */
+        rc = _authenticate(usrname, curpass, &session);
         if (rc != PAM_SUCCESS) {
             int abortme = 0;
             
@@ -1296,8 +1303,13 @@ PAM_EXTERN int pam_sm_chauthtok(
         lderr = ldap_get_lderrno(session->ld, NULL, &reason);
 #else
         lderr = session->ld->ld_errno;
+        reason = session->ld->ld_error;
 #endif /* LDAP_VERSION3 */
-        snprintf(errmsg, sizeof errmsg, "LDAP password information update failed: %s\n%s", ldap_err2string(lderr), reason);
+        if (reason != NULL) {
+            snprintf(errmsg, sizeof errmsg, "LDAP password information update failed: %s\n%s", ldap_err2string(lderr), reason);
+        } else {
+            snprintf(errmsg, sizeof errmsg, "LDAP password information update failed: %s", ldap_err2string(lderr));
+        }        
         conv_sendmsg(appconv, errmsg, PAM_ERROR_MSG, no_warn);
     } else {
         snprintf(errmsg, sizeof errmsg, "LDAP password information changed for %s", usrname);
@@ -1336,7 +1348,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(
        PAM_USER_UNKNOWN
      */
     int rc;
-    const char *name;
+    const char *usrname;
     char **q;
     int no_warn = 0;
     int herr, i;
@@ -1358,12 +1370,10 @@ PAM_EXTERN int pam_sm_acct_mgmt(
     }
 
 
-    fprintf(stderr, "==> pam_sm_acct_mgmt\n");
-    
     if (flags & PAM_SILENT)
         no_warn = 1;
 
-    rc = pam_get_user(pamh, (CONST_ARG char **)&name, NULL);
+    rc = pam_get_user(pamh, (CONST_ARG char **)&usrname, NULL);
     if (rc != PAM_SUCCESS)
         return rc;
 
@@ -1372,7 +1382,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(
         return rc;
     }
 
-    rc = _get_user_info(name, session);
+    rc = _get_user_info(usrname, session);
     if (rc != PAM_SUCCESS)
         goto out;
 
@@ -1386,12 +1396,19 @@ PAM_EXTERN int pam_sm_acct_mgmt(
         goto out;
     }
 
+#ifdef LINUX
+    if (gethostbyname_r(hostname, &hbuf, buf, sizeof buf, &h, &herr) != NSS_STATUS_SUCCESS) {
+        rc = PAM_SYSTEM_ERR;
+        goto out;
+    }
+#else
     h = gethostbyname_r(hostname, &hbuf, buf, sizeof buf, &herr);
     if (h == NULL) {
         rc = PAM_SYSTEM_ERR;
         goto out;
     }
-
+#endif /* LINUX */
+    
     if (_hasvalue(session->info->hosts_allow, h->h_name)) {
         rc = PAM_SUCCESS;
         goto out;
@@ -1423,15 +1440,3 @@ struct pam_module _modstruct = {
     pam_sm_chauthtok
 };
 #endif /* PAM_STATIC */
-
-#ifdef TESTING
-main(int argc, char **argv)
-{
-	int rc;
-   char *p = (argc > 1) ? argv[1] : "test";
-	char *np = (argc > 2) ? argv[2] : "test2";
-	fprintf(stderr, "%d\n", _validate("lukeh", p, NULL, NULL));
-	fprintf(stderr, "%d\n", _change_password("lukeh", p, np, NULL));
-	return rc;
-}
-#endif

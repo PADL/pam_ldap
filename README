@@ -1,6 +1,5 @@
 
-This is yet another pam_ldap module. Unlike Sun's, this is freely
-available (under the terms of the GNU General Library Public Licence).
+This is yet another pam_ldap module. 
 
 The advantages of this particular version are:
 
@@ -23,6 +22,7 @@ The advantages of this particular version are:
 
 The module builds under both Linux and Solaris although it has only been
 tested under Solaris 2.6.
+
 
 --
    Luke Howard
