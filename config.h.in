@@ -87,6 +87,9 @@
 /* Define if you have the <security/pam_misc.h> header file.  */
 #undef HAVE_SECURITY_PAM_MISC_H
 
+/* Define if you have the <security/pam_modules.h> header file.  */
+#undef HAVE_SECURITY_PAM_MODULES_H
+
 /* Define if you have the crypt library (-lcrypt).  */
 #undef HAVE_LIBCRYPT
 
