@@ -1,6 +1,12 @@
 $Id$
 ===============================================================
 
+30   Luke Howard <lukeh@padl.com>
+
+    * fixed Make.defs for linking against OpenLDAP libldap
+      (recall #279)
+    * more SSL stuff
+
 28   Luke Howard <lukeh@padl.com>
 
     * added patch from gero@faveve.uni-stuttgart.de for
