@@ -122,11 +122,11 @@
 
 #include <security/pam_modules.h>
 
-#ifdef LDAP_VERSION3
+#ifdef LDAP_VERSION3_API
 #define LDAP_MEMFREE(x)	ldap_memfree(x)
 #else
 #define LDAP_MEMFREE(x)	free(x)
-#endif /* LDAP_VERSION3 */
+#endif /* LDAP_VERSION3_API */
 
 static char rcsid[] = "$Id$";
 
@@ -359,9 +359,9 @@ static int _ypldapd_read_config(
 
     /* turn on getting policies */
     result->getpolicy = 1;
-#ifdef LDAP_VERSION3
+#ifdef LDAP_VERSION3_API
     result->version = LDAP_VERSION3;
-#endif /* LDAP_VERSION3 */
+#endif /* LDAP_VERSION3_API */
 
     return PAM_SUCCESS;
 }
@@ -474,7 +474,7 @@ static int _open_session(
     int rc;
 #endif /* SSL */
 
-#ifndef LDAP_VERSION3
+#ifndef LDAP_VERSION3_API
     session->ld = ldap_open(
                                 session->conf->host,
                                 session->conf->port
@@ -484,7 +484,7 @@ static int _open_session(
                                 session->conf->host,
                                 session->conf->port
                                 );
-#endif /* LDAP_VERSION3 */
+#endif /* LDAP_VERSION3_API */
     if (session->ld == NULL) {
         return PAM_SYSTEM_ERR;
     }
@@ -510,12 +510,12 @@ static int _open_session(
     }
 #endif /* SSL */
 
-#ifdef LDAP_VERSION3
+#ifdef LDAP_VERSION3_API
     (void) ldap_set_option(session->ld, LDAP_OPT_PROTOCOL_VERSION, &session->conf->version);
     ldap_set_rebind_proc(session->ld, _rebind_proc, (void *)session);
 #else
     session->ld->ld_version = session->conf->version;
-#endif /* LDAP_VERSION3 */
+#endif /* LDAP_VERSION3_API */
 
     return PAM_SUCCESS;
 }
@@ -532,7 +532,7 @@ static int _connect_anonymously(
             return rc;
     }
 
-#ifdef LDAP_VERSION3
+#ifdef LDAP_VERSION3_API
     if (session->conf->version == LDAP_VERSION3 &&
         session->conf->binddn == NULL &&
         (session->info == NULL ||
@@ -545,15 +545,15 @@ static int _connect_anonymously(
          */
         rc = LDAP_SUCCESS;        
     } else {
-#endif /* LDAP_VERSION3 */
+#endif /* LDAP_VERSION3_API */
         rc = ldap_simple_bind_s(
                                 session->ld,
                                 session->conf->binddn,
                                 session->conf->bindpw
                                 );
-#ifdef LDAP_VERSION3        
+#ifdef LDAP_VERSION3_API
     }
-#endif /* LDAP_VERSION3 */
+#endif /* LDAP_VERSION3_API */
     
     if (rc != LDAP_SUCCESS) {
         syslog(LOG_ERR, "pam_ldap: ldap_simple_bind_s %s", ldap_err2string(rc));
@@ -567,7 +567,7 @@ static int _connect_anonymously(
     return PAM_SUCCESS;
 }
 
-#ifdef LDAP_VERSION3
+#ifdef LDAP_VERSION3_API
 static int _rebind_proc(
                         LDAP *ld,
                         char **whop,
@@ -598,7 +598,7 @@ static int _rebind_proc(
     *methodp = LDAP_AUTH_SIMPLE;
     return LDAP_SUCCESS;
 }
-#endif /* LDAP_VERSION3 */
+#endif /* LDAP_VERSION3_API */
 
 static int _connect_as_user(
                             pam_ldap_session_t *session,
@@ -606,12 +606,12 @@ static int _connect_as_user(
                             )
 {
     int rc;
-#ifdef LDAP_VERSION3
+#ifdef LDAP_VERSION3_API
     PLDAPControl *controls;
     int msgid, parserc, finished = 0;
     struct timeval zerotime;   
     LDAPMessage *result;
-#endif /* LDAP_VERSION3 */
+#endif /* LDAP_VERSION3_API */
 
     /* avoid binding anonymously with a DN but no password */
     if (password == NULL || password[0] == '\0')
@@ -631,7 +631,7 @@ static int _connect_as_user(
             return rc;
     }
 
-#ifndef LDAP_VERSION3
+#ifndef LDAP_VERSION3_API
     /*
      * Use the synchronous API as we don't need to fetch controls etc
      */
@@ -706,7 +706,7 @@ static int _connect_as_user(
                 }
         }
     }
-#endif /* LDAP_VERSION3 */
+#endif /* LDAP_VERSION3_API */
                         
     session->info->bound_as_user = 1;
     
@@ -881,12 +881,12 @@ static int _get_user_info(
         return rc;
     }
 
-#ifdef LDAP_VERSION3
+#ifdef LDAP_VERSION3_API
     rc = 1;
     (void) ldap_set_option(session->ld, LDAP_OPT_SIZELIMIT, &rc);
 #else
     session->ld->ld_sizelimit = 1;
-#endif /* LDAP_VERSION3 */
+#endif /* LDAP_VERSION3_API */
 
     if (session->conf->filter != NULL) {
         snprintf(filter, sizeof filter, "(&(%s)(%s=%s))",
@@ -1060,12 +1060,12 @@ static int _get_password_policy(
         return rc;
     }
 
-#ifdef LDAP_VERSION3
+#ifdef LDAP_VERSION3_API
     rc = 1;
     (void) ldap_set_option(session->ld, LDAP_OPT_SIZELIMIT, &rc);
 #else
     session->ld->ld_sizelimit = 1;
-#endif /* LDAP_VERSION3 */
+#endif /* LDAP_VERSION3_API */
 
     rc = ldap_search_s(
                        session->ld,
@@ -1158,9 +1158,9 @@ static int _update_authtok(
     mod.mod_vals.modv_strvals = strvals;
     mod.mod_type = (char *)"userPassword";
     mod.mod_op = LDAP_MOD_REPLACE;
-#ifndef LDAP_VERSION3
+#ifndef LDAP_VERSION3_API
     mod.mod_next = NULL;
-#endif /* LDAP_VERSION3 */
+#endif /* LDAP_VERSION3_API */
 
     mods[0] = &mod;
     mods[1] = NULL;
@@ -1579,12 +1579,12 @@ PAM_EXTERN int pam_sm_chauthtok(
         int lderr;
         char *reason;
 
-#ifdef LDAP_VERSION3
+#ifdef LDAP_VERSION3_API
         lderr = ldap_get_lderrno(session->ld, NULL, &reason);
 #else
         lderr = session->ld->ld_errno;
         reason = session->ld->ld_error;
-#endif /* LDAP_VERSION3 */
+#endif /* LDAP_VERSION3_API */
         if (reason != NULL) {
             snprintf(errmsg, sizeof errmsg, "LDAP password information update failed: %s\n%s", ldap_err2string(lderr), reason);
         } else {
