@@ -193,6 +193,10 @@ Specifies the search scope (subtree, one level or base object). The
 default scope is subtree; base scope is almost never useful for
 nameservice lookups.
 .TP
+.B deref <never|searching|finding|always>
+Specifies the policy for dereferencing aliases. The default policy is
+to never dereference aliases.
+.TP
 .B timelimit <timelimit>
 Specifies the time limit (in seconds) to use when performing searches. A value
 of zero (0), which is the default, is to wait indefinitely for
@@ -403,6 +407,11 @@ choice when using the PADL XAD identity server.
 Specifies a message to send to users indicating that passwords cannot
 be changed. This could be used to redirect users to another means of
 changing passwords.
+.TP
+.B pam_sasl_mech <mechanism>
+Specifies the SASL mechanism to use for PAM authentication. This
+requires SASL libraries be installed. Support for this functionality
+presently experimental and does not support password policy controls.
 .SH PAM CONFIGURATION
 It is possible to configure some aspects of
 .B pam_ldap
@@ -483,18 +492,15 @@ application.
 Analogous to
 .B use_first_pass
 for password changing only.
-
 .TP
 .B debug
 This option is recognized by
 .B pam_ldap
 but is presently ignored.
-
 .SH AUTHOR
 The
 .B pam_ldap
 module was developed by PADL Software Pty Ltd (www.padl.com).
-
 .SH FILES
 .TP
 /etc/ldap.conf, /etc/ldap.secret, /etc/pam.conf
