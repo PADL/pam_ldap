@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+78	Luke Howard <lukeh@padl.com>
+
+	* updated prebuild step for RC
+
 77	Luke Howard <lukeh@padl.com>
 	
 	* renamed _authenticate() to _do_authentication()
