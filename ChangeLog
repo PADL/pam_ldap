@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+96	Luke Howard <lukeh@padl.com>
+
+	* put some meaningful content in AUTHORS
+
 95	Luke Howard <lukeh@padl.com>
 
 	* add files for automake happiness

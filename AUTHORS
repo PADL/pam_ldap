@@ -1,0 +1,30 @@
+pam_ldap was written by Luke Howard <lukeh@padl.com>.
+
+Special thanks go to people who have volunteered their time, effort,
+and ideas to make this software available.
+
+	Scott Balneaves <sbalneav@legalaid.mb.ca>
+	David Begley <david@avarice.nepean.uws.edu.au>
+	Cristian Gafton <gafton@redhat.com>
+	<gero@faveve.uni-stuttgart.de>
+	Norbert Klasen <norbert.klasen@zdv.uni-tuebingen.de>
+	Tom Lear <tom@trap.mtview.ca.us>
+	Elliot Lee <sopwith@redhat.com>
+	Joe Little <jlittle@open-it.org>
+	Phillip Liu <phillip@loudcloud.com>
+	Jungle Lin <Jungle Lin@judicial.gov.tw>
+	Jeff Mandel <jeff.mandel@probes.com>
+	Doug Nazar <nazard@dragoninc.on.ca>
+	<nalin@redhat.com>
+	Lars Oergel <lars.oergel@innominate.de>
+	Petr Olivka <Petr.Olivka@vsb.cz>
+	Alex Schlessinger <alex@hq.workspot.com>
+	<scremer@dohle.com>
+	Stein Vrale <stein@terminator.net>
+
+If I've forgotton anyone, please let me know.
+
+-- 
+Luke Howard
+lukeh@padl.com
+
