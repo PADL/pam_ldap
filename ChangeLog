@@ -1,6 +1,17 @@
 $Id$
 ===============================================================
 
+85	Luke Howard <lukeh@padl.com>
+
+	* patches from David Begley:
+	* note about using --with-ldap-lib=netscape4
+	* patch to configure (regenerated from configure.in)
+	* note about using gnumake
+	* linking with lib{plc,plds,nspr}3 libraries for
+	  4.1x Netscape SDK
+	* use -G not --shared when building shared
+	  libraries on Solaris
+
 84	Luke Howard <lukeh@padl.com>
 
 	* fixed typo in pam_ldap.c

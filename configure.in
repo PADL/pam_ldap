@@ -2,7 +2,7 @@ AC_INIT(pam_ldap.c)
 AC_CANONICAL_SYSTEM
 AC_PREFIX_DEFAULT()
 
-AM_INIT_AUTOMAKE(pam_ldap, 74)
+AM_INIT_AUTOMAKE(pam_ldap, 84)
 AM_CONFIG_HEADER(config.h)
 
 AC_PROG_CC
@@ -18,8 +18,14 @@ if test "$ac_cv_prog_gcc" = "yes"; then CFLAGS="$CFLAGS -Wall -fPIC"; fi
 
 dnl This is needed for the native Solaris LDAP SDK
 CPPFLAGS="$CPPFLAGS -DLDAP_REFERRALS"
-
 CPPFLAGS="$CPPFLAGS -D_REENTRANT"
+
+case "$target_os" in
+solaris*) pam_ldap_so_LDFLAGS="-G" ;;
+*) pam_ldap_so_LDFLAGS="--shared" ;;
+dnl "--shared" is undocumented for gcc, shouldn't this be "-shared"?
+esac
+AC_SUBST(pam_ldap_so_LDFLAGS)
 
 if test -n "$with_ldap_dir"; then
   CPPFLAGS="$CPPFLAGS -I$with_ldap_dir/include"
@@ -60,7 +66,7 @@ if test -z "$found_ldap_lib" -a \( $with_ldap_lib = auto -o $with_ldap_lib = umi
   AC_CHECK_LIB(ldap, main, LIBS="-lldap $LIBS" found_ldap_lib=yes)
 fi
 if test -z "$found_ldap_lib" -a \( $with_ldap_lib = auto -o $with_ldap_lib = netscape4 \); then
-  AC_CHECK_LIB(ldapssl41, main, LIBS="-lldapssl41 $LIBS" found_ldap_lib=yes need_pthread=true,, -lpthread)
+  AC_CHECK_LIB(ldapssl41, main, LIBS="-lldapssl41 -lplc3 -lplds3 -lnspr3 $LIBS" found_ldap_lib=yes need_pthread=true,, -lpthread)
   if test -z "$found_ldap_lib"; then
     AC_CHECK_LIB(ldapssl40, main, LIBS="-lldapssl40 $LIBS" found_ldap_lib=yes need_pthread=true,, -lpthread)
   fi

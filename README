@@ -27,7 +27,9 @@ The advantages of this particular version are:
    o Bundled with Debian (Potato) and RedHat (Rawhide)
      distributions.
 
-The module builds under both Linux 2.x and Solaris 2.6.
+The module builds under both Linux 2.x and Solaris 2.x (see note below
+regarding Solaris 7 - aka Solaris 2.7 - and above).  NOTE - you MUST
+use GNU Make (Solaris Make will not work).
 
 Thanks to fellow Aussie Chris Albone who wrote the initial
 pam_ldap_auth module.
@@ -65,36 +67,43 @@ any libraries that it depends on (such as the LDAP client
 library) can be located by the dynamic linker. Otherwise,
 libpam may fail to load the pam_ldap module.
 
-Q: Why does linking fail on Solaris (complaining about
+Q: Using the Netscape LDAP library with pam_ldap on Solaris 8
+- aka Solaris 2.8 - fails to link properly! David Begley writes:
+
+There are two releases of the Netscape LDAP library, one marked
+for Solaris 8 and the other marked for Solaris 2.6 - the additional
+catch is that the Solaris 8 library is a 64-bit library (this is marked
+on Netscape's site) whilst the other is a 32-bit library.
+
+It doesn't matter if you have a 64-bit UltraSPARC processor running
+the 64-bit Solaris kernel, if your compiler only works with 32-bit
+objects then it won't successfully link the 64-bit Solaris 8
+Netscape LDAP library.
+
+GCC (up to version 2.95.2) does not work properly with 64-bit objects
+under Solaris, so just use the Solaris 2.6 (32-bit) Netscape LDAP
+library and everything should be fine.
+
+Q: Can I use a third-party client LDAP library (such as Netscape's)
+on Solaris 7? David Begley writes:
+
+Yes, but if you have the Solaris 7 LDAP library installed (package
+SUNWlldap or SUNWldapx) configure will find it before the third-party
+library - in this case, you can't rely on the auto-lib-type detection of
+configure and must use the "--with-ldap-lib=" parameter.
+
+Q: Why does linking fail on Solaris 2.6 (complaining about
 relocations remaining against libcrypt)? David Begley
 writes:
 
-The link command that used to work (from pam_ldap-46, with the appropriate
-paths for the local libraries here):
+In short, the problem is that GCC is looking for a shared libcrypt
+(in response to the "--shared" parameter) which doesn't exist on
+Solaris 2.6 (but does on Solaris 7).  The fix is quite simple, use
+"-G" instead of "--shared" (could this be a GCC bug?).  This change
+should already be included in newer versions of pam_ldap.
 
-  ld -M mapfile -G -h pam_ldap.so.1 -z text -Bsymbolic \
-    -R/usr/local/ldapsdk4/lib -R/usr/ucblib -lcrypt -lpam -lnsl -lpthread \
-    -lresolv -o pam_ldap.so.1 dynamic/pam_ldap.o -L/usr/local/ldapsdk4/lib \
-    -lldapssl40
-
-I just tried this with pam_ldap-72:
-
-  ld -M mapfile -G -h pam_ldap.so.1 -z text -Bsymbolic \
-    -R/usr/local/ldapsdk4/lib -R/usr/ucblib -lcrypt -lpam -lnsl -lpthread \
-    -lresolv -o pam_ldap.so.1 pam_ldap.o md5.o -L/usr/local/ldapsdk4/lib \
-    -lldapssl40
-
-and it at least links cleanly this time (haven't tried to use it yet).  I even
-dropped "-lcrypt" completely and the exact same binary was output so I don't
-think it's even necessary (this is on Solaris 2.6), at least not with the
-Netscape LDAP library anyway.
-
-Try this - search your Makefile for "--shared" and change it to "-G" before
-trying to relink/rebuild;  Solaris 7 has a shared libcrypt whereas Solaris 2.6
-does not.  The GCC manual says "-shared" (note, one dash - there's no
-documented option with two dashes) will produce a shared object but appears to
-have the side-effect of requiring all "-l" linked libraries to also be shared
-(whereas using "-G" doesn't have this problem).
+It doesn't look like libcrypt is even needed if you're using the
+Netscape LDAP client library (maybe it's required for OpenLDAP?).
 
 Q: Where is ldap_ssl.h? It's in the Netscape LDAP
 C SDK. Download it from developer.netscape.com. If you

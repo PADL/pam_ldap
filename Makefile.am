@@ -3,7 +3,7 @@ EXTRA_DIST = COPYING.LIB CVSVersionInfo.txt ChangeLog README \
 	     ldap.conf pam.conf pam_ldap.spec pam.d
 
 pam_ldap_so_SOURCES = pam_ldap.c pam_ldap.h md5.c md5.h
-pam_ldap_so_LDFLAGS = --shared
+pam_ldap_so_LDFLAGS = @pam_ldap_so_LDFLAGS@
 
 
 install-exec-local: pam_ldap.so
