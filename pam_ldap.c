@@ -191,6 +191,7 @@ static int _open_session (pam_ldap_session_t * session);
 
 /* TLS routines */
 #if defined HAVE_LDAP_START_TLS_S || (defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_X_TLS))
+static int _set_ssl_default_options (pam_ldap_session_t *);
 static int _set_ssl_options (pam_ldap_session_t *);
 #endif
 
@@ -1082,6 +1083,13 @@ _open_session (pam_ldap_session_t * session)
   else
 #endif /* HAVE_LDAPSSL_INIT */
     {
+#if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_X_TLS)
+    /* set defaults for global TLS-related options */
+      if (_set_ssl_default_options (session) != LDAP_SUCCESS)
+        {
+          syslog (LOG_ERR, "pam_ldap: _set_ssl_default_options failed");
+        }
+#endif
 #ifdef HAVE_LDAP_INITIALIZE
       if (session->conf->uri != NULL)
 	{
@@ -1123,7 +1131,7 @@ _open_session (pam_ldap_session_t * session)
 	  return PAM_SYSTEM_ERR;
 	}
 
-      /* set up SSL context */
+      /* set up SSL per-context settings */
       if (_set_ssl_options (session) != LDAP_SUCCESS)
 	{
 	  syslog (LOG_ERR, "pam_ldap: _set_ssl_options failed");
@@ -1218,15 +1226,17 @@ _open_session (pam_ldap_session_t * session)
 }
 
 #if defined HAVE_LDAP_START_TLS_S || (defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_X_TLS))
+/* Some global TLS-specific options need to be set before we create our
+ * session context, so we set them here. */
 static int
-_set_ssl_options (pam_ldap_session_t * session)
+_set_ssl_default_options (pam_ldap_session_t * session)
 {
   int rc;
 
   /* ca cert file */
   if (session->conf->tls_cacertfile != NULL)
     {
-      rc = ldap_set_option (session->ld, LDAP_OPT_X_TLS_CACERTFILE,
+      rc = ldap_set_option (NULL, LDAP_OPT_X_TLS_CACERTFILE,
 			    session->conf->tls_cacertfile);
       if (rc != LDAP_SUCCESS)
 	{
@@ -1240,7 +1250,7 @@ _set_ssl_options (pam_ldap_session_t * session)
   if (session->conf->tls_cacertdir != NULL)
     {
       /* ca cert directory */
-      rc = ldap_set_option (session->ld, LDAP_OPT_X_TLS_CACERTDIR,
+      rc = ldap_set_option (NULL, LDAP_OPT_X_TLS_CACERTDIR,
 			    session->conf->tls_cacertdir);
       if (rc != LDAP_SUCCESS)
 	{
@@ -1252,7 +1262,7 @@ _set_ssl_options (pam_ldap_session_t * session)
     }
 
   /* require cert? */
-  rc = ldap_set_option (session->ld, LDAP_OPT_X_TLS_REQUIRE_CERT,
+  rc = ldap_set_option (NULL, LDAP_OPT_X_TLS_REQUIRE_CERT,
 			&session->conf->tls_checkpeer);
   if (rc != LDAP_SUCCESS)
     {
@@ -1265,7 +1275,7 @@ _set_ssl_options (pam_ldap_session_t * session)
   if (session->conf->tls_ciphers != NULL)
     {
       /* set cipher suite, certificate and private key: */
-      rc = ldap_set_option (session->ld, LDAP_OPT_X_TLS_CIPHER_SUITE,
+      rc = ldap_set_option (NULL, LDAP_OPT_X_TLS_CIPHER_SUITE,
 			    session->conf->tls_ciphers);
       if (rc != LDAP_SUCCESS)
 	{
@@ -1278,7 +1288,7 @@ _set_ssl_options (pam_ldap_session_t * session)
 
   if (session->conf->tls_cert != NULL)
     {
-      rc = ldap_set_option (session->ld, LDAP_OPT_X_TLS_CERTFILE,
+      rc = ldap_set_option (NULL, LDAP_OPT_X_TLS_CERTFILE,
 			    session->conf->tls_cert);
       if (rc != LDAP_SUCCESS)
 	{
@@ -1291,7 +1301,7 @@ _set_ssl_options (pam_ldap_session_t * session)
 
   if (session->conf->tls_key != NULL)
     {
-      rc = ldap_set_option (session->ld, LDAP_OPT_X_TLS_KEYFILE,
+      rc = ldap_set_option (NULL, LDAP_OPT_X_TLS_KEYFILE,
 			    session->conf->tls_key);
       if (rc != LDAP_SUCCESS)
 	{
@@ -1302,6 +1312,13 @@ _set_ssl_options (pam_ldap_session_t * session)
 	}
     }
 
+  return LDAP_SUCCESS;
+}
+
+/* Now we can set the per-context TLS-specific options. */
+static int
+_set_ssl_options (pam_ldap_session_t * session)
+{
   return LDAP_SUCCESS;
 }
 #endif
