@@ -1,6 +1,15 @@
 $Id$
 ===============================================================
 
+131	Luke Howard <lukeh@padl.com>
+
+	* allow "*" wildcard value to be present in host
+	  attribute
+	* added ignore_unknown_user option to all module
+	  functions; if the user could not be found and this
+	  option is set, PAM_IGNORE will be returned instead
+	  of PAM_USER_UNKNOWN
+
 130	Luke Howard <lukeh@padl.com>
 
 	* don't return PAM_AUTH_ERR for authorization errors;

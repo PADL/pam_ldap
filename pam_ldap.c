@@ -1187,14 +1187,14 @@ _open_session (pam_ldap_session_t * session)
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_REFERRALS)
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->conf->
-			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->
+			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_RESTART)
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->conf->
-			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->
+			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
@@ -1749,6 +1749,12 @@ _host_ok (pam_ldap_session_t * session)
   if (session->info->hosts_allow == NULL)
     {
       return PAM_PERM_DENIED;
+    }
+
+  /* allow wild-card entries */
+  if (_has_value (session->info->hosts_allow, "*"))
+    {
+      return PAM_SUCCESS;
     }
 
   if (gethostname (hostname, sizeof hostname) < 0)
@@ -2544,7 +2550,7 @@ pam_sm_authenticate (pam_handle_t * pamh,
   int rc;
   const char *username;
   char *p;
-  int use_first_pass = 0, try_first_pass = 0;
+  int use_first_pass = 0, try_first_pass = 0, ignore_unknown_user = 0;
   int i;
   pam_ldap_session_t *session = NULL;
   const char *configFile = NULL;
@@ -2557,6 +2563,8 @@ pam_sm_authenticate (pam_handle_t * pamh,
 	try_first_pass = 1;
       else if (!strncmp (argv[i], "config=", 7))
 	configFile = argv[i] + 7;
+      else if (!strcmp (argv[i], "ignore_unknown_user"))
+	ignore_unknown_user = 1;
       else if (!strcmp (argv[i], "no_warn"))
 	;
       else if (!strcmp (argv[i], "debug"))
@@ -2579,6 +2587,8 @@ pam_sm_authenticate (pam_handle_t * pamh,
       rc = _do_authentication (session, username, p);
       if (rc == PAM_SUCCESS || use_first_pass)
 	{
+	  if (rc == PAM_USER_UNKNOWN && ignore_unknown_user)
+	    rc = PAM_IGNORE;
 	  return rc;
 	}
     }
@@ -2591,6 +2601,8 @@ pam_sm_authenticate (pam_handle_t * pamh,
   rc = pam_get_item (pamh, PAM_AUTHTOK, (CONST_ARG void **) &p);
   if (rc == PAM_SUCCESS)
     rc = _do_authentication (session, username, p);
+  if (rc == PAM_USER_UNKNOWN && ignore_unknown_user)
+    rc = PAM_IGNORE;
 
   /*
    * reset username to template user if necessary
@@ -2643,7 +2655,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   int tries = 0, i, canabort = 1;
   pam_ldap_session_t *session = NULL;
   int use_first_pass = 0, try_first_pass = 0, no_warn = 0;
-  int use_authtok = 0;
+  int use_authtok = 0, ignore_unknown_user = 0;
   char errmsg[1024];
   pam_ldap_password_policy_t policy;
   LDAPMod *mods[2], mod;
@@ -2659,6 +2671,8 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	configFile = argv[i] + 7;
       else if (!strcmp (argv[i], "no_warn"))
 	no_warn = 1;
+      else if (!strcmp (argv[i], "ignore_unknown_user"))
+	ignore_unknown_user = 1;
       else if (!strcmp (argv[i], "debug"))
 	;
       else if (!strcmp (argv[i], "use_authtok"))
@@ -2702,6 +2716,8 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
     {
       /* see whether the user exists */
       rc = _get_user_info (session, username);
+      if (rc == PAM_USER_UNKNOWN && ignore_unknown_user)
+	rc = PAM_IGNORE;
       if (rc != PAM_SUCCESS)
 	return rc;
 
@@ -2806,7 +2822,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
       return rc;
     }				/* prelim */
   else if (session->info == NULL)	/* this is no LDAP user */
-    return PAM_USER_UNKNOWN;
+    return (ignore_unknown_user == 1) ? PAM_IGNORE : PAM_USER_UNKNOWN;
 
   if (use_authtok)
     use_first_pass = 1;
@@ -3011,7 +3027,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
    */
   int rc;
   const char *username;
-  int no_warn = 0;
+  int no_warn = 0, ignore_unknown_user = 0;
   int i, success = PAM_SUCCESS;
   struct pam_conv *appconv;
   pam_ldap_session_t *session = NULL;
@@ -3031,6 +3047,8 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	configFile = argv[i] + 7;
       else if (!strcmp (argv[i], "no_warn"))
 	no_warn = 1;
+      else if (!strcmp (argv[i], "ignore_unknown_user"))
+	ignore_unknown_user = 1;
       else if (!strcmp (argv[i], "debug"))
 	;
       else
@@ -3072,12 +3090,9 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
       rc = _get_user_info (session, username);
       if (rc != PAM_SUCCESS)
 	{
-	  /*
-	   * return PAM_IGNORE so that, if the user does not
-	   * exist in LDAP, authorization can be performed by
-	   * another module.
-	   */
-	  return PAM_IGNORE;
+	  if (rc == PAM_USER_UNKNOWN && ignore_unknown_user)
+	    rc = PAM_IGNORE;
+	  return rc;
 	}
     }
 
