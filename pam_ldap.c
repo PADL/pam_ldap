@@ -570,7 +570,7 @@ static int _connect_as_user(
             return rc;
     }
 
-#ifndef LDAP_VERSION2
+#ifndef LDAP_VERSION3
     /*
      * Use the synchronous API as we don't need to fetch controls etc
      */
