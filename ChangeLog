@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+150	Luke Howard <lukeh@padl.com>
+
+	* added depcomp for new automake
+
 149	Luke Howard <lukeh@padl.com>
 
 	* OS X build fix
