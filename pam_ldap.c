@@ -196,8 +196,13 @@ static int _set_ssl_options (pam_ldap_session_t *);
 
 static int _connect_anonymously (pam_ldap_session_t * session);
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
+#if LDAP_SET_REBIND_PROC_ARGS == 3
+static int _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request,
+			 ber_int_t msgid, void *arg);
+#else
 static int _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request,
 			 ber_int_t msgid);
+#endif
 #else
 #if LDAP_SET_REBIND_PROC_ARGS == 3
 static int _rebind_proc (LDAP * ld,
@@ -1358,10 +1363,20 @@ _connect_anonymously (pam_ldap_session_t * session)
 }
 
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
+#if LDAP_SET_REBIND_PROC_ARGS == 3
+static int
+_rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid, void *arg)
+#else
 static int
 _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid)
+#endif
 {
+#if LDAP_SET_REBIND_PROC_ARGS == 3
+  pam_ldap_session_t *session = (pam_ldap_session_t *) arg;
+#else
+  /* ugly hack */
   pam_ldap_session_t *session = global_session;
+#endif
   char *who, *cred;
 
   if (session->info != NULL && session->info->bound_as_user == 1)
