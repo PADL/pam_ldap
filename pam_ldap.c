@@ -2380,7 +2380,7 @@ _update_authtok (pam_ldap_session_t * session,
       mod.mod_type = (char *) "unicodePwd";
       mod.mod_op = LDAP_MOD_ADD | LDAP_MOD_BVALUES;
 
-      if (!session->conf->rootbinddn || geteuid () != 0)
+      if (!session->conf->rootbinddn || getuid () != 0)
 	{
 	  /* user must supply old password */
 	  snprintf (old_password_with_quotes,
@@ -2726,7 +2726,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
       if (rc != PAM_SUCCESS)
 	return rc;
 
-      if (!(session->conf->rootbinddn && geteuid () == 0))
+      if (!(session->conf->rootbinddn && getuid () == 0))
 	{
 	  /* we are not root, authenticate old password */
 	  if (try_first_pass || use_first_pass)
@@ -2891,7 +2891,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 
       if (newpass != NULL)
 	{
-	  if (geteuid () != 0)
+	  if (getuid () != 0)
 	    {
 	      if (curpass != NULL && !strcmp (curpass, newpass))
 		{

@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+135	Luke Howard <lukeh@padl.com>
+
+	* revert UID check to getuid() per patch from
+	  Erich Schneider
+	
 134	Luke Howard <lukeh@padl.com>
 
 	* per suggest from Bill Welliver, check for
