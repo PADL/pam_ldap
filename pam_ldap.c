@@ -531,7 +531,7 @@ _alloc_config (pam_ldap_config_t ** presult)
   result->groupattr = NULL;
   result->groupdn = NULL;
   result->getpolicy = 0;
-  result->checkhostattr = 1;
+  result->checkhostattr = 0;
 #ifdef LDAP_VERSION3
   result->version = LDAP_VERSION3;
 #else
@@ -1748,7 +1748,7 @@ _host_ok (pam_ldap_session_t * session)
   /* simple host based access authorization */
   if (session->info->hosts_allow == NULL)
     {
-      return PAM_SUCCESS;
+      return PAM_PERM_DENIED;
     }
 
   if (gethostname (hostname, sizeof hostname) < 0)
@@ -1793,7 +1793,7 @@ _host_ok (pam_ldap_session_t * session)
 	}
     }
 
-  return PAM_AUTH_ERR;
+  return PAM_PERM_DENIED;
 }
 
 static char *
@@ -3003,11 +3003,11 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 {
   /*
    * check whether the user can login.
-   */
-  /* returns PAM_ACCT_EXPIRED
-     PAM_AUTH_ERR
-     PAM_AUTHTOKEN_REQD (expired)
-     PAM_USER_UNKNOWN
+   * returns one of:
+   *   PAM_ACCT_EXPIRED (account expired)
+   *   PAM_PERM_DENIED (authorization failed)
+   *   PAM_AUTHTOKEN_REQD (authtoken expired)
+   *   PAM_USER_UNKNOWN
    */
   int rc;
   const char *username;
@@ -3070,13 +3070,14 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
   if (session->info == NULL)
     {
       rc = _get_user_info (session, username);
-      if (rc == PAM_USER_UNKNOWN)
+      if (rc != PAM_SUCCESS)
 	{
-	  return PAM_SUCCESS;
-	}
-      else if (rc != PAM_SUCCESS)
-	{
-	  return rc;
+	  /*
+	   * return PAM_IGNORE so that, if the user does not
+	   * exist in LDAP, authorization can be performed by
+	   * another module.
+	   */
+	  return PAM_IGNORE;
 	}
     }
 
@@ -3195,7 +3196,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	  snprintf (buf, sizeof buf, "You must be a %s of %s to login.",
 		    session->conf->groupattr, session->conf->groupdn);
 	  _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
-	  return PAM_AUTH_ERR;
+	  return PAM_PERM_DENIED;
 	}
     }
 
@@ -3214,7 +3215,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
       snprintf (buf, sizeof buf, "UID must be greater than %ld",
 		(long) session->conf->min_uid);
       _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
-      return PAM_AUTH_ERR;
+      return PAM_PERM_DENIED;
     }
 
   if (session->conf->max_uid && session->info->uid > session->conf->max_uid)
@@ -3222,7 +3223,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
       snprintf (buf, sizeof buf, "UID must be less than %ld",
 		(long) session->conf->max_uid);
       _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
-      return PAM_AUTH_ERR;
+      return PAM_PERM_DENIED;
     }
 
   return rc;

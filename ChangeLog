@@ -1,6 +1,23 @@
 $Id$
 ===============================================================
 
+130	Luke Howard <lukeh@padl.com>
+
+	* don't return PAM_AUTH_ERR for authorization errors;
+	  return PAM_PERM_DENIED
+	* reverted patch in pam_ldap-114: if a user doesn't
+	  exist in LDAP, pam_sm_acct_mgmt() returns
+	  PAM_IGNORE, rather than PAM_SUCCESS.
+	* HEADS UP: in default configuration, disable checking
+	  the host attribute. This must now be manually
+	  enabled with pam_check_host_attr in ldap.conf.
+	* HEADS UP: if checking the host attribute is
+	  enabled, and a user does not have any values for
+	  the host attribute, do not allow them to login.
+	  This avoids the ugly situation of having to add
+	  a dummy, invalid value for the host attribute for
+	  users that were not allowed to login to any host.
+
 129	Luke Howard <lukeh@padl.com>
 
 	* don't return PAM_SYSTEM_ERR for LDAP-related errors
