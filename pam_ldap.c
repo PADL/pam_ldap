@@ -652,7 +652,7 @@ static int _connect_as_user(
                 }
 
                 if (controls != NULL) {
-                    PLDAPControl *ctlp; /* ldctl_oid, ldctl_value, ldctl_iscritical */
+                    PLDAPControl *ctlp; 
                     for (ctlp = controls; *ctlp != NULL; ctlp++) {
                         if (!strcmp((*ctlp)->ldctl_oid, LDAP_CONTROL_PWEXPIRING)) {
                             char seconds[32];
