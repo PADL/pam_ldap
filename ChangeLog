@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+149	Luke Howard <lukeh@padl.com>
+
+	* OS X build fix
+
 148	Luke Howard <lukeh@padl.com>
 
 	* check for Netscape SDK without SSL; don't require

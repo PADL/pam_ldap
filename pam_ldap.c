@@ -126,7 +126,7 @@
 #include "pam_ldap.h"
 #include "md5.h"
 
-#ifdef HAVE_SECURITY_PAM_MISC_H
+#if defined(HAVE_SECURITY_PAM_MISC_H) || defined(HAVE_PAM_PAM_MISC_H)
  /* FIXME: is there something better to check? */
 #define CONST_ARG const
 #else
