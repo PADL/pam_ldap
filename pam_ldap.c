@@ -1688,7 +1688,7 @@ _get_password_policy_response_value (struct berval *response_value,
 	  ttag = ber_scanf (ber, "e", &error);
 	  if (ttag != LBER_ERROR)
 	    {
-	      if (session->info->policy_error != POLICY_ERROR_SUCCESS)
+	      if (session->info->policy_error == POLICY_ERROR_SUCCESS)
 		session->info->policy_error = error;
 	      continue;
 	    }
@@ -1840,8 +1840,6 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
 	  else if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PWEXPIRED))
 	    {
 	      session->info->policy_error = POLICY_ERROR_PASSWORD_EXPIRED;
-	      _pam_overwrite (session->info->userpw);
-	      _pam_drop (session->info->userpw);
 	      rc = LDAP_SUCCESS;
 	      /* That may be a lie, but we need to get to the acct_mgmt
 	       * step and force the change...
@@ -1868,8 +1866,14 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
       return PAM_AUTH_ERR;
     }
 
+  if (session->info->policy_error != POLICY_ERROR_SUCCESS)
+    {
+      _pam_overwrite (session->info->userpw);
+      _pam_drop (session->info->userpw);
+    }
+  /* else userpw is now set. Be sure to clobber it later. */
+
   session->info->bound_as_user = 1;
-  /* userpw is now set. Be sure to clobber it later. */
 
   return PAM_SUCCESS;
 }
