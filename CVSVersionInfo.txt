@@ -2,4 +2,4 @@
 # $Id$
 # $Name$
 ProjectName: cvs c
-ProjectVersion: 1
+ProjectVersion: 2
