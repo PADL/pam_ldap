@@ -1818,17 +1818,19 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		   (CONST_ARG void **) &curpass) == PAM_SUCCESS)
 		{
 		  rc = _authenticate (session, username, curpass);
-		  if (use_first_pass && rc != PAM_SUCCESS)
+		  if (rc != PAM_SUCCESS)
 		    {
+			if (use_first_pass)
+				{
 		      _conv_sendmsg (appconv, "LDAP Password incorrect",
 				     PAM_ERROR_MSG, no_warn);
-		      return rc;
-		    }
-		  else
-		    {
-		      _conv_sendmsg (appconv,
-				     "LDAP Password incorrect: try again",
+				}
+			else
+				{
+		      _conv_sendmsg (appconv, "LDAP Password incorrect: try again",
 				     PAM_ERROR_MSG, no_warn);
+				}
+		      return rc;
 		    }
 		}
 	      else
@@ -2180,13 +2182,14 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 #else
       success = PAM_NEW_AUTHTOK_REQD;
 #endif /* LINUX */
-/* ???? */
-/*
+
+#ifdef notdef /* ?????? */
 #ifdef PAM_AUTHTOK_EXPIRED
       success = PAM_AUTHTOK_EXPIRED;
 #else
       success = PAM_AUTHTOKEN_REQD;
-#endif *//* PAM_AUTHTOK_EXPIRED */
+#endif
+#endif /* notdef */
     }
 
   /*

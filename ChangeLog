@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+60	Luke Howard <lukeh@padl.com>
+
+    * patch from Jungle Lin@judicial.gov.tw to fix
+      logic bug in pam_sm_chauthtok()
+
 59	Luke Howard <lukeh@padl.com>
 
     * fixed some assumptions in chsh/chfn, need to look
