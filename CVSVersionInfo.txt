@@ -2,4 +2,4 @@
 # $Id$
 # $Name$
 ProjectName: pam_ldap
-ProjectVersion: 12
+ProjectVersion: 13
