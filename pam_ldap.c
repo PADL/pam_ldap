@@ -1075,8 +1075,6 @@ static int _authenticate(
         return rc;
 
     rc = _connect_as_user(session, password);
-    if (rc != PAM_SUCCESS)
-        return rc;
 
     return rc;
 }
