@@ -197,7 +197,7 @@ static int _set_ssl_options (pam_ldap_session_t *);
 static int _connect_anonymously (pam_ldap_session_t * session);
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
 #if LDAP_SET_REBIND_PROC_ARGS == 3
-static int _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request,
+static int _rebind_proc (LDAP * ld, LDAP_CONST char *url, ber_tag_t request,
 			 ber_int_t msgid, void *arg);
 #else
 static int _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request,
@@ -1365,7 +1365,7 @@ _connect_anonymously (pam_ldap_session_t * session)
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
 #if LDAP_SET_REBIND_PROC_ARGS == 3
 static int
-_rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid, void *arg)
+_rebind_proc (LDAP * ld, LDAP_CONST char *url, ber_tag_t request, ber_int_t msgid, void *arg)
 #else
 static int
 _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid)
