@@ -2,7 +2,7 @@
 # $Id$
 # $Name$
 ProjectName: pam_ldap
-ProjectVersion: 22
+ProjectVersion: 23
 # run this before building in RC. @@@PLATFORM@@@ is
 # substituted for our platform names (linux, solaris etc)
 PreBuild: ln -s Makefile.@@@PLATFORM@@@ Makefile
