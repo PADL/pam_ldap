@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+121	Luke Howard <lukeh@padl.com>
+
+	* escape username only, not entire filter
+
 120	Luke Howard <lukeh@padl.com>
 
 	* escape search filter to avoid wildcards etc

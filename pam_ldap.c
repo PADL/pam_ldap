@@ -1140,14 +1140,14 @@ _open_session (pam_ldap_session_t * session)
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_REFERRALS)
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->
-			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #if defined(HAVE_LDAP_SET_OPTION) && defined(LDAP_OPT_RESTART)
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->
-			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->conf->
+			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
@@ -1833,7 +1833,7 @@ _escape_string (const char *str, char *buf, size_t buflen)
 static int
 _get_user_info (pam_ldap_session_t * session, const char *user)
 {
-  char filter[LDAP_FILT_MAXSIZ], escapedFilter[LDAP_FILT_MAXSIZ];
+  char filter[LDAP_FILT_MAXSIZ], escapedUser[LDAP_FILT_MAXSIZ];
   int rc;
   LDAPMessage *res, *msg;
 
@@ -1848,27 +1848,28 @@ _get_user_info (pam_ldap_session_t * session, const char *user)
   session->ld->ld_sizelimit = 1;
 #endif
 
-  if (session->conf->filter != NULL)
-    {
-      snprintf (filter, sizeof filter, "(&(%s)(%s=%s))",
-		session->conf->filter, session->conf->userattr, user);
-    }
-  else
-    {
-      snprintf (filter, sizeof filter, "(%s=%s)",
-		session->conf->userattr, user);
-    }
-
-
-  rc = _escape_string (filter, escapedFilter, sizeof (escapedFilter));
+  rc = _escape_string (user, escapedUser, sizeof (escapedUser));
   if (rc != PAM_SUCCESS)
     {
       return rc;
     }
 
+  if (session->conf->filter != NULL)
+    {
+      snprintf (filter, sizeof filter, "(&(%s)(%s=%s))",
+		session->conf->filter, session->conf->userattr, escapedUser);
+    }
+  else
+    {
+      snprintf (filter, sizeof filter, "(%s=%s)",
+		session->conf->userattr, escapedUser);
+    }
+
+
+
   rc = ldap_search_s (session->ld,
 		      session->conf->base,
-		      session->conf->scope, escapedFilter, NULL, 0, &res);
+		      session->conf->scope, filter, NULL, 0, &res);
 
   if (rc != LDAP_SUCCESS)
     {
