@@ -97,7 +97,7 @@ typedef struct pam_ldap_config
 #define PASSWORD_CLEAR   0
 #define PASSWORD_CRYPT   1
 #define PASSWORD_MD5     2
-#define PASSWORD_NDS     3
+#define PASSWORD_CLEAR_REMOVE_OLD     3
 #define PASSWORD_AD      4
 #define PASSWORD_EXOP    5
     int password_type;

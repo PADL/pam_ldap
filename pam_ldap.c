@@ -837,8 +837,8 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	    result->password_type = PASSWORD_CRYPT;
 	  else if (!strcasecmp (v, "md5"))
 	    result->password_type = PASSWORD_MD5;
-	  else if (!strcasecmp (v, "nds"))
-	    result->password_type = PASSWORD_NDS;
+	  else if (!strcasecmp (v, "nds") || (!strcasecmp (v, "racf")))
+	    result->password_type = PASSWORD_CLEAR_REMOVE_OLD;
 	  else if (!strcasecmp (v, "ad"))
 	    result->password_type = PASSWORD_AD;
 	  else if (!strcasecmp (v, "exop"))
@@ -2408,8 +2408,8 @@ _update_authtok (pam_ldap_session_t * session,
 
       break;
 
-    case PASSWORD_NDS:
-      /* NDS requires that the old password is first removed */
+    case PASSWORD_CLEAR_REMOVE_OLD:
+      /* NDS/RACF requires that the old password is first removed */
       strvalsold[0] = (char *) old_password;
       strvalsold[1] = NULL;
       strvalsnew[0] = (char *) new_password;
