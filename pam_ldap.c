@@ -111,6 +111,7 @@
 
 #ifndef LINUX
 #define CONST_ARG
+#include <crypt.h>
 #else
 #define CONST_ARG const
 #include <sys/param.h>
@@ -261,7 +262,7 @@ static int _alloc_config(
  * Use the "internal" ypldapd.conf map to figure some things
  * out.
  */
-static int _read_config(
+static int _ypldapd_read_config(
                         pam_ldap_config_t **presult
                         )
 {
@@ -349,7 +350,7 @@ static int _read_config(
 
     return PAM_SUCCESS;
 }
-#else
+#endif /* YPLDAPD */
 
 #define CHECKPOINTER(ptr) do { if ((ptr) == NULL) { \
     fclose(fp); \
@@ -449,7 +450,6 @@ static int _read_config(
         
     return PAM_SUCCESS;
 }
-#endif /* YPLDAPD */
 
 static int _open_session(
                                   pam_ldap_session_t *session
@@ -935,13 +935,21 @@ static int _pam_ldap_get_session(
     session->ld = NULL;
     session->conf = NULL;
     session->info = NULL;
-    
-    rc = _read_config(&session->conf);
+   
+#ifdef YPLDAPD
+    rc = _ypldapd_read_config(&session->conf);
     if (rc != PAM_SUCCESS) {
         _release_config(&session->conf);
-        free(session);
-        return rc;
+#endif /* YPLDAPD */ 
+        rc = _read_config(&session->conf);
+        if (rc != PAM_SUCCESS) {
+            _release_config(&session->conf);
+            free(session);
+            return rc;
+        }
+#ifdef YPLDAPD
     }
+#endif /* YPLDAPD */
 
     rc = pam_set_data(pamh, "PADL-LDAP-SESSION-DATA", session, _pam_ldap_cleanup_session);
     if (rc != PAM_SUCCESS) {

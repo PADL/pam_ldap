@@ -120,6 +120,9 @@ typedef struct pam_ldap_session
 static int _alloc_config(pam_ldap_config_t **);
 static void _release_config(pam_ldap_config_t **);
 static int _read_config(pam_ldap_config_t **);
+#ifdef YPLDAPD
+static int _ypldapd_read_config(pam_ldap_config_t **);
+#endif /* YPLDAPD */
 
 /* Internal memory management */
 static void _release_user_info(pam_ldap_user_info_t **);
