@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+47	Luke Howard <lukeh@padl.com>
+
+    * removed _connect_anonymously() clause when updating
+      shadowLastChange
+
 46	Luke Howard <lukeh@padl.com>
 
     * incorporated new spec file
