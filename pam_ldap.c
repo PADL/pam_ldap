@@ -1282,6 +1282,7 @@ _set_ssl_default_options (pam_ldap_session_t * session)
 {
   int rc;
 
+#ifdef LDAP_OPT_X_TLS_RANDOM_FILE
   /* rand file */
   if (session->conf->tls_randfile != NULL)
     {
@@ -1295,6 +1296,7 @@ _set_ssl_default_options (pam_ldap_session_t * session)
 	  return LDAP_OPERATIONS_ERROR;
 	}
     }
+#endif /* LDAP_OPT_X_TLS_RANDOM_FILE */
 
   /* ca cert file */
   if (session->conf->tls_cacertfile != NULL)
