@@ -1,6 +1,12 @@
 $Id$
 ===============================================================
 
+138	Luke Howard <lukeh@padl.com>
+
+	* when flushing cached session data, check to see
+	  whether the application has requested a different
+	  configuration file due to a changed service
+
 137	Luke Howard <lukeh@padl.com>
 
 	* treat exceeded time and size limits as a successful
