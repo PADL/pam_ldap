@@ -9,4 +9,4 @@ ProjectMaintainer: lukeh
 PreBuild: configure --with-ldap-dir=/usr/local/ldapsdk --with-ldap-lib=netscape3
 PostBuild: rm -f Makefile
 # binaries to ship (although we don't do that at the moment)
-Shippables: pam_ldap.so.1
+Shippables: pam_ldap.so
