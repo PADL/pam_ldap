@@ -50,13 +50,13 @@ in the clear.
 A variety of authorization primitives are supported by
 .B
 pam_ldap,
-discussed in the configuration file section below.
+discussed in the configuration section below.
 .LP
 Finally,
 .B
 pam_ldap
 supports a number of password change protocols used by directory servers
-from a variety of different vendors. (Some directory servers support
+from various vendors. (Some directory servers support
 more than one password change protocol.)
 .LP
 Whilst
@@ -136,11 +136,11 @@ or
 ldaps,
 specifying LDAP over TCP, IPC and SSL respectively. If applicable,
 a port number can be specified; the default port number for the
-selected protocol is used if omitted. This directive takes
+selected protocol is used if omitted. This option takes
 precedence over the
 .B
 host
-directive; it is not possible to combine the two.
+option; it is not possible to combine the two.
 .TP
 .B
 ldap_version <version>
@@ -155,11 +155,11 @@ by the client library.
 .TP
 .B binddn <binddn>
 Specifies the distinguished name with which to bind to the directory
-server(s). This directive is optional; the default is to bind
+server(s). This option is optional; the default is to bind
 anonymously.
 .TP
 .B bindpw <bindpw>
-Specifies the cleartext credentials with which to bind. This directive
+Specifies the cleartext credentials with which to bind. This option
 is only applicable when used with
 .B binddn
 above. The default is no credential (anonymous bind). When binding to
@@ -167,12 +167,12 @@ the directory using
 .I
 SASL
 or other authentication mechanisms apart from simple binds, this
-directive is not used.
+option is not used.
 .TP
 .B rootbinddn <binddn>
-This directive has the same syntax and effect as the
+This option has the same syntax and effect as the
 .B binddn
-directive above, except it applies when the effective user ID is
+option above, except it applies when the effective user ID is
 zero. If not specified, then the identity specified in
 .B binddn
 is used instead. Because the configuration file may be readable by
@@ -182,11 +182,11 @@ file instead. This file is usually in the same directory as the
 configuration file.
 .TP
 .B port <port>
-Specifies the port to connect to; this directive is used with the
+Specifies the port to connect to; this option is used with the
 .B host
-directive, and is ignored with the
+option, and is ignored with the
 .B uri
-directive.
+option.
 .TP
 .B scope <sub|one|base>
 Specifies the search scope (subtree, one level or base object). The
@@ -201,6 +201,7 @@ to never dereference aliases.
 Specifies the time limit (in seconds) to use when performing searches. A value
 of zero (0), which is the default, is to wait indefinitely for
 searches to be completed.
+.TP
 .B bind_timelimit <timelimit>
 Specifies the time limit (in seconds) to use when connecting to the directory
 server. This is distinct from the time limit specified in
@@ -210,7 +211,7 @@ are otherwise cached.) Only some
 .I
 LDAP
 client libraries have the underlying functionality necessary to
-support this directive. The default bind timelimit is 30 seconds.
+support this option. The default bind timelimit is 30 seconds.
 .TP
 .B referrals <yes|no>
 Specifies whether automatic referral chasing should be enabled. The
@@ -299,8 +300,8 @@ The default is "uid", for compatability with RFC 2307.
 .B pam_filter <filter>
 Specifies a filter to use when retrieving user information. The user
 entry must match the attribute value assertion of
-(<pam_login_attribute>=<login_name>) as well as any filter specified
-here. There is no default for this directive.
+(pam_login_attribute=login_name) as well as any filter specified
+here. There is no default for this option.
 .TP
 .B pam_lookup_policy <yes|no>
 Specifies whether to search the root DSE for password policy. The 
@@ -326,16 +327,16 @@ for logon authorization to succeed.
 Specifies the attribute to use when testing a user's membership of a 
 group specified in the
 .B pam_groupdn
-directive.
+option.
 .TP
 .B pam_min_uid <uid>
 If specified, a user must have a POSIX user ID of at least
-.B <uid>
+.B uid
 in order for logon authorization to succeed.
 .TP
 .B pam_max_uid <uid>
 If specified, a user must have a POSIX user ID of no greater than
-.B <uid>
+.B uid
 in order for logon authorization to succeed.
 .TP
 .B pam_template_login_attribute <attribute>
@@ -346,13 +347,13 @@ The
 module will set PAM_USER to the value of this attribute if present in the
 user's entry, otherwise it defaults to the user specified in the
 .B pam_template_login
-directive.
+option.
 .TP
 .B pam_template_login <user>
 When using template users (not supported by all PAM applications),
 .B
 pam_ldap
-will set PAM_USER to the value of this directive if the user does not
+will set PAM_USER to the value of this option if the user does not
 contain a template login attribute.
 .TP
 .B pam_password <protocol>
@@ -428,7 +429,7 @@ config=<path>
 Specifies that
 .B pam_ldap
 should use the configuration file in
-.B <path>
+.B path
 instead of ldap.conf to retrieve its global configuration. Configuring
 multiple instances of
 .B pam_ldap
