@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+143	Luke Howard <lukeh@padl.com>
+
+	* specify runtime path for LDAP library correctly to
+	  native Solaris linker
+
 142	Luke Howard <lukeh@padl.com>
 
 	* use native linker on Solaris
