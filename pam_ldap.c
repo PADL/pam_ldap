@@ -1879,15 +1879,15 @@ _get_md5_salt (char saltbuf[16])
   struct timeval tv;
   int i;
 
-  md5_init (&state);
+  _pam_ldap_md5_init (&state);
   gettimeofday (&tv, NULL);
-  md5_append (&state, (unsigned char *) &tv, sizeof (tv));
+  _pam_ldap_md5_append (&state, (unsigned char *) &tv, sizeof (tv));
   i = getpid ();
-  md5_append (&state, (unsigned char *) &i, sizeof (i));
+  _pam_ldap_md5_append (&state, (unsigned char *) &i, sizeof (i));
   i = clock ();
-  md5_append (&state, (unsigned char *) &i, sizeof (i));
-  md5_append (&state, (unsigned char *) saltbuf, sizeof (saltbuf));
-  md5_finish (&state, digest);
+  _pam_ldap_md5_append (&state, (unsigned char *) &i, sizeof (i));
+  _pam_ldap_md5_append (&state, (unsigned char *) saltbuf, sizeof (saltbuf));
+  _pam_ldap_md5_finish (&state, digest);
 
   strcpy (saltbuf, "$1$");
   for (i = 0; i < 8; i++)

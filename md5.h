@@ -66,30 +66,25 @@ extern "C"
 {
 #endif
 
-/* Keep the namespace clean */
-#define md5_init	pam_ldap_md5_init
-#define md5_append	pam_ldap_md5_append
-#define md5_finish	pam_ldap_md5_finish
-
 /* Initialize the algorithm. */
 #ifdef P1
-void md5_init(P1(md5_state_t *pms));
+void _pam_ldap_md5_init(P1(md5_state_t *pms));
 #else
-void md5_init(md5_state_t *pms);
+void _pam_ldap_md5_init(md5_state_t *pms);
 #endif
 
 /* Append a string to the message. */
 #ifdef P3
-void md5_append(P3(md5_state_t *pms, const md5_byte_t *data, int nbytes));
+void _pam_ldap_md5_append(P3(md5_state_t *pms, const md5_byte_t *data, int nbytes));
 #else
-void md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes);
+void _pam_ldap_md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes);
 #endif
 
 /* Finish the message and return the digest. */
 #ifdef P2
-void md5_finish(P2(md5_state_t *pms, md5_byte_t digest[16]));
+void _pam_ldap_md5_finish(P2(md5_state_t *pms, md5_byte_t digest[16]));
 #else
-void md5_finish(md5_state_t *pms, md5_byte_t digest[16]);
+void _pam_ldap_md5_finish(md5_state_t *pms, md5_byte_t digest[16]);
 #endif
 
 #ifdef __cplusplus
