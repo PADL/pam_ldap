@@ -1676,6 +1676,7 @@ pam_sm_chauthtok (
 {
   int rc = PAM_SUCCESS;
   char *username, *curpass = NULL, *newpass = NULL, *expuser = NULL;
+  char buf[32], *strvals[2];
   struct pam_conv *appconv;
   struct pam_message msg, *pmsg;
   struct pam_response *resp;
@@ -1685,6 +1686,7 @@ pam_sm_chauthtok (
   int use_first_pass = 0, try_first_pass = 0, no_warn = 0;
   char errmsg[1024];
   pam_ldap_password_policy_t policy;
+  LDAPMod *mods[2], mod;
 
   for (i = 0; i < argc; i++)
     {
@@ -1959,6 +1961,36 @@ pam_sm_chauthtok (
     }
   else
     {
+      /* update shadowLastChange */
+      rc = _connect_anonymously (session);
+      if (rc != PAM_SUCCESS)
+	return rc; 
+
+      snprintf (buf, sizeof buf, "%ld", time(NULL) / (60 * 60 * 24));
+      strvals[0] = buf;
+      strvals[1] = NULL;
+
+      mod.mod_vals.modv_strvals = strvals;
+      mod.mod_type = (char *) "shadowLastChange";
+      mod.mod_op = LDAP_MOD_REPLACE;
+#ifndef LDAP_VERSION3_API
+      mod.mod_next = NULL;
+#endif /* LDAP_VERSION3_API */
+
+      mods[0] = &mod;
+      mods[1] = NULL;
+
+      rc = ldap_modify_s (
+                        session->ld,
+                        session->info->userdn,
+                        mods
+                        );
+
+      if (rc != LDAP_SUCCESS)
+      {
+        syslog (LOG_ERR, "pam_ldap: ldap_modify_s %s", ldap_err2string (rc));
+      }
+
       snprintf (errmsg, sizeof errmsg, "LDAP password information changed for %s", username);
       _conv_sendmsg (appconv, errmsg, PAM_TEXT_INFO, (flags & PAM_SILENT) ? 1 : 0);
     }
