@@ -98,6 +98,10 @@
 #ifdef SSL                                                                      
 #include <ldap_ssl.h>
 #endif /* SSL */
+#ifdef YPLDAPD
+#include <rpcsvc/yp_prot.h>
+#include <rpcsvc/ypclnt.h>
+#endif /* YPLDAPD */
 
 #include "pam_ldap.h"
 
@@ -181,14 +185,10 @@ void _release_session(
     return PAM_BUF_ERR; \
 } \
 } while (0)
-
-int _readconfig(
-                         pam_ldap_config **presult
-                         )
+int _allocconfig(
+                 pam_ldap_config **presult
+                 )
 {
-    /* this is the same configuration file as nss_ldap */
-    FILE *fp;
-    char b[BUFSIZ];
     pam_ldap_config *result;
 
     if (*presult == NULL) {
@@ -208,6 +208,104 @@ int _readconfig(
     result->plc_sslpath = NULL;
     result->plc_objectclass = NULL;
     result->plc_attr = NULL;
+
+    return PAM_SUCCESS;
+}
+
+
+#ifdef YPLDAPD
+int _readconfig(
+                        pam_ldap_config **presult
+                        )
+{
+    pam_ldap_config *result;
+    char *domain;
+    int len;
+    char *tmp;
+
+    if (_allocconfig(presult) != PAM_SUCCESS) {
+        return PAM_BUF_ERR;
+    }
+
+    result = *presult;
+
+    yp_get_default_domain(&domain);
+    yp_bind(domain);
+    if (yp_match(
+                 domain,
+                 "ypldapd.conf",
+                 "ldaphost",
+                 sizeof("ldaphost") - 1,
+                 &tmp,
+                 &len
+                 )) {
+        return PAM_SERVICE_ERR;
+    }
+
+    result->plc_host = (char *)malloc(len + 1);
+    if (result->plc_host == NULL)
+        return PAM_BUF_ERR;
+    
+    memcpy(result->plc_host, tmp, len);
+    result->plc_host[len] = '\0';
+    free(tmp);
+
+    if (yp_match(
+                 domain,
+                 "ypldapd.conf",
+                 "basedn",
+                 sizeof("basedn") - 1,
+                 &tmp,
+                 &len
+                 )) {
+        result->plc_base = NULL;
+    } else {
+        result->plc_base = (char *)malloc(len + 1);
+        if (result->plc_base == NULL)
+            return PAM_BUF_ERR;
+        memcpy(result->plc_base, tmp, len);
+        result->plc_base[len] = '\0';
+        free(tmp);
+    }
+    
+    if (yp_match(
+                 domain,
+                 "ypldapd.conf",
+                 "ldapport",
+                 sizeof("ldapport") - 1,
+                 &tmp,
+                 &len
+                 )) {
+        result->plc_port = LDAP_PORT;
+    } else {
+        result->plc_port = atoi(tmp);
+        free(tmp);
+    }
+    
+    yp_unbind(domain);
+
+    result->plc_attr = strdup("uid");
+    if (result->plc_attr == NULL) {
+        return PAM_BUF_ERR;
+    }
+
+    return PAM_SUCCESS;
+}
+#else
+int _readconfig(
+                         pam_ldap_config **presult
+                         )
+{
+    /* this is the same configuration file as nss_ldap */
+    FILE *fp;
+    char b[BUFSIZ];
+    pam_ldap_config *result;
+
+    if (_allocconfig(presult) != PAM_SUCCESS) {
+        return PAM_BUF_ERR;
+    }
+
+    result = *presult;
     
     fp = fopen("/etc/ldap.conf", "r");
     if (fp == NULL) {
@@ -271,6 +369,7 @@ int _readconfig(
         
     return PAM_SUCCESS;
 }
+#endif
 
 static int _open_session(
                                   pam_ldap_session *session
@@ -285,19 +384,21 @@ static int _open_session(
     }
 
 #ifdef SSL
-    rc = ldapssl_client_init(session->pls_conf->plc_sslpath, NULL);
-    if (rc != LDAP_SUCCESS) {
-        syslog(LOG_ERR, "pam_ldap: ldapssl_client_init %s", ldap_err2string(rc));
-        return PAM_SERVICE_ERR;
-    }
-    rc = ldapssl_install_routines(session->pls_ld);
-    if (rc != LDAP_SUCCESS) {
-        syslog(LOG_ERR, "pam_ldap: ldap_simple_bind_s %s", ldap_err2string(rc));
-        return PAM_SERVICE_ERR;
-    }
-    rc = ldap_set_option(session->pls_ld, LDAP_OPT_SSL, LDAP_OPT_ON);
-    if (rc != LDAP_SUCCESS) {
-        return PAM_SERVICE_ERR;
+    if (session->pls_conf->plc_sslpath != NULL) {
+        rc = ldapssl_client_init(session->pls_conf->plc_sslpath, NULL);
+        if (rc != LDAP_SUCCESS) {
+            syslog(LOG_ERR, "pam_ldap: ldapssl_client_init %s", ldap_err2string(rc));
+            return PAM_SERVICE_ERR;
+        }
+        rc = ldapssl_install_routines(session->pls_ld);
+        if (rc != LDAP_SUCCESS) {
+            syslog(LOG_ERR, "pam_ldap: ldap_simple_bind_s %s", ldap_err2string(rc));
+            return PAM_SERVICE_ERR;
+        }
+        rc = ldap_set_option(session->pls_ld, LDAP_OPT_SSL, LDAP_OPT_ON);
+        if (rc != LDAP_SUCCESS) {
+            return PAM_SERVICE_ERR;
+        }
     }
 #endif /* SSL */
 

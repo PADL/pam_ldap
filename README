@@ -13,6 +13,8 @@ The advantages of this particular version are:
 
 	o Compatibility with the nss_ldap configuration file format
 
+	o Supports ypldapd LDAP locator for plug-and-play installation
+
 The module builds under both Linux and Solaris although it has only been
 tested under Solaris 2.6.
 
