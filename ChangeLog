@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+12   Luke Howard <lukeh@padl.com>
+
+    * Fixed some errors in ldap.conf and mapfile
+
 11   Luke Howard <lukeh@padl.com>
 
     * Added support for group membership as in Chris'
