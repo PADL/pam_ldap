@@ -53,6 +53,8 @@ typedef struct pam_ldap_config
         char *groupattr;
         /* LDAP protocol version */
         int version;
+        /* generate hashes locally */
+        int crypt_local;
 } pam_ldap_config_t;
 
 /* Netscape global password policy attributes */
@@ -133,6 +135,7 @@ static int _get_integer_value(LDAP *, LDAPMessage *, const char *, int *);
 static int _get_string_values(LDAP *, LDAPMessage *, const char *, char ***);
 static int _has_value(char **, const char *);
 static int _host_ok(pam_ldap_session_t *session);
+static char *_get_salt(char buf[3]);
 
 /* LDAP cover routines */
 static int _get_user_info(pam_ldap_session_t *, const char *);

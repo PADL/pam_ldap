@@ -230,7 +230,7 @@ static int _alloc_config(
     pam_ldap_config_t *result;
 
     if (*presult == NULL) {
-        *presult = (pam_ldap_config_t *)malloc(sizeof(*result));
+        *presult = (pam_ldap_config_t *)calloc(1, sizeof(*result));
         if (presult == NULL)
             return PAM_BUF_ERR;
     }
@@ -250,6 +250,7 @@ static int _alloc_config(
     result->groupdn = NULL;
     result->getpolicy = 0;
     result->version = LDAP_VERSION2;
+    result->crypt_local = 0;
 
     return PAM_SUCCESS;
 }
@@ -425,6 +426,8 @@ static int _read_config(
             result->getpolicy = !strcmp(v, "yes");
         } else if (!strcmp(k, "pam_groupdn")) {
             CHECKPOINTER(result->groupdn = strdup(v));
+        } else if (!strcmp(k, "pam_crypt")) {
+            result->crypt_local = !strcmp(v, "local");
         } else if (!strcmp(k, "pam_member_attribute")) {
             CHECKPOINTER(result->groupattr = strdup(v));
         }
@@ -452,10 +455,17 @@ static int _open_session(
                                   pam_ldap_session_t *session
                                   )
 {
+#ifndef LDAP_VERSION3
+    session->ld = ldap_open(
+                                session->conf->host,
+                                session->conf->port
+                                );
+#else
     session->ld = ldap_init(
                                 session->conf->host,
                                 session->conf->port
                                 );
+#endif /* LDAP_VERSION3 */
     if (session->ld == NULL) {
         return PAM_SYSTEM_ERR;
     }
@@ -776,6 +786,34 @@ static int _host_ok(
     return PAM_AUTH_ERR;
 }
 
+static char *_get_salt(
+                       char salt[3]
+                      )
+{
+   int   i;
+   int   j;
+
+   srand(time(NULL));
+                                                                                
+   for (j = 0; j < 2; j++) {
+      i = rand() % 3;
+      switch(i) {
+      case 0:
+         i = (rand() % (57 - 46)) + 46;
+         break;
+      case 1:
+         i = (rand() % (90 - 65)) + 65;
+         break;
+      case 2:
+         i = (rand() % (122 - 97)) + 97;
+         break;
+      }
+      salt[j] = i;
+   }
+   salt[2] = '\0';
+   return (salt);
+}
+
 static int _get_user_info(
                    pam_ldap_session_t *session,
                    const char *user
@@ -1029,6 +1067,7 @@ static int _update_authtok(
 {
     char *strvals[2];
     LDAPMod *mods[2], mod;
+    char buf[32], saltbuf[3];
     int rc = PAM_SUCCESS;
     
     if (session->info == NULL) {
@@ -1047,8 +1086,13 @@ static int _update_authtok(
     if (rc != PAM_SUCCESS)
         return rc;
     
-    /* note: this assumes that the server generates the password hash */
-    strvals[0] = (char *)new_password;
+    if (session->conf->crypt_local) {
+        snprintf(buf, sizeof buf, "{crypt}%s", crypt(new_password, _get_salt(saltbuf)));
+        strvals[0] = buf;
+    } else {
+        strvals[0] = (char *)new_password;
+    }
+
     strvals[1] = NULL;
 
     mod.mod_vals.modv_strvals = strvals;

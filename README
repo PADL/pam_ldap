@@ -20,9 +20,20 @@ The advantages of this particular version are:
    o Supports access authorization on the "host" attribute of the
      account objectclass, and on group membership
 
+   o Supports generating crypted hashes locally for use with
+     OpenLDAP and other University of Michigan derived LDAP 
+     servers
+
 The module builds under both Linux 2.x and Solaris 2.6.
 
-Thanks to fellow Aussie Chris Albone who wrote the initial pam_ldap_auth module.
+Thanks to fellow Aussie Chris Albone who wrote the initial pam_ldap_auth
+module.
+
+I've tested this with Netscape Directory Server 3.1 under NT and
+Solaris, the University of Michigan LDAP server, and Microsoft's
+Exchange Server.
+
+
 
 --
    Luke Howard
