@@ -3217,6 +3217,8 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	  _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
 	  return PAM_PERM_DENIED;
 	}
+      else
+	  rc = success;
     }
 
   if (session->conf->checkhostattr)

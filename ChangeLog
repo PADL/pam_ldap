@@ -1,6 +1,16 @@
 $Id$
 ===============================================================
 
+133	Luke Howard <lukeh@padl.com>
+
+	* Patch from Ed Golden for group_dn: set error
+	  code correctly
+
+132	Luke Howard <lukeh@padl.com>
+
+	* Patch from Bob Guo to discard trailing whitespace
+	  in configuration file
+
 131	Luke Howard <lukeh@padl.com>
 
 	* allow "*" wildcard value to be present in host
