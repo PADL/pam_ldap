@@ -973,14 +973,14 @@ _open_session (pam_ldap_session_t * session)
 
 #ifdef LDAP_OPT_REFERRALS
   (void) ldap_set_option (session->ld, LDAP_OPT_REFERRALS,
-			  session->conf->
-			  referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->
+			  conf->referrals ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef LDAP_OPT_RESTART
   (void) ldap_set_option (session->ld, LDAP_OPT_RESTART,
-			  session->conf->
-			  restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
+			  session->
+			  conf->restart ? LDAP_OPT_ON : LDAP_OPT_OFF);
 #endif
 
 #ifdef HAVE_LDAP_START_TLS_S
@@ -1078,15 +1078,18 @@ _connect_anonymously (pam_ldap_session_t * session)
 
 #if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
 static int
-_rebind_proc (LDAP *ld, LDAP_CONST char *url, int request, ber_int_t msgid)
+_rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid)
 {
   pam_ldap_session_t *session = global_session;
   char *who, *cred;
 
-  if (session->info != NULL && session->info->bound_as_user == 1) {
+  if (session->info != NULL && session->info->bound_as_user == 1)
+    {
       who = session->info->userdn;
       cred = session->info->userpw;
-  } else {
+    }
+  else
+    {
       if (session->conf->rootbinddn != NULL && geteuid () == 0)
 	{
 	  who = session->conf->rootbinddn;
@@ -1097,9 +1100,9 @@ _rebind_proc (LDAP *ld, LDAP_CONST char *url, int request, ber_int_t msgid)
 	  who = session->conf->binddn;
 	  cred = session->conf->bindpw;
 	}
-  }
+    }
 
-  return ldap_simple_bind_s(ld, who, cred);
+  return ldap_simple_bind_s (ld, who, cred);
 }
 #else
 # if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
@@ -1107,8 +1110,9 @@ static int
 _rebind_proc (LDAP * ld,
 	      char **whop, char **credp, int *methodp, int freeit, void *arg)
 # else
-static int
-_rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp, int freeit)
+     static int
+       _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp,
+		     int freeit)
 # endif
 {
 #if HAVE_LDAP_SET_REBIND_PROC_ARGS == 3
