@@ -525,7 +525,7 @@ _read_config (const char * configFile, pam_ldap_config_t ** presult)
   FILE *fp;
   char b[BUFSIZ];
   pam_ldap_config_t *result;
-  char errmsg[PATH_MAX + 25];
+  char errmsg[MAXPATHLEN + 25];
  
   if (_alloc_config (presult) != PAM_SUCCESS)
     {

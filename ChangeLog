@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+81	Luke Howard <lukeh@padl.com>
+
+	* use MAXPATHLEN instead of PATH_MAX; pam_ldap-80
+	  failed on Solaris
+
 80	Luke Howard <lukeh@padl.com>
 
 	* added support for configurable configuration files;
