@@ -6,15 +6,15 @@ SECURITY_DIR = /lib/security
 # The Netscape LDAP libraries
 LDAP_LIB_DIR = /usr/local/ldapsdk/lib
 LDAP_INC_DIR = /usr/local/ldapsdk/include
-LDAPLIBS = -L$(LDAP_LIB_DIR) -lldapssl30 -lpam -lnsl -lpthread -lresolv
+LDAPLIBS = -L$(LDAP_LIB_DIR) -lldapssl30
 
 # OpenLDAP/Umich LDAP libraries
 #LDAP_LIB_DIR = /usr/local/lib
 #LDAP_INC_DIR = /usr/local/include
-#LDAPLIBS = -L$(LDAP_LIB_DIR) -lldap -llber -lpam -lnsl -lpthread -lresolv
+#LDAPLIBS = -L$(LDAP_LIB_DIR) -lldap -llber 
 
 #CDEFS = -O2
-WARNINGS = -ansi -D_POSIX_SOURCE -Wall -Wwrite-strings \
+WARNINGS = -ansi -Wall -Wwrite-strings \
 	-Wpointer-arith -Wcast-align \
 	-Wtraditional -Wstrict-prototypes -Wmissing-prototypes \
 	-Wnested-externs -Winline -Wshadow -pedantic

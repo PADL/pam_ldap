@@ -4,7 +4,7 @@
 CC = gcc
 CFLAGS = -Wall -I$(LDAP_INC_DIR) -DSOLARIS -D__EXTENSIONS__ $(CDEFS) -fPIC
 LD_FLAGS = -M mapfile -G -h $(LIBAUTHSH) -z text -Bsymbolic \
-	-R$(LDAP_LIB_DIR) -R/usr/ucblib
+	-R$(LDAP_LIB_DIR) -R/usr/ucblib -lcrypt -lpam -lnsl -lpthread -lresolv
 
 include Make.defs
 

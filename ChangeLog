@@ -1,6 +1,33 @@
 $Id$
 ===============================================================
 
+36.BZ37.6	Luke Howard <lukeh@padl.com>
+
+    * updated ChangeLog (this file)
+
+36.BZ37.5	Luke Howard <lukeh@padl.com>
+
+    * included FreeBSD porting fixes
+
+36.BZ37.4	Luke Howard <lukeh@padl.com>
+
+    * send user credentials of bound_as_user is
+      set, rather than if userpw != NULL
+
+36.BZ37.3	Luke Howard <lukeh@padl.com>
+
+    * drop userpw if it is already set
+
+36.BZ37.2	Luke Howard <lukeh@padl.com>
+
+    * fixed reordered include to compile properly
+
+36.BZ37.1	Luke Howard <lukeh@padl.com>
+
+    * patch release with possible fix for BUG#37, where
+      user credentials were not being forwarded to
+      referred servers (whilst password changing)
+
 36   Luke Howard <lukeh@padl.com>
 
     * added -lresolv to library search path

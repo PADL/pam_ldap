@@ -3,8 +3,8 @@
 # OS Part
 # Linux Section
 CC = gcc
-CFLAGS = -Wall -I$(LDAP_INC_DIR) $(CON_FILE) -D_GNU_SOURCE -DLINUX $(CDEFS) -fPIC
-LD_FLAGS = -x --shared -rpath $(LDAP_LIB_DIR) -lcrypt
+CFLAGS = -Wall -I$(LDAP_INC_DIR) $(CON_FILE) -D_GNU_SOURCE -DLINUX_PAM -DLINUX $(CDEFS) -fPIC
+LD_FLAGS = -x --shared -rpath $(LDAP_LIB_DIR) -lcrypt -lnsl -lpam -lnsl -lpthread -lresolv
 
 include Make.defs
 

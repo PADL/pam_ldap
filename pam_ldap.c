@@ -96,9 +96,16 @@
 #define _XOPEN_SOURCE
 #endif /* _XOPEN_SOURCE */
 #include <sys/time.h>
+#include <sys/param.h>
 #include <unistd.h>
 #include <syslog.h>
 #include <netdb.h>
+
+#ifdef FREEBSD
+#include <des.h>
+#else
+#include <crypt.h>
+#endif /* FREEBSD */
 
 #include <lber.h>
 #include <ldap.h>
@@ -113,15 +120,11 @@
 
 #include "pam_ldap.h"
 
-#ifndef LINUX
-#define CONST_ARG
-#include <crypt.h>
-#else
+#ifdef LINUX_PAM
 #define CONST_ARG const
-#include <sys/param.h>
-#endif /* !LINUX */
-
-#include <security/pam_modules.h>
+#else
+#define CONST_ARG
+#endif /* LINUX_PAM */
 
 #ifdef LDAP_VERSION3_API
 #define LDAP_MEMFREE(x)	ldap_memfree(x)
@@ -136,7 +139,7 @@ static char rcsid[] = "$Id$";
 #define LDAP_VERSION3_API
 #endif /* LDAP_VERSION3_API */
 
-static int 
+static int
 ldap_get_lderrno (LDAP * ld, char **m, char **s)
 {
   int rc;
@@ -162,7 +165,7 @@ ldap_get_lderrno (LDAP * ld, char **m, char **s)
 }
 #endif /* LDAP_VERSION3_API */
 
-static void 
+static void
 _release_config (
 		  pam_ldap_config_t ** pconfig
 )
@@ -184,8 +187,8 @@ _release_config (
 
   if (c->bindpw != NULL)
     {
-      memset (c->bindpw, 0, strlen (c->bindpw));
-      free (c->bindpw);
+	_pam_overwrite(c->bindpw);
+	_pam_drop(c->bindpw);
     }
 
   if (c->sslpath != NULL)
@@ -220,7 +223,7 @@ _release_config (
   return;
 }
 
-static void 
+static void
 _release_user_info (
 		     pam_ldap_user_info_t ** info
 )
@@ -232,6 +235,12 @@ _release_user_info (
     {
       LDAP_MEMFREE ((void *) (*info)->userdn);
     }
+
+  /*
+   * Clobber the password.
+   */
+  _pam_overwrite ((*info)->userpw);
+  _pam_drop ((*info)->userpw);
 
   if ((*info)->hosts_allow != NULL)
     {
@@ -245,7 +254,7 @@ _release_user_info (
   return;
 }
 
-static void 
+static void
 _pam_ldap_cleanup_session (
 			    pam_handle_t * pamh,
 			    void *data,
@@ -271,7 +280,7 @@ _pam_ldap_cleanup_session (
   return;
 }
 
-static void 
+static void
 _cleanup_authtok_data (
 			pam_handle_t * pamh,
 			void *data,
@@ -284,7 +293,7 @@ _cleanup_authtok_data (
   return;
 }
 
-static int 
+static int
 _alloc_config (
 		pam_ldap_config_t ** presult
 )
@@ -325,7 +334,7 @@ _alloc_config (
  * Use the "internal" ypldapd.conf map to figure some things
  * out.
  */
-static int 
+static int
 _ypldapd_read_config (
 		       pam_ldap_config_t ** presult
 )
@@ -431,7 +440,7 @@ _ypldapd_read_config (
 } \
 } while (0)
 
-static int 
+static int
 _read_config (
 	       pam_ldap_config_t ** presult
 )
@@ -579,7 +588,7 @@ _read_config (
   return PAM_SUCCESS;
 }
 
-static int 
+static int
 _open_session (
 		pam_ldap_session_t * session
 )
@@ -646,7 +655,7 @@ _open_session (
   return PAM_SUCCESS;
 }
 
-static int 
+static int
 _connect_anonymously (
 		       pam_ldap_session_t * session
 )
@@ -701,7 +710,7 @@ _connect_anonymously (
 }
 
 #ifdef NETSCAPE_API_EXTENSIONS
-static int 
+static int
 _rebind_proc (
 	       LDAP * ld,
 	       char **whop,
@@ -721,23 +730,27 @@ _rebind_proc (
 	free (*credp);
     }
 
-  if (session->conf->binddn)
-    *whop = session->conf->binddn;
+  if (session->info->bound_as_user == 1)
+    {
+      /*
+       * We're authenticating as a user.
+       */
+      *whop = strdup (session->info->userdn);
+      *credp = strdup (session->info->userpw);
+    }
   else
-    *whop = NULL;
-
-
-  if (session->conf->bindpw)
-    *credp = session->conf->bindpw;
-  else
-    *credp = NULL;
+    {
+      *whop = strdup (session->conf->binddn);
+      *credp = strdup (session->conf->bindpw);
+    }
 
   *methodp = LDAP_AUTH_SIMPLE;
+
   return LDAP_SUCCESS;
 }
 #endif /* NETSCAPE_API_EXTENSIONS */
 
-static int 
+static int
 _connect_as_user (
 		   pam_ldap_session_t * session,
 		   const char *password
@@ -770,14 +783,31 @@ _connect_as_user (
 	return rc;
     }
 
+  /*
+   * We copy the password temporarily so that when referrals are
+   * chased, the correct credentials are set by the rebind 
+   * procedure.
+   */
+  if (session->info->userpw != NULL)
+    {
+      _pam_overwrite (session->info->userpw);
+      _pam_drop (session->info->userpw);
+    }
+
+  session->info->userpw = strdup (password);
+  if (session->info->userpw == NULL)
+    return PAM_BUF_ERR;
+
 #ifndef LDAP_VERSION3_API
   /*
-   * Use the synchronous API as we don't need to fetch controls etc
+   * Use the synchronous API as we don't need to fetch controls etc.
    */
-  rc = ldap_simple_bind_s (session->ld, session->info->userdn, (char *) password);
+  rc = ldap_simple_bind_s (session->ld, session->info->userdn, session->info->userpw);
   if (rc != LDAP_SUCCESS)
     {
       syslog (LOG_ERR, "pam_ldap: ldap_simple_bind_s %s", ldap_err2string (rc));
+      _pam_overwrite (session->info->userpw);
+      _pam_drop (session->info->userpw);
       return PAM_AUTH_ERR;
     }
 #else
@@ -787,11 +817,13 @@ _connect_as_user (
    */
   zerotime.tv_sec = zerotime.tv_usec = 0L;
 
-  msgid = ldap_simple_bind (session->ld, session->info->userdn, (char *) password);
+  msgid = ldap_simple_bind (session->ld, session->info->userdn, session->info->userpw);
   if (msgid < 0)
     {
       syslog (LOG_ERR, "pam_ldap: ldap_simple_bind %s",
 	      ldap_err2string (ldap_get_lderrno (session->ld, NULL, NULL)));
+      _pam_overwrite (session->info->userpw);
+      _pam_drop (session->info->userpw);
       return PAM_AUTH_ERR;
     }
 
@@ -804,6 +836,8 @@ _connect_as_user (
 	  /* error */
 	  syslog (LOG_ERR, "pam_ldap: ldap_result %s",
 	      ldap_err2string (ldap_get_lderrno (session->ld, NULL, NULL)));
+	  _pam_overwrite (session->info->userpw);
+	  _pam_drop (session->info->userpw);
 	  return PAM_SYSTEM_ERR;
 	  break;
 	case 0:
@@ -826,11 +860,15 @@ _connect_as_user (
 	  if (parserc != LDAP_SUCCESS)
 	    {
 	      syslog (LOG_ERR, "pam_ldap: ldap_parse_result %s", ldap_err2string (parserc));
+	      _pam_overwrite (session->info->userpw);
+	      _pam_drop (session->info->userpw);
 	      return PAM_SYSTEM_ERR;
 	    }
 	  if (rc != LDAP_SUCCESS)
 	    {
 	      syslog (LOG_ERR, "pam_ldap: ldap_simple_bind %s", ldap_err2string (rc));
+	      _pam_overwrite (session->info->userpw);
+	      _pam_drop (session->info->userpw);
 	      return PAM_AUTH_ERR;
 	    }
 
@@ -859,11 +897,12 @@ _connect_as_user (
 #endif /* LDAP_VERSION3_API */
 
   session->info->bound_as_user = 1;
+  /* userpw is now set. Be sure to clobber it later. */
 
   return PAM_SUCCESS;
 }
 
-static int 
+static int
 _get_integer_value (
 		     LDAP * ld,
 		     LDAPMessage * e,
@@ -885,7 +924,7 @@ _get_integer_value (
 }
 
 #ifdef notdef
-static int 
+static int
 _get_string_value (
 		    LDAP * ld,
 		    LDAPMessage * e,
@@ -917,7 +956,7 @@ _get_string_value (
 }
 #endif /* notdef */
 
-static int 
+static int
 _get_string_values (
 		     LDAP * ld,
 		     LDAPMessage * e,
@@ -937,7 +976,7 @@ _get_string_values (
   return PAM_SUCCESS;
 }
 
-static int 
+static int
 _has_value (
 	     char **src,
 	     const char *tgt
@@ -956,15 +995,18 @@ _has_value (
   return 0;
 }
 
-static int 
+static int
 _host_ok (
 	   pam_ldap_session_t * session
 )
 {
-  int herr;
-  struct hostent hbuf, *h;
   char hostname[MAXHOSTNAMELEN];
+  struct hostent *h;
+#ifndef FREEBSD
+  int herr;
+  struct hostent hbuf;
   char buf[1024];
+#endif /* FREEBSD */
   char **q;
 
   /* simple host based access authorization */
@@ -978,14 +1020,20 @@ _host_ok (
       return PAM_SYSTEM_ERR;
     }
 
-#ifndef LINUX
-  h = gethostbyname_r (hostname, &hbuf, buf, sizeof buf, &herr);
+#if defined(FREEBSD)
+  h = gethostbyname(hostname);
   if (h == NULL)
     {
       return PAM_SYSTEM_ERR;
     }
-#else
+#elif defined(LINUX)
   if (gethostbyname_r (hostname, &hbuf, buf, sizeof buf, &h, &herr) != 0)
+    {
+      return PAM_SYSTEM_ERR;
+    }
+#else
+  h = gethostbyname_r (hostname, &hbuf, buf, sizeof buf, &herr);
+  if (h == NULL)
     {
       return PAM_SYSTEM_ERR;
     }
@@ -1041,7 +1089,7 @@ _get_salt (
   return (salt);
 }
 
-static int 
+static int
 _get_user_info (
 		 pam_ldap_session_t * session,
 		 const char *user
@@ -1142,7 +1190,7 @@ _get_user_info (
   return PAM_SUCCESS;
 }
 
-static int 
+static int
 _pam_ldap_get_session (
 			pam_handle_t * pamh,
 			const char *username,
@@ -1209,12 +1257,12 @@ _pam_ldap_get_session (
   return PAM_SUCCESS;
 }
 
-static int 
+static int
 _reopen (
 	  pam_ldap_session_t * session
 )
 {
-  /* V3 lets us avoid five unneeded binds in a password change */
+  /* FYI: V3 lets us avoid five unneeded binds in a password change */
   if (session->conf->version == LDAP_VERSION2)
     {
       if (session->ld != NULL)
@@ -1231,7 +1279,7 @@ _reopen (
   return PAM_SUCCESS;
 }
 
-static int 
+static int
 _get_password_policy (
 		       pam_ldap_session_t * session,
 		       pam_ldap_password_policy_t * policy
@@ -1292,7 +1340,7 @@ _get_password_policy (
   return PAM_SUCCESS;
 }
 
-static int 
+static int
 _authenticate (
 		pam_ldap_session_t * session,
 		const char *user,
@@ -1324,7 +1372,7 @@ _authenticate (
   return rc;
 }
 
-static int 
+static int
 _update_authtok (
 		  pam_ldap_session_t * session,
 		  const char *user,
@@ -1397,7 +1445,7 @@ _update_authtok (
   return rc;
 }
 
-static int 
+static int
 _get_authtok (
 	       pam_handle_t * pamh,
 	       int flags,
@@ -1453,7 +1501,7 @@ _get_authtok (
   return PAM_SUCCESS;
 }
 
-static int 
+static int
 _conv_sendmsg (
 		struct pam_conv *aconv,
 		const char *message,
@@ -1481,7 +1529,7 @@ _conv_sendmsg (
     );
 }
 
-PAM_EXTERN int 
+PAM_EXTERN int
 pam_sm_authenticate (
 		      pam_handle_t * pamh,
 		      int flags,
@@ -1548,7 +1596,7 @@ pam_sm_authenticate (
   return rc;
 }
 
-PAM_EXTERN int 
+PAM_EXTERN int
 pam_sm_setcred (
 		 pam_handle_t * pamh,
 		 int flags,
@@ -1559,7 +1607,7 @@ pam_sm_setcred (
   return PAM_SUCCESS;
 }
 
-PAM_EXTERN int 
+PAM_EXTERN int
 pam_sm_open_session (
 		      pam_handle_t * pamh,
 		      int flags,
@@ -1570,7 +1618,7 @@ pam_sm_open_session (
   return PAM_IGNORE;
 }
 
-PAM_EXTERN int 
+PAM_EXTERN int
 pam_sm_close_session (
 		       pam_handle_t * pamh,
 		       int flags,
@@ -1581,7 +1629,7 @@ pam_sm_close_session (
   return PAM_IGNORE;
 }
 
-PAM_EXTERN int 
+PAM_EXTERN int
 pam_sm_chauthtok (
 		   pam_handle_t * pamh,
 		   int flags,
@@ -1881,7 +1929,7 @@ pam_sm_chauthtok (
   return rc;
 }
 
-PAM_EXTERN int 
+PAM_EXTERN int
 pam_sm_acct_mgmt (
 		   pam_handle_t * pamh,
 		   int flags,

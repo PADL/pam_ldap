@@ -19,9 +19,9 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef LINUX
+#ifndef LINUX_PAM
 #include <security/pam_appl.h>
-#endif /* !LINUX */
+#endif /* !LINUX_PAM */
 
 #include <security/pam_modules.h>
 
@@ -93,6 +93,8 @@ typedef struct pam_ldap_user_info
     char *username;
     /* DN of user in directory */
     char *userdn;
+    /* temporary cache of user's bind credentials for rebind function */
+    char *userpw;
     /* host attribute from account objectclass */
     char **hosts_allow;
     /* seconds until password expires */
@@ -167,9 +169,24 @@ static int _pam_ldap_get_session (pam_handle_t *, const char *, pam_ldap_session
 static int _get_authtok (pam_handle_t *, int, int);
 static int _conv_sendmsg (struct pam_conv *, const char *, int, int);
 
-#ifndef LINUX
+#ifdef LINUX_PAM
+#include <security/pam_misc.h>
+#else
 #define PAM_EXTERN
-#endif /* LINUX */
+#define _pam_overwrite(x) \
+{ \
+     register char *__xx__; \
+     if ((__xx__=x)) \
+          while (*__xx__) \
+               *__xx__++ = '\0'; \
+}
+
+#define _pam_drop(X) \
+if (X) { \
+    free(X); \
+    X=NULL; \
+}
+#endif /* LINUX_PAM */
 
 /* PAM authentication routine */
 #define PAM_SM_AUTH
