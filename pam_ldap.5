@@ -13,7 +13,7 @@ for authentication, authorization and password changing against
 LDAP
 servers. 
 .LP
-Key benefits of the PADL pam_ldap module support for transport layer
+Features of the PADL pam_ldap module include support for transport layer
 security, SASL authentication, directory server-enforced password policy,
 and host- and group- based logon authorization.
 .LP
@@ -35,14 +35,14 @@ When authenticating or authorizing a user,
 pam_ldap
 first maps the user's login name to a distinguished name by searching
 the directory server. This must be possible using the local system's
-identity (specified in ldap.conf). (Note that presently only simple
+identity, specified in ldap.conf. (Note that presently only simple
 authentication is supported for authenticating in this initial step.)
 .LP
 To authenticate a user,
 .B
 pam_ldap
 attempts to bind to the directory server using the distinguished name
-of the user retrieved previously. Both simple and SASL authentication
+of the user (retrieved previously). Both simple and SASL authentication
 mechanisms are supported; in the former case, one should take care to
 use transport security to prevent the user's password being transmitted
 in the clear.
@@ -78,7 +78,7 @@ file. (It should be noted that some LDAP client libraries, such as
 OpenLDAP, also use a configuration file of the same name.
 .B
 pam_ldap
-supports many of the same configuration file directives as OpenLDAP,
+supports many of the same configuration file options as OpenLDAP,
 but it adds several that are specific to the functionality it provides.
 Unlike OpenLDAP, pam_ldap configuration file keywords are not case
 sensitive. Additionally, it is not guaranteed that
@@ -87,8 +87,8 @@ pam_ldap
 will continue to match the configuration file semantics of OpenLDAP.
 You may wish to use different files.)
 .LP
-Configuration file directives consist of a keyword followed by a
-space and any arguments. The following directives are supported by
+Configuration file options consist of a keyword followed by a
+space and any arguments. The following options are supported by
 both
 .B
 pam_ldap
@@ -115,9 +115,8 @@ The failover time depends on whether the
 LDAP
 client library supports configurable network or connect timeouts
 (see
-.B
-bind_timelimit
-) below.
+.B bind_timelimit
+below).
 .TP
 .B base <base>
 Specifies the default base distinguished name (DN) to use for searches.
@@ -135,9 +134,13 @@ ldapi,
 or
 .B
 ldaps,
-specifying LDAP over TCP, SSL and IPC respectively. If applicable,
+specifying LDAP over TCP, IPC and SSL respectively. If applicable,
 a port number can be specified; the default port number for the
-selected protocol is used if omitted.
+selected protocol is used if omitted. This directive takes
+precedence over the
+.B
+host
+directive; it is not possible to combine the two.
 .TP
 .B
 ldap_version <version>
@@ -187,7 +190,7 @@ directive.
 .TP
 .B scope <sub|one|base>
 Specifies the search scope (subtree, one level or base object). The
-default is subtree scope; base scope is almost never useful for
+default scope is subtree; base scope is almost never useful for
 nameservice lookups.
 .TP
 .B timelimit <timelimit>
@@ -204,37 +207,6 @@ are otherwise cached.) Only some
 LDAP
 client libraries have the underlying functionality necessary to
 support this directive. The default bind timelimit is 30 seconds.
-.TP
-.B reconnect_policy <hard_open|hard_init|soft>
-Specifies the policy to use for reconnecting to a failed
-.I
-LDAP
-server. The default is
-.B hard_open,
-which reconnects if opening the connection to the directory server
-failed. By contrast,
-.B hard_init,
-reconnects if initializing the connection failed. Initializing may not
-actually contact the directory server, and it is possible that a
-malformed configuration file will cause
-.B nss_ldap
-to reconnect. If
-.B soft
-is specified, then
-.B nss_ldap
-will return immediately on server failure. All "hard" reconnect
-policies block with exponential backoff before retrying. At present
-the backoff parameters are not configurable at runtime.
-.TP
-.B idle_timelimit <timelimit>
-Specifies the time (in seconds) after which
-.B
-nss_ldap
-will close connections to the directory server. This directive is
-presently not supported by the
-.B
-pam_ldap
-module.
 .TP
 .B ssl <on|off|start_tls>
 Specifies whether to use SSL/TLS or not (the default is not to). If
@@ -286,7 +258,7 @@ client TLS authentication.
 Specifies the path to the file containing the private key for client
 TLS authentication.
 .TP
-The following configuration directives apply to pam_ldap only:
+The following configuration options apply to pam_ldap only:
 .TP
 .B pam_login_attribute <attribute>
 Specifies the attribute to use when constructing the attribute value
@@ -396,8 +368,8 @@ Change password using the RFC 3062 password modify extended operation
 .TP
 .B exop_send_old
 Change password using the RFC 3062 password modify extended operation
-(both the old and new passwords are sent). This should be used with
-the PADL XAD identity server.
+(both the old and new passwords are sent). This is the preferred
+choice when using the PADL XAD identity server.
 .RE
 .TP
 .B pam_password_prohibit_message <message>
@@ -411,7 +383,7 @@ on a per-service basis, in the PAM configuration file (this is usually
 /etc/pam.conf; for PAM implementations based on Linux-PAM, per-service
 files in /etc/pam.d are also supported).
 .LP
-The following directives may be specified as arguments to the
+The following options may be specified as arguments to the
 .B pam_ldap
 module:
 .TP
@@ -453,7 +425,8 @@ should return PAM_IGNORE for users that are not present in
 This forces the PAM framework to ignore the
 .B pam_ldap
 module. This option is useful where certain accounts do not reside in
-LDAP, but one wishes to make
+.I LDAP,
+but one wishes to make
 .B pam_ldap
 "required" for all accounts in the directory. In this case one would
 make both
