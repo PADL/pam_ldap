@@ -1754,7 +1754,7 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
     {
       userpw.bv_val = session->info->userpw;
       userpw.bv_len = (userpw.bv_val != 0) ? strlen (userpw.bv_val) : 0;
-      passwd_policy_req.ldctl_oid = LDAP_CONTROL_PWPOLICY;
+      passwd_policy_req.ldctl_oid = LDAP_CONTROL_PASSWORDPOLICYREQUEST;
       passwd_policy_req.ldctl_value.bv_val = 0;	/* none */
       passwd_policy_req.ldctl_value.bv_len = 0;
       passwd_policy_req.ldctl_iscritical = 0;	/* not critical */
@@ -1846,7 +1846,7 @@ _connect_as_user (pam_ldap_session_t * session, const char *password)
 	       * step and force the change...
 	       */
 	    }
-	  else if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PWPOLICY))
+	  else if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PASSWORDPOLICYRESPONSE))
 	    {
 	      rc = _get_password_policy_response_value (&(*ctlp)->ldctl_value,
 							session);
