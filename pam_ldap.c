@@ -240,7 +240,7 @@ static int _get_user_info (pam_ldap_session_t * session, const char *user);
 static int _pam_ldap_get_session (pam_handle_t * pamh, const char *username,
 				  const char *configFile,
 				  pam_ldap_session_t ** psession);
-static int _reopen (pam_ldap_session_t * session);
+static int _session_reopen (pam_ldap_session_t * session);
 static int _get_password_policy (pam_ldap_session_t * session,
 				 pam_ldap_password_policy_t * policy);
 static int _do_authentication (pam_ldap_session_t * session,
@@ -472,6 +472,11 @@ _release_config (pam_ldap_config_t ** pconfig)
   if (c->filter != NULL)
     {
       free (c->filter);
+    }
+
+  if (c->password_prohibit_message != NULL)
+    {
+      free (c->password_prohibit_message);
     }
 
   memset (c, 0, sizeof (*c));
@@ -845,6 +850,10 @@ _read_config (const char *configFile, pam_ldap_config_t ** presult)
 	    result->password_type = PASSWORD_AD;
 	  else if (!strcasecmp (v, "exop"))
 	    result->password_type = PASSWORD_EXOP;
+	}
+      else if (!strcasecmp (k, "pam_password_prohibit_message"))
+	{
+	  CHECKPOINTER (result->password_prohibit_message = strdup (v));
 	}
       else if (!strcasecmp (k, "pam_crypt"))
 	{
@@ -2217,7 +2226,7 @@ _pam_ldap_get_session (pam_handle_t * pamh, const char *username,
 }
 
 static int
-_reopen (pam_ldap_session_t * session)
+_session_reopen (pam_ldap_session_t * session)
 {
   /* FYI: V3 lets us avoid five unneeded binds in a password change */
   if (session->conf->version == LDAP_VERSION2)
@@ -2301,12 +2310,12 @@ _do_authentication (pam_ldap_session_t * session,
 	return rc;
     }
 
-  rc = _reopen (session);
+  rc = _session_reopen (session);
   if (rc != PAM_SUCCESS)
     return rc;
 
   rc = _connect_as_user (session, password);
-  _reopen (session);
+  _session_reopen (session);
   _connect_anonymously (session);
   return rc;
 }
@@ -2359,7 +2368,7 @@ _update_authtok (pam_ldap_session_t * session,
        * system to be configured in such a way that the
        * user can bypass local password policy
        */
-      rc = _reopen (session);
+      rc = _session_reopen (session);
       if (rc != PAM_SUCCESS)
 	return rc;
 
@@ -2744,6 +2753,16 @@ PAM_EXTERN int
 pam_sm_open_session (pam_handle_t * pamh,
 		     int flags, int argc, const char **argv)
 {
+  /*
+   * Bug #120 fix: close the LDAP connection as it may time out
+   * before pam_sm_close_session() is called.
+   */
+  void *session;
+
+  if (pam_get_data
+      (pamh, PADL_LDAP_SESSION_DATA, (const void **) &session) == PAM_SUCCESS)
+    _pam_ldap_cleanup_session (pamh, (void *)session, PAM_SUCCESS);
+
   return PAM_SUCCESS;
 }
 
@@ -2823,6 +2842,21 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   rc = _pam_ldap_get_session (pamh, username, configFile, &session);
   if (rc != PAM_SUCCESS)
     return rc;
+
+  /* do we prohibit changes */
+  if (session->conf->password_prohibit_message)
+    {
+      rc = _get_user_info (session, username);
+      if (rc == PAM_USER_UNKNOWN && ignore_unknown_user)
+	rc = PAM_IGNORE;
+      /* skip non-ldap users */
+      if (rc != PAM_SUCCESS)
+	return rc;
+      /* prohibit ldap users */
+	_conv_sendmsg (appconv, session->conf->password_prohibit_message,
+		       PAM_ERROR_MSG, no_warn);
+	return PAM_PERM_DENIED;
+    }
 
   if (flags & PAM_PRELIM_CHECK)
     {
@@ -3369,6 +3403,9 @@ struct pam_module _modstruct = {
   pam_sm_authenticate,
   pam_sm_setcred,
   pam_sm_acct_mgmt,
-  pam_sm_open_session, pam_sm_close_session, pam_sm_chauthtok
+  pam_sm_open_session,
+  pam_sm_close_session,
+  pam_sm_chauthtok
 };
 #endif /* PAM_STATIC */
+

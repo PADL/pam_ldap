@@ -101,6 +101,8 @@ typedef struct pam_ldap_config
 #define PASSWORD_AD      4
 #define PASSWORD_EXOP    5
     int password_type;
+    /* stop all changes, present message */
+    char *password_prohibit_message;
     /* min uid */
     uid_t min_uid;
     /* max uid */
@@ -233,61 +235,6 @@ pam_ldap_session_t;
 #define PADL_LDAP_AUTH_DATA "PADL-LDAP-AUTH-DATA"
 /* authtok for Solaris */
 #define PADL_LDAP_OLDAUTHTOK_DATA "PADL-LDAP-OLDAUTHTOK-DATA"
-
-/* Configuration file routines */
-static int _alloc_config (pam_ldap_config_t **);
-static void _release_config (pam_ldap_config_t **);
-static int _read_config (const char *, pam_ldap_config_t **);
-#ifdef YPLDAPD
-static int _ypldapd_read_config (pam_ldap_config_t **);
-#endif /* YPLDAPD */
-
-/* Internal memory management */
-static void _release_user_info (pam_ldap_user_info_t **);
-
-/* Internal LDAP session management */
-static int _open_session (pam_ldap_session_t *);
-static int _connect_anonymously (pam_ldap_session_t *);
-#if defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)
-#if LDAP_SET_REBIND_PROC_ARGS == 3
-static int _rebind_proc (LDAP * ld, LDAP_CONST char *url, ber_tag_t request, ber_int_t msgid, void *arg);
-#else
-static int _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid);
-#endif
-#else
-#if LDAP_SET_REBIND_PROC_ARGS == 3
-static int _rebind_proc (LDAP *, char **, char **, int *, int, void *);
-#else
-static int _rebind_proc (LDAP * ld, char **whop, char **credp, int *methodp, int freeit);
-#endif
-#endif /* OpenLDAP */
-static int _connect_as_user (pam_ldap_session_t *, const char *);
-static int _reopen (pam_ldap_session_t *);
-
-/* LDAP entry helper routines */
-static int _get_integer_value (LDAP *, LDAPMessage *, const char *, int *);
-static int _get_long_integer_value (LDAP *, LDAPMessage *, const char *, long int *);
-static int _get_string_values (LDAP *, LDAPMessage *, const char *, char ***);
-static int _has_value (char **, const char *);
-static int _host_ok (pam_ldap_session_t * session);
-static char *_get_salt (char buf[16]);
-static char *_get_md5_salt (char buf[16]);
-static void _cleanup_data (pam_handle_t *, void *, int);
-static void _cleanup_authtok_data (pam_handle_t *, void *, int);
-
-/* LDAP cover routines */
-static int _get_user_info (pam_ldap_session_t *, const char *);
-static int _get_password_policy (pam_ldap_session_t *, pam_ldap_password_policy_t *);
-static int _do_authentication (pam_ldap_session_t *, const char *, const char *);
-static int _update_authtok (pam_ldap_session_t *, const char *, const char *, const char *);
-
-/* PAM API helpers, public session management */
-static void _pam_ldap_cleanup_session (pam_handle_t *, void *, int);
-
-static int _pam_ldap_get_session (pam_handle_t *, const char *, const char *, pam_ldap_session_t **);
-
-static int _get_authtok (pam_handle_t *, int, int);
-static int _conv_sendmsg (struct pam_conv *, const char *, int, int);
 
 #ifndef PAM_EXTERN
 #define PAM_EXTERN

@@ -1,6 +1,13 @@
 $Id$
 ===============================================================
 
+157	Luke Howard <lukeh@padl.com>
+
+	* BUG#120 feature: pam_password_prohibit_message
+	* fix for BUG#105
+	* removed static function prototypes from pam_ldap.h
+	* check for libnsl
+
 156	Luke Howard <lukeh@padl.com>
 
 	* fix for bug #119

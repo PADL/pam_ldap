@@ -3,6 +3,9 @@ pam_ldap was written by Luke Howard <lukeh@padl.com>.
 Special thanks go to people who have volunteered their time, effort,
 and ideas to make this software available.
 
+Please note that unless specifically indicated otherwise,
+Luke Howard retains copyright in all contributed code.
+
 	Scott Balneaves <sbalneav@legalaid.mb.ca>
 	David Begley <david@avarice.nepean.uws.edu.au>
 	Stephen Cremer <scremer@dohle.com>
@@ -31,6 +34,7 @@ and ideas to make this software available.
 	Alex Schlessinger <alex@hq.workspot.com>
 	Henning P. Schmiedehausen <hps@intermeta.de>
 	Erich Schneider <erich@caltech.edu>
+	Aaron Spangla <spangla@nationwide.com>
 	Jarkko Turkulainen <jt@wapit.com>
 	Stein Vrale <stein@terminator.net>
 	Bill Welliver <Bill.Welliver@fairchildsemi.com>
