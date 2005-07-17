@@ -1,6 +1,13 @@
 $Id$
 ===============================================================
 
+180	Luke Howard <lukeh@padl.com>
+
+	* from Peter Marschall <peter@adpm.de>:
+	  manual page installation fix
+	* fix for BUG#210: use start_tls on referrals if
+	  configured to do so
+
 179	Luke Howard <lukeh@padl.com>
 
 	* more manual page updates

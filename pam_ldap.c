@@ -1587,6 +1587,7 @@ _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid)
   pam_ldap_session_t *session = global_session;
 #endif
   char *who, *cred;
+  int rc;
 
   if (session->info != NULL && session->info->bound_as_user == 1)
     {
@@ -1605,6 +1606,17 @@ _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid)
 	  who = session->conf->binddn;
 	  cred = session->conf->bindpw;
 	}
+    }
+
+  if (session->conf->ssl_on == SSL_START_TLS)
+    {
+      rc = ldap_start_tls_s (session->ld, NULL, NULL);
+      if (rc != LDAP_SUCCESS)
+        {
+          syslog (LOG_ERR, "pam_ldap: ldap_starttls_s: %s",
+                  ldap_err2string (rc));
+          return PAM_SERVICE_ERR;
+        }
     }
 
   return ldap_simple_bind_s (ld, who, cred);

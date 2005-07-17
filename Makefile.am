@@ -39,7 +39,6 @@ install-data-local:
 		$(mkinstalldirs) $(DESTDIR)$(sysconfdir); \
 		$(INSTALL_DATA) -o root -g root $(srcdir)/ldap.conf $(DESTDIR)$(sysconfdir)/ldap.conf; \
 	fi
-	$(INSTALL_DATA) -o root -g root $(srcdir)/pam_ldap.5 $(DESTDIR)$(mandir)/man5/pam_ldap.5
 
 uninstall-local:
 	@$(NORMAL_UNINSTALL)
