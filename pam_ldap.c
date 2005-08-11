@@ -2054,8 +2054,24 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
 	    }
 	  else if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PASSWORDPOLICYRESPONSE))
 	    {
-	      rc = _get_password_policy_response_value (&(*ctlp)->ldctl_value,
-							session);
+	      int rc2;
+
+	      rc2 = _get_password_policy_response_value (&(*ctlp)->ldctl_value,
+							 session);
+
+	      if (rc2 != LDAP_SUCCESS ||
+		  session->info->policy_error != POLICY_ERROR_SUCCESS)
+		{
+		  /*
+		   * If decoding policy control failed, return the error.
+		   *
+		   * If decoding policy control succeeded, and there is a
+		   * policy error, return LDAP_SUCCESS so that the error
+		   * will be handled in the account management step (see
+		   * above).
+		   */
+		  rc = rc2;
+		}
 	    }
 	}
       ldap_controls_free (controls);

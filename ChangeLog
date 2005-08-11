@@ -7,6 +7,9 @@ $Id$
 	  manual page installation fix
 	* fix for BUG#210: use start_tls on referrals if
 	  configured to do so
+	* when handling new password policy control, only
+	  fall through to account management module if a
+	  policy error was returned
 
 179	Luke Howard <lukeh@padl.com>
 
