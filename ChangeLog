@@ -9,7 +9,7 @@ $Id$
 	  configured to do so
 	* when handling new password policy control, only
 	  fall through to account management module if a
-	  policy error was returned
+	  policy error was returned (CERT VU#778916)
 
 179	Luke Howard <lukeh@padl.com>
 
