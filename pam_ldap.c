@@ -372,7 +372,7 @@ ldap_get_lderrno (LDAP * ld, char **m, char **s)
 #endif
     }
 
-  if (s != NULL)
+  if (m != NULL)
     {
 #if defined(HAVE_LDAP_GET_OPTION) && defined(LDAP_OPT_MATCHED_DN)
       rc = ldap_get_option (ld, LDAP_OPT_MATCHED_DN, m);

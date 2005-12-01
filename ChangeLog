@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+181	Luke Howard <lukeh@padl.com>
+
+	* fix for BUG#237: typo in ldap_get_lderrno()
+	  implementation
+
 180	Luke Howard <lukeh@padl.com>
 
 	* from Peter Marschall <peter@adpm.de>:
