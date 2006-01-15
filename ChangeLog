@@ -5,6 +5,8 @@ $Id$
 
 	* fix for BUG#237: typo in ldap_get_lderrno()
 	  implementation
+	* fix for BUG#207: if ldap_start_tls_s() fails
+	  return PAM_AUTHINFO_UNAVAIL
 
 180	Luke Howard <lukeh@padl.com>
 

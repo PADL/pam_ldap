@@ -1380,7 +1380,7 @@ _open_session (pam_ldap_session_t * session)
 	    {
 	      syslog (LOG_ERR, "pam_ldap: ldap_starttls_s: %s",
 		      ldap_err2string (rc));
-	      return PAM_SERVICE_ERR;
+	      return PAM_AUTHINFO_UNAVAIL;
 	    }
 	}
     }
@@ -1615,7 +1615,7 @@ _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid)
         {
           syslog (LOG_ERR, "pam_ldap: ldap_starttls_s: %s",
                   ldap_err2string (rc));
-          return PAM_SERVICE_ERR;
+          return PAM_AUTHINFO_UNAVAIL;
         }
     }
 
