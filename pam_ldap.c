@@ -2325,6 +2325,9 @@ _host_ok (pam_ldap_session_t * session)
     }
 #endif
 
+  if (h == NULL || h->h_name == NULL) 
+    return PAM_SYSTEM_ERR; 
+
   if (_has_deny_value (session->info->hosts_allow, h->h_name))
     return PAM_PERM_DENIED;
   else if (_has_value (session->info->hosts_allow, h->h_name))
