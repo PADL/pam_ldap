@@ -1880,7 +1880,7 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
   LDAPMessage *result;
   LDAPControl **controls;
   LDAPControl passwd_policy_req;
-  LDAPControl *srvctrls[2];
+  LDAPControl *srvctrls[2], **psrvctrls = NULL;
   struct berval userpw;
 #endif /* HAVE_LDAP_PARSE_RESULT && HAVE_LDAP_CONTROLS_FREE */
 
@@ -1918,11 +1918,9 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
   if (session->info->userpw == NULL)
     return PAM_BUF_ERR;
 
-#if (defined(HAVE_SASL_SASL_H) || defined(HAVE_SASL_H)) && defined(HAVE_LDAP_SASL_INTERACTIVE_BIND_S)
-  if (session->conf->sasl_mechanism != NULL)
+#if defined(HAVE_LDAP_PARSE_RESULT) && defined(HAVE_LDAP_CONTROLS_FREE)
+  if (session->conf->getpolicy)
     {
-      void *args[]  = { pamh, session };
-
       passwd_policy_req.ldctl_oid = LDAP_CONTROL_PASSWORDPOLICYREQUEST;
       passwd_policy_req.ldctl_value.bv_val = 0;	/* none */
       passwd_policy_req.ldctl_value.bv_len = 0;
@@ -1930,13 +1928,22 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
       srvctrls[0] = &passwd_policy_req;
       srvctrls[1] = 0;
 
+      psrvctrls = srvctrls;
+    }
+#endif
+
+#if (defined(HAVE_SASL_SASL_H) || defined(HAVE_SASL_H)) && defined(HAVE_LDAP_SASL_INTERACTIVE_BIND_S)
+  if (session->conf->sasl_mechanism != NULL)
+    {
+      void *args[]  = { pamh, session };
+
       /*
        * XXX this API is broken - how can we extract the password policy
        * controls? do we need to implement DIGEST-MD5 ourself?
        */
       rc = ldap_sasl_interactive_bind_s (session->ld, session->info->userdn,
 					 session->conf->sasl_mechanism,
-					 srvctrls, NULL,
+					 psrvctrls : NULL, NULL,
 #ifdef LDAP_SASL_AUTOMATIC
 					 LDAP_SASL_AUTOMATIC,
 #else
@@ -1960,16 +1967,10 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
     {
       userpw.bv_val = session->info->userpw;
       userpw.bv_len = (userpw.bv_val != 0) ? strlen (userpw.bv_val) : 0;
-      passwd_policy_req.ldctl_oid = LDAP_CONTROL_PASSWORDPOLICYREQUEST;
-      passwd_policy_req.ldctl_value.bv_val = 0;	/* none */
-      passwd_policy_req.ldctl_value.bv_len = 0;
-      passwd_policy_req.ldctl_iscritical = 0;	/* not critical */
-      srvctrls[0] = &passwd_policy_req;
-      srvctrls[1] = 0;
 
       rc =
 	ldap_sasl_bind (session->ld, session->info->userdn, LDAP_SASL_SIMPLE,
-			&userpw, srvctrls, 0, &msgid);
+			&userpw, psrvctrls, 0, &msgid);
       if (rc != LDAP_SUCCESS || msgid == -1)
 	{
 	  syslog (LOG_ERR, "pam_ldap: ldap_sasl_bind %s",

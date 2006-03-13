@@ -3,6 +3,8 @@ $Id$
 
 181	Luke Howard <lukeh@padl.com>
 
+	* fix for BUG#256: don't send password policy request
+	  control if pam_lookup_policy no specified
 	* fix for BUG#254: check gethostbyname() result
 	* fix for BUG#237: typo in ldap_get_lderrno()
 	  implementation
