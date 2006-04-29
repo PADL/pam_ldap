@@ -3823,6 +3823,7 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
     case POLICY_ERROR_SUCCESS:
       break;
     case POLICY_ERROR_PASSWORD_EXPIRED:
+    case POLICY_ERROR_CHANGE_AFTER_RESET:
       _conv_sendmsg (appconv,
 		     "You are required to change your LDAP password immediately.",
 		     PAM_ERROR_MSG, no_warn);
@@ -3833,7 +3834,6 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
 #endif /* LINUX */
       break;
     case POLICY_ERROR_ACCOUNT_LOCKED:
-    case POLICY_ERROR_CHANGE_AFTER_RESET:
     case POLICY_ERROR_PASSWORD_MOD_NOT_ALLOWED:
     case POLICY_ERROR_MUST_SUPPLY_OLD_PASSWORD:
     case POLICY_ERROR_INSUFFICIENT_PASSWORD_QUALITY:
@@ -3843,14 +3843,14 @@ pam_sm_acct_mgmt (pam_handle_t * pamh, int flags, int argc, const char **argv)
       _conv_sendmsg (appconv,
 		     policy_error_table[session->info->policy_error],
 		     PAM_ERROR_MSG, no_warn);
-      rc = success = PAM_PERM_DENIED;
+      return PAM_PERM_DENIED;
       break;
     default:
       snprintf (buf, sizeof buf,
 		"Unknown password policy error %d received.",
 		session->info->policy_error);
       _conv_sendmsg (appconv, buf, PAM_ERROR_MSG, no_warn);
-      rc = success = PAM_PERM_DENIED;
+      return PAM_PERM_DENIED;
       break;
     }
 

@@ -11,6 +11,9 @@ $Id$
 	* fix for BUG#207: if ldap_start_tls_s() fails
 	  return PAM_AUTHINFO_UNAVAIL
 	* fix for BUG#261: sslpath example wrong
+	* fix for BUG#268: POLICY_ERROR_CHANGE_AFTER_RESET
+	  should be handled as POLICY_ERROR_PASSWORD_EXPIRED,
+	  other password policy errors to be treated as fatal
 
 180	Luke Howard <lukeh@padl.com>
 
