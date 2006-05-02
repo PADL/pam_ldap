@@ -1943,7 +1943,7 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
        */
       rc = ldap_sasl_interactive_bind_s (session->ld, session->info->userdn,
 					 session->conf->sasl_mechanism,
-					 psrvctrls : NULL, NULL,
+					 psrvctrls, NULL,
 #ifdef LDAP_SASL_AUTOMATIC
 					 LDAP_SASL_AUTOMATIC,
 #else
