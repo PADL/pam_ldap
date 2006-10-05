@@ -2060,18 +2060,47 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
 	      rc2 = _get_password_policy_response_value (&(*ctlp)->ldctl_value,
 							 session);
 
-	      if (rc2 != LDAP_SUCCESS ||
-		  session->info->policy_error != POLICY_ERROR_SUCCESS)
+	      if (rc2 != LDAP_SUCCESS)
 		{
 		  /*
-		   * If decoding policy control failed, return the error.
-		   *
-		   * If decoding policy control succeeded, and there is a
-		   * policy error, return LDAP_SUCCESS so that the error
-		   * will be handled in the account management step (see
-		   * above).
+		   * If decoding policy control failed, and we're not already
+		   * planning to report an error, return the decoding error.
 		   */
-		  rc = rc2;
+	          if (rc == LDAP_SUCCESS)
+		    {
+                      rc = rc2;
+		    }
+		}
+	      else
+		{
+		  /*
+		   * If we have a policy error, and it's one which the PAM spec
+		   * expects us to communicate via the acct_mgmt callback,
+		   * then we suppress the error.  If it's a different kind of
+		   * policy error, then make sure we indicate the error now.
+		   */
+		  switch (session->info->policy_error)
+		    {
+		    case POLICY_ERROR_SUCCESS:
+		      break;
+		    case POLICY_ERROR_CHANGE_AFTER_RESET:
+		    case POLICY_ERROR_PASSWORD_EXPIRED:
+		      rc = LDAP_SUCCESS;
+		      break;
+		    case POLICY_ERROR_ACCOUNT_LOCKED:
+		    case POLICY_ERROR_PASSWORD_MOD_NOT_ALLOWED:
+		    case POLICY_ERROR_MUST_SUPPLY_OLD_PASSWORD:
+		    case POLICY_ERROR_INSUFFICIENT_PASSWORD_QUALITY:
+		    case POLICY_ERROR_PASSWORD_TOO_SHORT:
+		    case POLICY_ERROR_PASSWORD_TOO_YOUNG:
+		    case POLICY_ERROR_PASSWORD_INSUFFICIENT:
+		    default:
+		      ldap_controls_free (controls);
+		      _pam_overwrite (session->info->userpw);
+		      _pam_drop (session->info->userpw);
+		      return PAM_AUTH_ERR;
+		      break;
+		    }
 		}
 	    }
 	}
