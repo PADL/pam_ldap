@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+184	Luke Howard <lukeh@padl.com>
+
+	* fix for BUG#312: pam_ldap does not try to reconnect
+	  when LDAP server closed the connection
+
 183	Luke Howard <lukeh@padl.com>
 
 	* fix for BUG#291: don't suppress password policy

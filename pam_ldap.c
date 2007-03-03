@@ -1512,7 +1512,18 @@ _connect_anonymously (pam_ldap_session_t * session)
   int msgid;
   struct timeval timeout;
   LDAPMessage *result;
+  int reconnect = 0;
 
+retry:
+  if (reconnect) 
+    {
+      if (session->ld != NULL)
+        {
+          ldap_unbind (session->ld);
+          session->ld = NULL;
+        }
+      syslog(LOG_ERR, "pam_ldap: reconnecting to LDAP server...");
+    }
   if (session->ld == NULL)
     {
       rc = _open_session (session);
@@ -1534,8 +1545,15 @@ _connect_anonymously (pam_ldap_session_t * session)
 
   if (msgid == -1)
     {
+      int ld_errno = ldap_get_lderrno (session->ld, 0, 0);
+
       syslog (LOG_ERR, "pam_ldap: ldap_simple_bind %s",
-	      ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
+	      ldap_err2string (ld_errno));
+      if (ld_errno == LDAP_SERVER_DOWN && !reconnect) 
+        {
+          reconnect = 1;
+          goto retry;
+        }
       return PAM_AUTHINFO_UNAVAIL;
     }
 
@@ -1544,8 +1562,15 @@ _connect_anonymously (pam_ldap_session_t * session)
   rc = ldap_result (session->ld, msgid, FALSE, &timeout, &result);
   if (rc == -1 || rc == 0)
     {
+      int ld_errno = ldap_get_lderrno (session->ld, 0, 0);
+
       syslog (LOG_ERR, "pam_ldap: ldap_result %s",
-	      ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
+	      ldap_err2string (ld_errno));
+      if (ld_errno == LDAP_SERVER_DOWN && !reconnect) 
+        {
+          reconnect = 1;
+          goto retry;
+        }
       return PAM_AUTHINFO_UNAVAIL;
     }
 
@@ -1882,6 +1907,7 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
   LDAPControl passwd_policy_req;
   LDAPControl *srvctrls[2], **psrvctrls = NULL;
   struct berval userpw;
+  int reconnect=0;
 #endif /* HAVE_LDAP_PARSE_RESULT && HAVE_LDAP_CONTROLS_FREE */
 
   /* avoid binding anonymously with a DN but no password */
@@ -1895,6 +1921,18 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
   /* if we already bound as the user don't bother retrying */
   if (session->info->bound_as_user)
     return PAM_SUCCESS;
+
+retry:
+  if (reconnect) 
+    {
+      if (session->ld != NULL)
+        {
+          ldap_unbind (session->ld);
+          session->ld = NULL;
+        }
+      session->info->bound_as_user = 0;
+      syslog(LOG_INFO, "pam_ldap: reconnecting to LDAP server...");
+    }
 
   if (session->ld == NULL)
     {
@@ -1952,8 +1990,15 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
 					 _do_sasl_interact, &args);
       if (rc != LDAP_SUCCESS)
 	{
+          int ld_errno = ldap_get_lderrno (session->ld, 0, 0);
+
 	  syslog (LOG_ERR, "pam_ldap: ldap_sasl_interactive_bind %s",
-		  ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
+		  ldap_err2string (ld_errno));
+          if (ld_errno == LDAP_SERVER_DOWN && !reconnect) 
+            {
+              reconnect = 1;
+              goto retry;
+            }
 	  _pam_overwrite (session->info->userpw);
 	  _pam_drop (session->info->userpw);
 	  return PAM_AUTHINFO_UNAVAIL;
@@ -1973,8 +2018,15 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
 			&userpw, psrvctrls, 0, &msgid);
       if (rc != LDAP_SUCCESS || msgid == -1)
 	{
+          int ld_errno = ldap_get_lderrno (session->ld, 0, 0);
+
 	  syslog (LOG_ERR, "pam_ldap: ldap_sasl_bind %s",
-		  ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
+		  ldap_err2string (ld_errno));
+          if (ld_errno == LDAP_SERVER_DOWN && !reconnect) 
+            {
+              reconnect = 1;
+              goto retry;
+            }
 	  _pam_overwrite (session->info->userpw);
 	  _pam_drop (session->info->userpw);
 	  return PAM_AUTHINFO_UNAVAIL;
@@ -1986,8 +2038,15 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
 				session->info->userpw);
       if (msgid == -1)
 	{
+          int ld_errno = ldap_get_lderrno (session->ld, 0, 0);
+
 	  syslog (LOG_ERR, "pam_ldap: ldap_simple_bind %s",
-		  ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
+		  ldap_err2string (ld_errno));
+          if (ld_errno == LDAP_SERVER_DOWN && !reconnect) 
+            {
+              reconnect = 1;
+              goto retry;
+            }
 	  _pam_overwrite (session->info->userpw);
 	  _pam_drop (session->info->userpw);
 	  return PAM_AUTHINFO_UNAVAIL;
@@ -1999,8 +2058,18 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
 		      session->info->userpw);
   if (msgid == -1)
     {
+      int ld_errno = ldap_get_lderrno (session->ld, 0, 0);
+
+
+
+
       syslog (LOG_ERR, "pam_ldap: ldap_simple_bind %s",
-	      ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
+	      ldap_err2string (ld_errno));
+      if (ld_errno == LDAP_SERVER_DOWN && !reconnect) 
+        {
+          reconnect = 1;
+          goto retry;
+        }
       _pam_overwrite (session->info->userpw);
       _pam_drop (session->info->userpw);
       return PAM_AUTHINFO_UNAVAIL;
@@ -2012,8 +2081,15 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
   rc = ldap_result (session->ld, msgid, FALSE, &timeout, &result);
   if (rc == -1 || rc == 0)
     {
+      int ld_errno = ldap_get_lderrno (session->ld, 0, 0);
+
       syslog (LOG_ERR, "pam_ldap: ldap_result %s",
-	      ldap_err2string (ldap_get_lderrno (session->ld, 0, 0)));
+	      ldap_err2string (ld_errno));
+      if (ld_errno == LDAP_SERVER_DOWN && !reconnect) 
+        {
+          reconnect = 1;
+          goto retry;
+        }
       _pam_overwrite (session->info->userpw);
       _pam_drop (session->info->userpw);
       return PAM_AUTHINFO_UNAVAIL;
