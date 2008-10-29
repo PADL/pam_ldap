@@ -206,6 +206,8 @@ static void _cleanup_data (pam_handle_t * pamh, void *data, int error_status);
 static void _cleanup_authtok_data (pam_handle_t * pamh, void *data,
 				   int error_status);
 static int _alloc_config (pam_ldap_config_t ** presult);
+static int _get_password_policy_response_value (struct berval *response_value,
+						pam_ldap_session_t * session);
 #ifdef YPLDAPD
 static int _ypldapd_read_config (pam_ldap_config_t ** presult);
 #endif
@@ -1612,7 +1614,17 @@ _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid)
   pam_ldap_session_t *session = global_session;
 #endif
   char *who, *cred;
+  struct timeval timeout;
   int rc;
+#if defined(HAVE_LDAP_PARSE_RESULT) && defined(HAVE_LDAP_CONTROLS_FREE)
+  int parserc;
+  LDAPMessage *result;
+  LDAPControl **controls;
+  LDAPControl passwd_policy_req;
+  LDAPControl *srvctrls[2], **psrvctrls = NULL;
+  struct berval userpw;
+  int reconnect=0;
+#endif /* HAVE_LDAP_PARSE_RESULT && HAVE_LDAP_CONTROLS_FREE */
 
   if (session->info != NULL && session->info->bound_as_user == 1)
     {
@@ -1640,11 +1652,103 @@ _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid)
         {
           syslog (LOG_ERR, "pam_ldap: ldap_starttls_s: %s",
                   ldap_err2string (rc));
-          return PAM_AUTHINFO_UNAVAIL;
+          return LDAP_OPERATIONS_ERROR;
         }
     }
 
+#if !defined(HAVE_LDAP_PARSE_RESULT) || !defined(HAVE_LDAP_CONTROLS_FREE)
   return ldap_simple_bind_s (ld, who, cred);
+#else
+#if !defined(HAVE_LDAP_SASL_BIND) || !defined(LDAP_SASL_SIMPLE)
+  msgid = ldap_simple_bind (ld, who, cred);
+#else
+  if (session->conf->getpolicy)
+    {
+      passwd_policy_req.ldctl_oid = LDAP_CONTROL_PASSWORDPOLICYREQUEST;
+      passwd_policy_req.ldctl_value.bv_val = 0;	/* none */
+      passwd_policy_req.ldctl_value.bv_len = 0;
+      passwd_policy_req.ldctl_iscritical = 0;	/* not critical */
+      srvctrls[0] = &passwd_policy_req;
+      srvctrls[1] = 0;
+
+      psrvctrls = srvctrls;
+    }
+  userpw.bv_val = cred;
+  userpw.bv_len = (userpw.bv_val != 0) ? strlen (userpw.bv_val) : 0;
+
+  rc =
+    ldap_sasl_bind (session->ld, who, LDAP_SASL_SIMPLE,
+                    &userpw, psrvctrls, 0, &msgid);
+  if (rc != LDAP_SUCCESS )
+    {
+      return rc;
+    }
+#endif
+  if (msgid == -1)
+    {
+      syslog (LOG_ERR, "pam_ldap: ldap_simple_bind %s",
+              ldap_err2string (ldap_get_lderrno (ld, 0, 0)));
+      return LDAP_OPERATIONS_ERROR;
+    }
+
+  timeout.tv_sec = session->conf->bind_timelimit;
+  timeout.tv_usec = 0;
+  result = NULL;
+  rc = ldap_result (ld, msgid, FALSE, &timeout, &result);
+  if (rc == -1 || rc == 0)
+    {
+      syslog (LOG_ERR, "pam_ldap: ldap_result %s",
+              ldap_err2string (ldap_get_lderrno (ld, 0, 0)));
+      ldap_msgfree (result);
+      return LDAP_OPERATIONS_ERROR;
+    }
+
+  controls = NULL;
+  parserc = ldap_parse_result (ld, result, &rc, 0, 0, 0, &controls, TRUE);
+  if (parserc != LDAP_SUCCESS)
+    {
+      syslog (LOG_ERR, "pam_ldap: ldap_parse_result %s",
+              ldap_err2string (parserc));
+      _pam_overwrite (session->info->userpw);
+      _pam_drop (session->info->userpw);
+      return PAM_SERVICE_ERR;
+    }
+  if (controls != NULL)
+    {
+      LDAPControl **ctlp;
+      for (ctlp = controls; *ctlp != NULL; ctlp++)
+        {
+          if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PWEXPIRED))
+            {
+              if (session->info->policy_error == POLICY_ERROR_SUCCESS)
+                session->info->policy_error = POLICY_ERROR_PASSWORD_EXPIRED;
+            }
+          else if (!strcmp ((*ctlp)->ldctl_oid, LDAP_CONTROL_PASSWORDPOLICYRESPONSE))
+            _get_password_policy_response_value (&(*ctlp)->ldctl_value,
+                                                 session);
+        }
+      ldap_controls_free (controls);
+      /* suppress a failure due to password expiration or needs-changing if we
+       * appear to be in the middle of changing a password */
+      switch (request)
+        {
+        case LDAP_REQ_MODIFY:
+        case LDAP_REQ_EXTENDED:
+          switch (session->info->policy_error)
+            {
+            case POLICY_ERROR_PASSWORD_EXPIRED:
+            case POLICY_ERROR_CHANGE_AFTER_RESET:
+              rc = LDAP_SUCCESS;
+              break;
+            default:
+              break;
+            }
+        default:
+          break;
+        }
+    }
+    return rc;
+#endif
 }
 #else
 #if LDAP_SET_REBIND_PROC_ARGS == 3
@@ -2195,10 +2299,17 @@ retry:
       return PAM_AUTH_ERR;
     }
 
-  if (session->info->policy_error != POLICY_ERROR_SUCCESS)
+  /* check if we need to unset userpw */
+  switch (session->info->policy_error)
     {
+    case POLICY_ERROR_SUCCESS:
+    case POLICY_ERROR_PASSWORD_EXPIRED:
+    case POLICY_ERROR_CHANGE_AFTER_RESET:
+     break;
+    default:
       _pam_overwrite (session->info->userpw);
       _pam_drop (session->info->userpw);
+      break;
     }
   /* else userpw is now set. Be sure to clobber it later. */
 

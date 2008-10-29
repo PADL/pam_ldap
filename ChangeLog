@@ -1,6 +1,12 @@
 $Id$
 ===============================================================
 
+185	Luke Howard <lukeh@padlcom>
+
+	* fix for BUG#232: LDAP write on userPassword fails
+	  when chasing referral and cached policy error is
+	  POLICY_ERROR_PASSWORD_EXPIRED
+
 184	Luke Howard <lukeh@padl.com>
 
 	* fix for BUG#312: pam_ldap does not try to reconnect
