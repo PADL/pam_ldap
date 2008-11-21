@@ -1623,7 +1623,6 @@ _rebind_proc (LDAP * ld, LDAP_CONST char *url, int request, ber_int_t msgid)
   LDAPControl passwd_policy_req;
   LDAPControl *srvctrls[2], **psrvctrls = NULL;
   struct berval userpw;
-  int reconnect=0;
 #endif /* HAVE_LDAP_PARSE_RESULT && HAVE_LDAP_CONTROLS_FREE */
 
   if (session->info != NULL && session->info->bound_as_user == 1)
@@ -2011,7 +2010,7 @@ _connect_as_user (pam_handle_t * pamh, pam_ldap_session_t * session, const char 
   LDAPControl passwd_policy_req;
   LDAPControl *srvctrls[2], **psrvctrls = NULL;
   struct berval userpw;
-  int reconnect=0;
+  int reconnect = 0;
 #endif /* HAVE_LDAP_PARSE_RESULT && HAVE_LDAP_CONTROLS_FREE */
 
   /* avoid binding anonymously with a DN but no password */
