@@ -6,6 +6,8 @@ $Id$
 	* fix for BUG#232: LDAP write on userPassword fails
 	  when chasing referral and cached policy error is
 	  POLICY_ERROR_PASSWORD_EXPIRED
+	* fix for BUG#366: only request attributes that are
+	  actually used
 
 184	Luke Howard <lukeh@padl.com>
 

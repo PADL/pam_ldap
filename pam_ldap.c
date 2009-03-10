@@ -2670,6 +2670,20 @@ _escape_string (const char *str, char *buf, size_t buflen)
   return ret;
 }
 
+static char *_pam_ldap_attrs[] = {
+  "host",
+  "authorizedService",
+  "shadowExpire",
+  "shadowFlag",
+  "shadowInactive",
+  "shadowLastChange",
+  "shadowMax",
+  "shadowMin",
+  "shadowWarning",
+  "uidNumber",
+  NULL 
+};
+
 static int
 _get_user_info (pam_ldap_session_t * session, const char *user)
 {
@@ -2728,7 +2742,7 @@ nxt:
     }
 
   rc = ldap_search_s (session->ld, ssd->base, ssd->scope,
-		      filter, NULL, 0, &res);
+		      filter, _pam_ldap_attrs, 0, &res);
 
   if (rc != LDAP_SUCCESS &&
       rc != LDAP_TIMELIMIT_EXCEEDED && rc != LDAP_SIZELIMIT_EXCEEDED)
