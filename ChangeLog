@@ -8,6 +8,7 @@ $Id$
 	  POLICY_ERROR_PASSWORD_EXPIRED
 	* fix for BUG#366: only request attributes that are
 	  actually used
+	* fix for BUG#394: canonicalize PAM_USER name
 
 184	Luke Howard <lukeh@padl.com>
 

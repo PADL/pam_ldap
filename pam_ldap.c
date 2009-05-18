@@ -2776,7 +2776,13 @@ nxt:
       return PAM_BUF_ERR;
     }
 
-  session->info->username = strdup (user);
+  rc = _get_string_value (session->ld, msg, session->conf->userattr,
+                    &session->info->username);
+  if (rc != PAM_SUCCESS)
+    {
+      session->info->username = strdup (user);
+    }
+
   if (session->info->username == NULL)
     {
       ldap_msgfree (res);
@@ -3457,6 +3463,13 @@ pam_sm_authenticate (pam_handle_t * pamh,
 		pam_set_item (pamh, PAM_USER,
 			      (void *) session->info->tmpluser);
 	    }
+          else if (rc == PAM_SUCCESS && session->info->username != NULL)
+            {
+              (void) pam_set_data (pamh, PADL_LDAP_AUTH_DATA,
+                                  (void *) strdup (session->info->username),
+                                  _cleanup_data);
+              rc = pam_set_item (pamh, PAM_USER, (void *) session->info->username);
+            }
 	  return rc;
 	}
     }
@@ -3486,6 +3499,13 @@ pam_sm_authenticate (pam_handle_t * pamh,
 			   (void *) strdup (session->info->username),
 			   _cleanup_data);
       rc = pam_set_item (pamh, PAM_USER, (void *) session->info->tmpluser);
+    }
+  else if (rc == PAM_SUCCESS && session->info->username != NULL)
+    {
+      (void) pam_set_data (pamh, PADL_LDAP_AUTH_DATA,
+                          (void *) strdup (session->info->username),
+                          _cleanup_data);
+      rc = pam_set_item (pamh, PAM_USER, (void *) session->info->username);
     }
 
   return rc;
