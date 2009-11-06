@@ -54,7 +54,8 @@ mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
-am_pam_ldap_so_OBJECTS = pam_ldap.$(OBJEXT) md5.$(OBJEXT)
+am_pam_ldap_so_OBJECTS = pam_ldap.$(OBJEXT) md5.$(OBJEXT) \
+	vers.$(OBJEXT)
 pam_ldap_so_OBJECTS = $(am_pam_ldap_so_OBJECTS)
 pam_ldap_so_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I.
@@ -176,7 +177,7 @@ target_vendor = @target_vendor@
 EXTRA_DIST = COPYING.LIB CVSVersionInfo.txt ChangeLog README \
 	     ldap.conf pam.conf pam_ldap.spec pam.d
 
-pam_ldap_so_SOURCES = pam_ldap.c pam_ldap.h md5.c md5.h
+pam_ldap_so_SOURCES = pam_ldap.c pam_ldap.h md5.c md5.h vers.c
 man_MANS = pam_ldap.5
 @USE_NATIVE_LINKER_TRUE@NATIVE_LINK = $(pam_ldap_so_LD) $(AM_LDFLAGS) -o $@ 
 @USE_NATIVE_LINKER_FALSE@GNU_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -254,6 +255,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md5.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pam_ldap.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vers.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -607,6 +609,9 @@ install-data-local:
 
 uninstall-local:
 	@$(NORMAL_UNINSTALL)
+
+vers.c: $(top_srcdir)/CVSVersionInfo.txt
+	CVSVERSIONDIR=$(top_srcdir) vers_string -v
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

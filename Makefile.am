@@ -2,7 +2,7 @@ noinst_PROGRAMS = pam_ldap.so
 EXTRA_DIST = COPYING.LIB CVSVersionInfo.txt ChangeLog README \
 	     ldap.conf pam.conf pam_ldap.spec pam.d
 
-pam_ldap_so_SOURCES = pam_ldap.c pam_ldap.h md5.c md5.h
+pam_ldap_so_SOURCES = pam_ldap.c pam_ldap.h md5.c md5.h vers.c
 pam_ldap_so_LDFLAGS = @pam_ldap_so_LDFLAGS@
 
 man_MANS = pam_ldap.5
@@ -43,3 +43,5 @@ install-data-local:
 uninstall-local:
 	@$(NORMAL_UNINSTALL)
 
+vers.c: $(top_srcdir)/CVSVersionInfo.txt
+	CVSVERSIONDIR=$(top_srcdir) vers_string -v
