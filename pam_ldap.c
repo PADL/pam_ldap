@@ -131,11 +131,15 @@
 #include "pam_ldap.h"
 #include "md5.h"
 
-#if defined(HAVE_SECURITY_PAM_MISC_H) || defined(HAVE_PAM_PAM_MISC_H)
+#if defined(HAVE_SECURITY_PAM_MISC_H) || defined(HAVE_PAM_PAM_MISC_H) || defined(OPENPAM)
  /* FIXME: is there something better to check? */
 #define CONST_ARG const
 #else
 #define CONST_ARG
+#endif
+
+#ifdef PAM_AUTHTOK_RECOVER_ERR
+#define PAM_AUTHTOK_RECOVERY_ERR PAM_AUTHTOK_RECOVER_ERR
 #endif
 
 #ifndef HAVE_LDAP_MEMFREE
@@ -1948,13 +1952,13 @@ _do_sasl_interaction (pam_handle_t *pamh, pam_ldap_session_t *session,
       if (interact->challenge != NULL)
 	{
 	  challenge_msg.msg_style = PAM_TEXT_INFO;
-	  challenge_msg.msg = interact->challenge;
+	  challenge_msg.msg = (char *)interact->challenge;
 	  pmsg[i++] = &challenge_msg;
 	}
 
       prompt_msg.msg_style = (interact->id == SASL_CB_ECHOPROMPT) ?
 			     PAM_PROMPT_ECHO_ON : PAM_PROMPT_ECHO_OFF;
-      prompt_msg.msg = (interact->prompt != NULL) ? interact->prompt : "Enter SASL response: ";
+      prompt_msg.msg = (interact->prompt != NULL) ? (char *)interact->prompt : "Enter SASL response: ";
       pmsg[i++] = &prompt_msg;
 
       rc = pam_get_item(pamh, PAM_CONV, (CONST_ARG void **)&conv);
@@ -3707,11 +3711,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		    {
 		      _conv_sendmsg (appconv, "Password change aborted",
 				     PAM_ERROR_MSG, no_warn);
-#ifdef PAM_AUTHTOK_RECOVERY_ERR
 		      return PAM_AUTHTOK_RECOVERY_ERR;
-#else
-		      return PAM_AUTHTOK_RECOVER_ERR;
-#endif /* PAM_AUTHTOK_RECOVERY_ERR */
 		    }
 		  else
 		    {
@@ -3753,11 +3753,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
       syslog (LOG_ERR,
 	      "pam_ldap: error getting old authentication token (%s)",
 	      pam_strerror (pamh, rc));
-#ifdef PAM_AUTHTOK_RECOVERY_ERR
       return PAM_AUTHTOK_RECOVERY_ERR;
-#else
-      return PAM_AUTHTOK_RECOVER_ERR;
-#endif /* PAM_AUTHTOK_RECOVERY_ERR */
     }
 
   if (try_first_pass || use_first_pass)
@@ -3767,11 +3763,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	newpass = NULL;
 
       if (use_first_pass && newpass == NULL)
-#ifdef PAM_AUTHTOK_RECOVERY_ERR
 	return PAM_AUTHTOK_RECOVERY_ERR;
-#else
-	return PAM_AUTHTOK_RECOVER_ERR;
-#endif /* PAM_AUTHTOK_RECOVERY_ERR */
     }
 
   tries = 0;
@@ -3821,11 +3813,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	}
       else
 	{
-#ifdef PAM_AUTHTOK_RECOVERY_ERR
 	  return PAM_AUTHTOK_RECOVERY_ERR;
-#else
-	  return PAM_AUTHTOK_RECOVER_ERR;
-#endif /* PAM_AUTHTOK_RECOVERY_ERR */
 	}
 
       if (cmiscptr == NULL)
@@ -3857,11 +3845,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 		{
 		  _conv_sendmsg (appconv, "Password change aborted",
 				 PAM_ERROR_MSG, no_warn);
-#ifdef PAM_AUTHTOK_RECOVERY_ERR
 		  return PAM_AUTHTOK_RECOVERY_ERR;
-#else
-		  return PAM_AUTHTOK_RECOVER_ERR;
-#endif /* PAM_AUTHTOK_RECOVERY_ERR */
 		}
 	    }
 	  else if (!strcmp (newpass, miscptr))

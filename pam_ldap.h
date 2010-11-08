@@ -175,7 +175,7 @@ typedef struct pam_ldap_shadow
 				   inactive.  */
     long int expire;		/* Number of days since 1970-01-01 until
 				   account expires.  */
-    unsigned long int flag;	/* Reserved.  */
+    long int flag;	        /* Reserved.  */
   }
 pam_ldap_shadow_t;
 

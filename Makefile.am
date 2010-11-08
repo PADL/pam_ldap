@@ -44,4 +44,4 @@ uninstall-local:
 	@$(NORMAL_UNINSTALL)
 
 vers.c: $(top_srcdir)/CVSVersionInfo.txt
-	CVSVERSIONDIR=$(top_srcdir) $(top_srcdir)/vers_string -v
+	$(top_srcdir)/vers_string -v

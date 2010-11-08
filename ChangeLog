@@ -1,6 +1,10 @@
 $Id$
 ===============================================================
 
+186	Luke Howard <lukeh@padlcom>
+
+	* fix for BUG#424: build fails on Darwin
+
 185	Luke Howard <lukeh@padlcom>
 
 	* fix for BUG#232: LDAP write on userPassword fails
