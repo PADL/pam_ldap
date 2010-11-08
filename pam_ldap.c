@@ -138,10 +138,6 @@
 #define CONST_ARG
 #endif
 
-#ifdef PAM_AUTHTOK_RECOVER_ERR
-#define PAM_AUTHTOK_RECOVERY_ERR PAM_AUTHTOK_RECOVER_ERR
-#endif
-
 #ifndef HAVE_LDAP_MEMFREE
 #define ldap_memfree(x)	free(x)
 #endif
