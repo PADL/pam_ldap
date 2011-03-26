@@ -1,6 +1,11 @@
 $Id$
 ===============================================================
 
+187	Luke Howard <lukeh@padlcom>
+
+	* fix for BUG#431: pam_ldap doesn't always set
+          PAM_OLDAUTHTOK item when changing expired passwords
+
 186	Luke Howard <lukeh@padlcom>
 
 	* fix for BUG#424: build fails on Darwin
