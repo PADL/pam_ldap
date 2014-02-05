@@ -3559,6 +3559,8 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
   pam_ldap_password_policy_t policy;
   LDAPMod *mods[2], mod;
   const char *configFile = NULL;
+  time_t currenttime;
+  long int currentday;
 
   for (i = 0; i < argc; i++)
     {
@@ -3738,6 +3740,30 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
     return (ignore_flags & IGNORE_UNKNOWN_USER) ? PAM_IGNORE :
       PAM_USER_UNKNOWN;
 
+  /* Grab the current time */
+  time (&currenttime);
+  currentday = (long int) (currenttime / SECSPERDAY);
+
+  /* Check shadow expire conditions */
+  if (session->info->shadow.expire > 0)
+    {
+      if (currentday >= session->info->shadow.expire)
+        {
+          return PAM_ACCT_EXPIRED;
+        }
+    }
+
+  /* Check shadow min conditions */
+  if ((session->info->shadow.lstchg > 0) && (session->info->shadow.min > 0))
+    {
+      if (currentday < (session->info->shadow.lstchg +
+			 session->info->shadow.min))
+	{
+        _conv_sendmsg (appconv, "password change too recent",
+                       PAM_ERROR_MSG, no_warn);
+        return PAM_AUTHTOK_ERR;
+	}
+    }
 
   if (use_authtok)
     use_first_pass = 1;
