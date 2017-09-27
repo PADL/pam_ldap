@@ -2179,7 +2179,7 @@ retry:
     }
 #endif /* HAVE_LDAP_SASL_BIND && LDAP_SASL_SIMPLE */
 
-  timeout.tv_sec = 10;
+  timeout.tv_sec = session->conf->bind_timelimit;	/* default 10 */
   timeout.tv_usec = 0;
   rc = ldap_result (session->ld, msgid, FALSE, &timeout, &result);
   if (rc == -1 || rc == 0)
