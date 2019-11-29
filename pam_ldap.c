@@ -142,6 +142,8 @@
 #define ldap_memfree(x)	free(x)
 #endif
 
+#define FREE_IF(x) if(x != NULL){free(x); x = NULL;}
+
 #ifdef __GNUC__
 #define __UNUSED__ __attribute__ ((unused))
 #else
@@ -517,7 +519,21 @@ _release_config (pam_ldap_config_t ** pconfig)
     {
       free (c->password_prohibit_message);
     }
-
+  if (c->ssd != NULL) 
+    {
+      /* 
+      This is a linked list. 
+      */
+      pam_ssd_t *p_ssd = c->ssd;
+      while(p_ssd != NULL) 
+      {
+        pam_ssd_t *p_ssd_next = p_ssd->next;
+        FREE_IF(p_ssd->base);
+        FREE_IF(p_ssd->filter);
+        FREE_IF(p_ssd);
+        p_ssd = p_ssd_next;
+      };
+    }
   memset (c, 0, sizeof (*c));
   free (c);
   *pconfig = NULL;
@@ -3338,7 +3354,7 @@ static int
 _get_authtok (pam_handle_t * pamh, int flags, int first)
 {
   int rc;
-  char *p;
+  char *p = NULL;
   struct pam_message msg[1], *pmsg[1];
   struct pam_response *resp;
   struct pam_conv *conv;
@@ -3379,7 +3395,7 @@ _get_authtok (pam_handle_t * pamh, int flags, int first)
 
   free (resp);
   pam_set_item (pamh, PAM_AUTHTOK, p);
-
+  FREE_IF(p);
   return PAM_SUCCESS;
 }
 
@@ -3399,9 +3415,14 @@ _conv_sendmsg (struct pam_conv *aconv,
   msg.msg = (char *) message;
   resp = NULL;
 
-  return aconv->conv (1,
+  int ret = aconv->conv (1,
 		      (CONST_ARG struct pam_message **) &pmsg,
 		      &resp, aconv->appdata_ptr);
+  if (resp != NULL) {
+      FREE_IF(resp->resp);
+      FREE_IF(resp);
+  }
+  return (ret);
 }
 
 PAM_EXTERN int
@@ -3732,12 +3753,14 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
       pam_set_data (pamh, PADL_LDAP_OLDAUTHTOK_DATA,
 		    (curpass == NULL) ? NULL : (void *) strdup (curpass),
 		    _cleanup_authtok_data);
+      FREE_IF(curpass);
       return rc;
     }				/* prelim */
-  else if (session->info == NULL)	/* this is no LDAP user */
+  else if (session->info == NULL) {	/* this is no LDAP user */
+	if (curpass != NULL)free(curpass);
     return (ignore_flags & IGNORE_UNKNOWN_USER) ? PAM_IGNORE :
       PAM_USER_UNKNOWN;
-
+    }
 
   if (use_authtok)
     use_first_pass = 1;
@@ -3779,8 +3802,10 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
       rc = appconv->conv (1, (CONST_ARG struct pam_message **) &pmsg,
 			  &resp, appconv->appdata_ptr);
 
-      if (rc != PAM_SUCCESS)
-	return rc;
+      if (rc != PAM_SUCCESS) {
+		FREE_IF(curpass);
+		return rc;
+	  }
 
       newpass = resp->resp;
       free (resp);
@@ -3809,6 +3834,7 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
 	}
       else
 	{
+	  FREE_IF(curpass);
 	  return PAM_AUTHTOK_RECOVERY_ERR;
 	}
 
@@ -3864,9 +3890,13 @@ pam_sm_chauthtok (pam_handle_t * pamh, int flags, int argc, const char **argv)
     }				/* while */
 
   if (cmiscptr != NULL || newpass == NULL)
+  {
+	FREE_IF(curpass);
     return PAM_MAXTRIES;
+  }
 
   rc = _update_authtok (pamh, session, username, curpass, newpass);
+  FREE_IF(curpass);
   if (rc != PAM_SUCCESS)
     {
       int lderr;
