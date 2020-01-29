@@ -3248,6 +3248,19 @@ _update_authtok (pam_handle_t *pamh,
 
     case PASSWORD_EXOP:
     case PASSWORD_EXOP_SEND_OLD:
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      //
+      // connect_as_user drops session->info->userpw.  This causes update referrals to break.
+      // We fix that here by installing old_password into session->info->userpw
+      //
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      if (old_password && !session->info->userpw)
+        {
+	  session->info->userpw = strdup (old_password);
+	  if (session->info->userpw == NULL)
+	      return PAM_BUF_ERR;
+        }
+      ////////////////////////////////////////////////////////////////////////////////////////////
 #ifdef LDAP_EXOP_MODIFY_PASSWD
       ber = ber_alloc_t (LBER_USE_DER);
 
