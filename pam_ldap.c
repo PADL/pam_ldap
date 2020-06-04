@@ -444,6 +444,9 @@ _release_config (pam_ldap_config_t ** pconfig)
   if (c->configFile != NULL)
     free (c->configFile);
 
+  if (c->uri != NULL)
+    free (c->uri);
+
   if (c->host != NULL)
     free (c->host);
 
@@ -517,6 +520,24 @@ _release_config (pam_ldap_config_t ** pconfig)
     {
       free (c->password_prohibit_message);
     }
+
+  if (c->tls_cacertfile != NULL)
+    free (c->tls_cacertfile);
+
+  if (c->tls_cacertdir != NULL)
+    free (c->tls_cacertdir);
+
+  if (c->tls_ciphers != NULL)
+    free (c->tls_ciphers);
+
+  if (c->tls_cert != NULL)
+    free (c->tls_cert);
+
+  if (c->tls_key != NULL)
+    free (c->tls_key);
+
+  if (c->tls_randfile != NULL)
+    free (c->tls_randfile);
 
   memset (c, 0, sizeof (*c));
   free (c);
